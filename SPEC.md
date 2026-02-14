@@ -35,14 +35,14 @@ To achieve GPU-level performance, CanvasUI uses 2D Affine Transformation Matrice
 - **Identity**: `[1, 0, 0, 1, 0, 0]`.
 - **World Matrix**: Calculated as `Parent.WorldMatrix × Local.Matrix` (left-multiply; parent is the left operand).
 - **AABB Calculation**: The World Axis-Aligned Bounding Box is derived by transforming the four corners of an element's local bounds through `worldMatrix` and finding the min/max X and Y.
-- **Skew**: The affine matrix naturally encodes skew. CanvasUI **does not** expose explicit skew properties; skew is only achievable by setting the `localMatrix` directly.
+- **Skew**: Supported via `skewX` and `skewY` (in radians). Skew is applied as a shear transformation.
 
 ### 1.3 Behavioral Rules
 
-1. When any of `x`, `y`, `rotation`, `scaleX`, `scaleY`, `pivotX`, or `pivotY` change, the element must call `invalidate(DirtyFlags.Transform)`.
+1. When any of `x`, `y`, `rotation`, `scaleX`, `scaleY`, `skewX`, `skewY`, `pivotX`, or `pivotY` change, the element must call `invalidate(DirtyFlags.Transform)`.
 2. When an element's transform is invalidated, **all descendants** must also be marked `DirtyFlags.Transform` (cascading downward through the tree). The cascade happens lazily during the next `update()` pass, not eagerly on set.
 3. `worldMatrix` is recomputed during `update()` only if `DirtyFlags.Transform` is set. After recomputation the flag is cleared.
-4. The local matrix is composed as: `Translate(x + pivotX, y + pivotY) × Rotate(rotation) × Scale(scaleX, scaleY) × Translate(-pivotX, -pivotY)`.
+4. The local matrix is composed as: `Translate(x, y) × Rotate(rotation) × Skew(skewX, skewY) × Scale(scaleX, scaleY) × Translate(-pivotX, -pivotY)`. The pivot point `(pivotX, pivotY)` in local space always maps to `(x, y)` in parent space — changing the pivot repositions the element around a fixed anchor.
 
 ### 1.4 API Contract
 
@@ -55,6 +55,8 @@ export interface ITransform {
   x: number;
   y: number;
   rotation: number;       // Radians, clockwise.
+  skewX: number;          // Radians. Default: 0.
+  skewY: number;          // Radians. Default: 0.
   scaleX: number;          // Default: 1. Must not be 0.
   scaleY: number;          // Default: 1. Must not be 0.
   pivotX: number;          // Local-space pivot X. Default: 0.
@@ -89,7 +91,7 @@ A retained-mode system where the library tracks object states. Updates are "push
 
 | Flag | Triggered By | Effect |
 |---|---|---|
-| `Transform` | `x`, `y`, `rotation`, `scaleX`, `scaleY`, `pivotX`, `pivotY` change | Recompute `worldMatrix` and AABB. Cascades to all descendants. |
+| `Transform` | `x`, `y`, `rotation`, `scaleX`, `scaleY`, `skewX`, `skewY`, `pivotX`, `pivotY` change | Recompute `worldMatrix` and AABB. Cascades to all descendants. |
 | `Visual` | `alpha`, `blendMode`, fill/stroke changes, or any draw-affecting property | Repaint element. Does **not** cascade unless `cacheAsBitmap` ancestor exists (see below). |
 | `Layout` | `width`, `height`, style property changes, child add/remove | Re-run layout resolver for this element's subtree. |
 | `Spatial` | AABB changes (consequence of Transform or Layout resolution) | Re-insert into `SpatialHashGrid`. |

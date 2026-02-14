@@ -26,7 +26,9 @@ description: Implement the next layer of CanvasUI following the phase-gate proce
 
 6. Write unit tests covering all acceptance criteria listed in `PRD.md`.
 
-7. Create or update the demo panel for this layer in `demo/`.
+7. Create or update the demo panel for this layer:
+   - **HTML** (panel markup, sliders, canvas, etc.) goes in `demo/index.html` inside the `<div id="layer-N" class="panel">` block.
+   - **JS** (all interactive logic) goes in `demo/panels/layerN.js` and is loaded via `<script src="panels/layerN.js"></script>` at the bottom of `index.html`. Never place demo JS inline in `index.html`.
 
 ## Verification
 
@@ -58,4 +60,5 @@ description: Implement the next layer of CanvasUI following the phase-gate proce
     - How to inspect the demo panel.
     - Any ambiguities or deviations encountered.
 
-15. **Do NOT proceed to the next layer** until the human sets Status to `✅ APPROVED`.
+
+15. **Once satisfied with the layer**, run `/finish-layer` to verify, commit, and prepare for the next phase. This replaces the manual "Status to APPROVED" step.

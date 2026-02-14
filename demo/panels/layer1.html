@@ -1,0 +1,62 @@
+      <div class="main-header">
+        <h2>Layer 1 — Core Math & Transformation Engine</h2>
+        <p>Affine transformation matrices, AABB computation, and the ITransform interface.</p>
+      </div>
+      <div class="card">
+        <div class="status-badge ready">
+          <span class="pulse"></span> Interactive Demo
+        </div>
+        <h3>Transform Playground</h3>
+        <p style="margin-bottom: 20px;">Drag the sliders to transform the blue rectangle. The dashed orange box shows the world-space AABB.</p>
+
+        <canvas id="math-canvas" width="600" height="400" style="width: 100%; max-width: 600px; background: #0f0f1a; border-radius: 8px; border: 1px solid var(--border);"></canvas>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px 24px; margin-top: 20px; max-width: 600px;">
+          <label style="font-size: 12px; font-family: var(--font-mono); color: var(--text-secondary); display: flex; flex-direction: column; gap: 4px;">
+            x: <span id="val-x">200</span>
+            <input type="range" id="slider-x" min="0" max="500" value="200" style="accent-color: var(--accent);">
+          </label>
+          <label style="font-size: 12px; font-family: var(--font-mono); color: var(--text-secondary); display: flex; flex-direction: column; gap: 4px;">
+            y: <span id="val-y">150</span>
+            <input type="range" id="slider-y" min="0" max="350" value="150" style="accent-color: var(--accent);">
+          </label>
+          <label style="font-size: 12px; font-family: var(--font-mono); color: var(--text-secondary); display: flex; flex-direction: column; gap: 4px;">
+            rotation: <span id="val-rot">0</span>°
+            <input type="range" id="slider-rot" min="-180" max="180" value="0" style="accent-color: var(--accent);">
+          </label>
+          <label style="font-size: 12px; font-family: var(--font-mono); color: var(--text-secondary); display: flex; flex-direction: column; gap: 4px;">
+            scaleX: <span id="val-sx">1.0</span>
+            <input type="range" id="slider-sx" min="-30" max="30" value="10" style="accent-color: var(--accent);">
+          </label>
+          <label style="font-size: 12px; font-family: var(--font-mono); color: var(--text-secondary); display: flex; flex-direction: column; gap: 4px;">
+            scaleY: <span id="val-sy">1.0</span>
+            <input type="range" id="slider-sy" min="-30" max="30" value="10" style="accent-color: var(--accent);">
+          </label>
+          <label style="font-size: 12px; font-family: var(--font-mono); color: var(--text-secondary); display: flex; flex-direction: column; gap: 4px;">
+            skewX: <span id="val-skx">0</span>°
+            <input type="range" id="slider-skx" min="-60" max="60" value="0" style="accent-color: #60c0f0;">
+          </label>
+          <label style="font-size: 12px; font-family: var(--font-mono); color: var(--text-secondary); display: flex; flex-direction: column; gap: 4px;">
+            skewY: <span id="val-sky">0</span>°
+            <input type="range" id="slider-sky" min="-60" max="60" value="0" style="accent-color: #60c0f0;">
+          </label>
+          <label style="font-size: 12px; font-family: var(--font-mono); color: var(--text-secondary); display: flex; flex-direction: column; gap: 4px;">
+            pivotX: <span id="val-px">0</span>
+            <input type="range" id="slider-px" min="0" max="100" value="0" style="accent-color: #f06060;">
+          </label>
+          <label style="font-size: 12px; font-family: var(--font-mono); color: var(--text-secondary); display: flex; flex-direction: column; gap: 4px;">
+            pivotY: <span id="val-py">0</span>
+            <input type="range" id="slider-py" min="0" max="80" value="0" style="accent-color: #f06060;">
+          </label>
+          <label style="font-size: 12px; font-family: var(--font-mono); color: var(--text-secondary); display: flex; flex-direction: column; gap: 4px;">
+            width: <span id="val-w">100</span>
+            <input type="range" id="slider-w" min="10" max="250" value="100" style="accent-color: #60f0a0;">
+          </label>
+          <label style="font-size: 12px; font-family: var(--font-mono); color: var(--text-secondary); display: flex; flex-direction: column; gap: 4px;">
+            height: <span id="val-h">80</span>
+            <input type="range" id="slider-h" min="10" max="200" value="80" style="accent-color: #60f0a0;">
+          </label>
+        </div>
+
+        <div id="matrix-readout" style="margin-top: 16px; font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); background: var(--bg-primary); padding: 12px; border-radius: 6px; max-width: 600px;"></div>
+      </div>

@@ -81,11 +81,11 @@ Establish the project skeleton, build pipeline, and a live-reloading demo site t
 
 | # | Item | Details |
 |---|---|---|
-| 0.1 | **Directory structure** | `src/`, `src/internal/`, `tests/`, `demo/`, `dist/` |
+| 0.1 | **Directory structure** | `src/`, `src/internal/`, `tests/`, `demo/`, `demo/panels/`, `dist/` |
 | 0.2 | **`package.json`** | `name: "canvasui"`, `type: "module"`, scripts: `dev`, `build`, `test` |
 | 0.3 | **`tsconfig.json`** | `strict: true`, `target: "ESNext"`, `module: "ESNext"`, `outDir: "dist"` |
 | 0.4 | **Bun dev server** | `demo/server.ts` — serves `demo/index.html` + live-reload via WebSocket on file change |
-| 0.5 | **Demo shell page** | `demo/index.html` — dark-themed page with a sidebar listing each layer's demo panel and a main content area. Initially shows "Layer 0 — Scaffold Ready" |
+| 0.5 | **Demo shell page** | `demo/index.html` — dark-themed page with a sidebar listing each layer's demo panel and a main content area. Each layer's interactive JS lives in `demo/panels/layerN.js` and is loaded via `<script src>`. Initially shows "Layer 0 — Scaffold Ready" |
 | 0.6 | **`bun build` entry** | Bundles `src/index.ts` → `dist/canvasui.js` (ESM) |
 | 0.7 | **Smoke test** | `tests/scaffold.test.ts` — validates the build produces a valid ESM bundle |
 

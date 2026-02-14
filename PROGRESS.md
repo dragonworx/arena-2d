@@ -7,13 +7,11 @@
 
 ## Current Phase
 
-Layer 0 — Project Scaffold & Demo Site
+Layer 2 — Event Bus
 
 ## Status
 
-🔍 AWAITING REVIEW
-
-Tests: 4/4 passing
+⏳ NOT STARTED
 
 ---
 
@@ -47,26 +45,37 @@ Tests: 4/4 passing
 
 ## Completed Layers
 
-_(none yet)_
+### Layer 0 — Project Scaffold & Demo Site ✅
+- [x] 0.1 Directory structure
+- [x] 0.2 `package.json` with scripts
+- [x] 0.3 `tsconfig.json`
+- [x] 0.4 Bun dev server with WebSocket live-reload
+- [x] 0.5 Demo shell page
+- [x] 0.6 `bun build` entry producing `dist/canvasui.js`
+- [x] 0.7 Smoke test
+- Tests: 4/4 passing
+
+---
+
+### Layer 1 — Core Math & Transformation Engine ✅
+- [x] 1.1 `src/math/matrix.ts` — `MatrixArray`, identity, multiply, translate, rotate, scale, invert, transformPoint
+- [x] 1.2 `src/math/aabb.ts` — `computeAABB(localBounds, worldMatrix)`
+- [x] 1.3 `ITransform` mixin with property setters and `updateLocalMatrix()`
+- [x] 1.4 Unit tests (identity, composition, inversion, pivoted rotation, AABB, edge cases)
+- [x] 1.5 Demo panel — rectangle with transform sliders and AABB overlay
+- Tests: 47/47 passing
 
 ---
 
 ## In Progress
 
-### Layer 0 — Project Scaffold & Demo Site
-- [x] 0.1 Directory structure (`src/`, `src/internal/`, `tests/`, `demo/`, `dist/`)
-- [x] 0.2 `package.json` with scripts: `dev`, `build`, `test`
-- [x] 0.3 `tsconfig.json` (strict, ESNext)
-- [x] 0.4 Bun dev server (`demo/server.ts`) with WebSocket live-reload
-- [x] 0.5 Demo shell page (`demo/index.html`) — dark theme, sidebar nav, main content area
-- [x] 0.6 `bun build` entry producing `dist/canvasui.js`
-- [x] 0.7 Smoke test (`tests/scaffold.test.ts`)
+_(none)_
 
 ---
 
 ## Blocked / Awaiting Review
 
-Layer 0 — Project Scaffold & Demo Site (🔍 AWAITING REVIEW)_
+_(none)_
 
 ---
 
