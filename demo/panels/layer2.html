@@ -1,0 +1,42 @@
+<div class="main-header">
+  <h2>Layer 2 — Event Emitter</h2>
+  <p>Minimal typed event system. Click buttons to emit events and watch the logs.</p>
+</div>
+
+<div class="card">
+  <h3>Interactive Events</h3>
+  <div class="controls-row">
+    <button id="btn-emit-foo" class="btn">Emit 'foo'</button>
+    <button id="btn-emit-bar" class="btn">Emit 'bar' (once)</button>
+    <button id="btn-clear-logs" class="btn secondary">Clear Logs</button>
+  </div>
+  
+  <div class="log-container">
+    <div id="event-logs" class="logs"></div>
+  </div>
+</div>
+
+<style>
+  .log-container {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 4px;
+    height: 200px;
+    margin-top: 1rem;
+    overflow-y: auto;
+    font-family: monospace;
+    font-size: 0.9em;
+    padding: 0.5rem;
+  }
+  .log-entry {
+    margin-bottom: 2px;
+    padding: 2px 4px;
+    border-left: 2px solid transparent;
+  }
+  .log-entry.foo { border-left-color: #6c6cf0; color: #a0a0ff; }
+  .log-entry.bar { border-left-color: #f0a040; color: #ffd0a0; }
+  .timestamp {
+    color: #666;
+    margin-right: 8px;
+  }
+</style>

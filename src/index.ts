@@ -21,3 +21,7 @@ export { computeAABB } from "./math/aabb";
 
 export type { ITransform } from "./math/Transform";
 export { Transform } from "./math/Transform";
+
+// --- Layer 2: Event Emitter ---
+export type { IEventEmitter } from "./events/EventEmitter";
+export { EventEmitter } from "./events/EventEmitter";

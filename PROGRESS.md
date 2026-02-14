@@ -7,7 +7,7 @@
 
 ## Current Phase
 
-Layer 2 — Event Bus
+Layer 3 — Element Base & Dirty Flagging
 
 ## Status
 
@@ -67,6 +67,14 @@ Layer 2 — Event Bus
 
 ---
 
+### Layer 2 — Event Emitter ✅
+- [x] 2.1 `src/events/EventEmitter.ts` — `on()`, `off()`, `once()`, `emit()`
+- [x] 2.2 Unit tests (add/remove/once, emit ordering, off-during-emit safety)
+- [x] 2.3 Demo panel — Interactive event emitter playground
+- Tests: 7/7 passing
+
+---
+
 ## In Progress
 
 _(none)_
@@ -103,12 +111,7 @@ _(none)_
 
 ---
 
-### 🟢 Layer 2 — Event Emitter
-- [ ] 2.1 `src/events/EventEmitter.ts` — `on()`, `off()`, `once()`, `emit()`
-- [ ] 2.2 Unit tests (add/remove/once, emit ordering, off-during-emit safety)
-- **Acceptance:** Handlers fire in registration order; `off` during `emit` is safe
 
----
 
 ### 🟡 Layer 3 — Element Base & Dirty Flagging
 - [ ] 3.1 `src/core/DirtyFlags.ts` — bitmask enum
