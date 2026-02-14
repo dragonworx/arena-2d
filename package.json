@@ -1,0 +1,24 @@
+{
+  "name": "canvasui",
+  "version": "0.0.1",
+  "type": "module",
+  "main": "dist/canvasui.js",
+  "module": "dist/canvasui.js",
+  "scripts": {
+    "dev": "bun demo/server.ts",
+    "build": "bun run build.ts",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit",
+    "lint": "bunx biome check src/ tests/ demo/ build.ts",
+    "lint:fix": "bunx biome check --write src/ tests/ demo/ build.ts",
+    "quality": "bun run typecheck && bun run lint && bun test"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.0",
+    "bun-types": "^1.3.9",
+    "typescript": "^5.9.3"
+  },
+  "trustedDependencies": [
+    "@biomejs/biome"
+  ]
+}

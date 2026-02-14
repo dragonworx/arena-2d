@@ -1,0 +1,141 @@
+import { watch } from "node:fs";
+import { extname, join } from "node:path";
+
+const PORT = 3000;
+const PROJECT_ROOT = join(import.meta.dir, "..");
+const DEMO_DIR = import.meta.dir;
+const SRC_DIR = join(PROJECT_ROOT, "src");
+
+// --- MIME types ---
+const MIME_TYPES: Record<string, string> = {
+  ".html": "text/html",
+  ".css": "text/css",
+  ".js": "application/javascript",
+  ".mjs": "application/javascript",
+  ".json": "application/json",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".svg": "image/svg+xml",
+  ".ico": "image/x-icon",
+  ".woff2": "font/woff2",
+  ".woff": "font/woff",
+};
+
+// --- WebSocket clients ---
+// biome-ignore lint/suspicious/noExplicitAny: Bun ServerWebSocket generic type
+const wsClients = new Set<any>();
+
+// --- File watcher ---
+function startWatcher(dir: string, label: string) {
+  try {
+    watch(dir, { recursive: true }, async (_event, filename) => {
+      if (
+        !filename ||
+        filename.includes("node_modules") ||
+        filename.includes("dist")
+      )
+        return;
+      console.log(`[${label}] changed: ${filename}`);
+
+      // Rebuild bundle
+      try {
+        const result = await Bun.build({
+          entrypoints: [join(SRC_DIR, "index.ts")],
+          outdir: join(PROJECT_ROOT, "dist"),
+          naming: "canvasui.js",
+          format: "esm",
+          target: "browser",
+          minify: false,
+        });
+        if (result.success) {
+          console.log("  ✓ Rebuilt dist/canvasui.js");
+        }
+      } catch {
+        // Build errors are non-fatal for the dev server
+      }
+
+      // Notify all connected clients to reload
+      for (const ws of wsClients) {
+        try {
+          ws.send("reload");
+        } catch {
+          wsClients.delete(ws);
+        }
+      }
+    });
+    console.log(`  Watching ${label}/`);
+  } catch {
+    console.warn(`  Could not watch ${label}/`);
+  }
+}
+
+// --- Server ---
+const server = Bun.serve({
+  port: PORT,
+
+  async fetch(req) {
+    const url = new URL(req.url);
+    let pathname = url.pathname;
+
+    // Upgrade WebSocket
+    if (pathname === "/__livereload") {
+      const upgraded = server.upgrade(req);
+      // biome-ignore lint/suspicious/noExplicitAny: Bun websocket upgrade returns void
+      if (upgraded) return undefined as any;
+      return new Response("WebSocket upgrade failed", { status: 400 });
+    }
+
+    // Default to index.html
+    if (pathname === "/") pathname = "/index.html";
+
+    // Serve the built bundle
+    if (pathname === "/dist/canvasui.js") {
+      const file = Bun.file(join(PROJECT_ROOT, "dist", "canvasui.js"));
+      if (await file.exists()) {
+        return new Response(file, {
+          headers: { "Content-Type": "application/javascript" },
+        });
+      }
+      return new Response("Bundle not built yet. Run: bun run build", {
+        status: 404,
+      });
+    }
+
+    // Serve demo files
+    const filePath = join(DEMO_DIR, pathname);
+    const file = Bun.file(filePath);
+
+    if (await file.exists()) {
+      const ext = extname(filePath);
+      const contentType = MIME_TYPES[ext] || "application/octet-stream";
+      return new Response(file, {
+        headers: { "Content-Type": contentType },
+      });
+    }
+
+    return new Response("Not Found", { status: 404 });
+  },
+
+  websocket: {
+    open(ws) {
+      wsClients.add(ws);
+    },
+    close(ws) {
+      wsClients.delete(ws);
+    },
+    message() {
+      // No incoming messages expected
+    },
+  },
+});
+
+console.log("\n  CanvasUI Dev Server");
+console.log("  ───────────────────");
+console.log(`  → http://localhost:${PORT}`);
+console.log("");
+
+startWatcher(SRC_DIR, "src");
+startWatcher(DEMO_DIR, "demo");
+
+console.log("");
+console.log("  Ready. Waiting for changes...\n");
