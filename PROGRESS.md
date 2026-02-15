@@ -7,7 +7,7 @@
 
 ## Current Phase
 
-Layer 5 — Ticker (Frame Loop)
+Layer 6 — Rendering Wrapper (CanvasUIContext)
 
 ## Status
 
@@ -98,16 +98,17 @@ Layer 5 — Ticker (Frame Loop)
 
 ---
 
-## In Progress
+### Layer 5 — Ticker (Frame Loop) ✅
+- [x] 5.1 `src/core/Ticker.ts` — `start()`, `stop()`, `add()`, `remove()`
+- [x] 5.2 FPS throttling (`globalFPS < refresh → skip frames; 0 = pause`)
+- [x] 5.3 Frame pipeline ordering (stubs for layout/paint/hit)
+- [x] 5.4 `elapsedTime` accumulation
+- [x] 5.5 Unit tests (clamping, throttling, start/stop/restart, elapsed)
+- [x] 5.6 Demo panel — FPS counter, deltaTime readout, bouncing ball, nested ticker
+- Tests: 163/163 passing (25 new ticker tests)
 
-_None_
-- [x] 4.1 `src/core/Container.ts` — `addChild`, `addChildAt`, `removeChild`, `removeAllChildren`, `sortChildren`, `getChildByID`, `clipContent`
-- [x] 4.2 Scene propagation — `onAdded`/`onRemoved`/`onSceneChanged` cascade
-- [x] 4.3 Transform cascade — `invalidate(Transform)` propagates to descendants
-- [x] 4.4 Cache-as-bitmap — invalidation bubbling to nearest cached ancestor
-- [x] 4.5 Unit tests (z-order, re-parenting, cascade depth, cache invalidation)
-- [x] 4.6 Demo panel — nested container tree with add/remove/reorder controls
-- Tests: 138/138 passing (36 new container tests + 102 prior)
+---
+
 
 ---
 
@@ -156,13 +157,13 @@ _(none)_
 
 ---
 
-### 🟡 Layer 5 — Ticker (Frame Loop)
-- [ ] 5.1 `src/core/Ticker.ts` — `start()`, `stop()`, `add()`, `remove()`
-- [ ] 5.2 FPS throttling (`globalFPS < refresh → skip frames; 0 = pause`)
-- [ ] 5.3 Frame pipeline ordering (stubs for layout/paint/hit)
-- [ ] 5.4 `elapsedTime` accumulation
-- [ ] 5.5 Unit tests (clamping, throttling, start/stop/restart, elapsed)
-- [ ] 5.6 Demo panel — FPS counter, deltaTime readout, bouncing ball
+### Layer 5 — Ticker (Frame Loop) ✅
+- [x] 5.1 `src/core/Ticker.ts` — `start()`, `stop()`, `add()`, `remove()`
+- [x] 5.2 FPS throttling (`globalFPS < refresh → skip frames; 0 = pause`)
+- [x] 5.3 Frame pipeline ordering (stubs for layout/paint/hit)
+- [x] 5.4 `elapsedTime` accumulation
+- [x] 5.5 Unit tests (clamping, throttling, start/stop/restart, elapsed)
+- [x] 5.6 Demo panel — FPS counter, deltaTime readout, bouncing ball, nested ticker
 - **Acceptance:** `deltaTime` never exceeds `maxDeltaTime`; FPS throttle works; no spike on restart
 
 ---

@@ -35,5 +35,9 @@ export { Element } from "./core/Element";
 export type { IContainer } from "./core/Container";
 export { Container } from "./core/Container";
 
+// --- Layer 5: Ticker (Frame Loop) ---
+export type { ITicker } from "./core/Ticker";
+export { Ticker } from "./core/Ticker";
+
 // --- Interaction (Helpers for Layer 4+, full system in Layer 5/7) ---
 export { resolvePointerPosition } from "./core/Interaction";
