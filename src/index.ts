@@ -25,3 +25,8 @@ export { Transform } from "./math/Transform";
 // --- Layer 2: Event Emitter ---
 export type { IEventEmitter } from "./events/EventEmitter";
 export { EventEmitter } from "./events/EventEmitter";
+
+// --- Layer 3: Element Base & Dirty Flagging ---
+export { DirtyFlags } from "./core/DirtyFlags";
+export type { IElement } from "./core/Element";
+export { Element } from "./core/Element";

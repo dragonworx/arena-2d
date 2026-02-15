@@ -7,7 +7,7 @@
 
 ## Current Phase
 
-Layer 3 — Element Base & Dirty Flagging
+Layer 4 — Container & Child Management
 
 ## Status
 
@@ -75,6 +75,18 @@ Layer 3 — Element Base & Dirty Flagging
 
 ---
 
+### Layer 3 — Element Base & Dirty Flagging ✅
+- [x] 3.1 `src/core/DirtyFlags.ts` — bitmask enum
+- [x] 3.2 `src/core/Element.ts` — `IElement` + `IEventEmitter`, property setters → `invalidate()`
+- [x] 3.3 Alpha chain (`effectiveAlpha = parent.effectiveAlpha * alpha`)
+- [x] 3.4 `visible`, `zIndex`, `blendMode` with `Visual` dirty flag
+- [x] 3.5 `destroy()` — detach, clear listeners, clear flags
+- [x] 3.6 Unit tests (flag coalescing, lifecycle hooks, alpha chain, destroy)
+- [x] 3.7 Demo panel — dirty flag inspector, transform controls, auto/manual update, destroy demo
+- Tests: 102/102 passing (35 new element tests + 67 prior)
+
+---
+
 ## In Progress
 
 _(none)_
@@ -112,16 +124,6 @@ _(none)_
 ---
 
 
-
-### 🟡 Layer 3 — Element Base & Dirty Flagging
-- [ ] 3.1 `src/core/DirtyFlags.ts` — bitmask enum
-- [ ] 3.2 `src/core/Element.ts` — `IElement` + `IEventEmitter`, property setters → `invalidate()`
-- [ ] 3.3 Alpha chain (`effectiveAlpha = parent.effectiveAlpha * alpha`)
-- [ ] 3.4 `visible`, `zIndex`, `blendMode` with `Visual` dirty flag
-- [ ] 3.5 `destroy()` — detach, clear listeners, clear flags
-- [ ] 3.6 Unit tests (flag coalescing, lifecycle hooks, alpha chain, destroy)
-- [ ] 3.7 Demo panel — grid of squares with visibility toggle and alpha slider
-- **Acceptance:** Dirty flags coalesce; `effectiveAlpha` is multiplicative; `update()` clears flags
 
 ---
 

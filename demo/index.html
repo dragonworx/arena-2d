@@ -28,7 +28,7 @@
       </div>
       <div class="nav-section">
         <div class="nav-section-title">Core</div>
-        <a class="nav-link disabled" data-panel="layer-3">
+        <a class="nav-link" data-panel="layer-3">
           <span class="nav-dot"></span> Layer 3 — Elements
         </a>
         <a class="nav-link disabled" data-panel="layer-4">
@@ -118,28 +118,59 @@
 
     <!-- Layer 2 Panel -->
     <div id="layer-2" class="panel"></div>
+
+    <!-- Layer 3 Panel -->
+    <div id="layer-3" class="panel"></div>
   </main>
 
-  <!-- Nav interaction -->
+  <!-- Routing -->
   <script>
+    function navigateTo(panelId, pushHistory = true) {
+      // Update nav active state
+      document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+      const link = document.querySelector(`.nav-link[data-panel="${panelId}"]`);
+      if (link && !link.classList.contains('disabled')) link.classList.add('active');
+
+      // Update panel visibility
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      const panel = document.getElementById(panelId);
+      if (panel) panel.classList.add('active');
+
+      // Update URL hash and history
+      if (pushHistory) {
+        history.pushState({ panel: panelId }, '', `#${panelId}`);
+      }
+    }
+
+    // Nav click handler
     document.querySelectorAll('.nav-link:not(.disabled)').forEach(link => {
-      link.addEventListener('click', () => {
-        // Update nav
-        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-        link.classList.add('active');
-        // Update panel
-        const panelId = link.dataset.panel;
-        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-        const panel = document.getElementById(panelId);
-        if (panel) panel.classList.add('active');
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        navigateTo(link.dataset.panel);
       });
     });
+
+    // Browser back/forward
+    window.addEventListener('popstate', (e) => {
+      const panelId = e.state?.panel || location.hash.slice(1) || 'layer-0';
+      navigateTo(panelId, false);
+    });
+
+    // Deep link on page load
+    (function() {
+      const hash = location.hash.slice(1);
+      if (hash && document.getElementById(hash)) {
+        navigateTo(hash, false);
+      }
+    })();
   </script>
 
   <!-- Layer 1 Demo Script -->
   <script type="module" src="panels/layer1.js"></script>
   <!-- Layer 2 Demo Script -->
   <script type="module" src="panels/layer2.js"></script>
+  <!-- Layer 3 Demo Script -->
+  <script type="module" src="panels/layer3.js"></script>
 
   <!-- Live Reload -->
   <script>

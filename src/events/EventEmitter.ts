@@ -7,6 +7,7 @@ export interface IEventEmitter {
   once(event: string, handler: (e: any) => void): void;
   // biome-ignore lint/suspicious/noExplicitAny: Payload is generic
   emit(event: string, e: any): void;
+  removeAllListeners(): void;
 }
 
 export class EventEmitter implements IEventEmitter {
@@ -54,5 +55,9 @@ export class EventEmitter implements IEventEmitter {
     for (const handler of [...handlers]) {
       handler(e);
     }
+  }
+
+  removeAllListeners(): void {
+    this._events.clear();
   }
 }
