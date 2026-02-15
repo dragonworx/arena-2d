@@ -22,7 +22,8 @@ describe("DirtyFlags", () => {
       DirtyFlags.Transform |
         DirtyFlags.Visual |
         DirtyFlags.Layout |
-        DirtyFlags.Spatial,
+        DirtyFlags.Spatial |
+        DirtyFlags.Order,
     );
   });
 
@@ -378,12 +379,14 @@ describe("Element — destroy()", () => {
 describe("Element — lifecycle hooks", () => {
   test("onAdded is callable", () => {
     const el = new Element();
-    expect(() => el.onAdded(null)).not.toThrow();
+    const parent = new Element();
+    expect(() => el.onAdded(parent)).not.toThrow();
   });
 
   test("onRemoved is callable", () => {
     const el = new Element();
-    expect(() => el.onRemoved(null)).not.toThrow();
+    const parent = new Element();
+    expect(() => el.onRemoved(parent)).not.toThrow();
   });
 
   test("onSceneChanged is callable", () => {

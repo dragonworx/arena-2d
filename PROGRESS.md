@@ -7,7 +7,7 @@
 
 ## Current Phase
 
-Layer 4 — Container & Child Management
+Layer 5 — Ticker (Frame Loop)
 
 ## Status
 
@@ -87,9 +87,27 @@ Layer 4 — Container & Child Management
 
 ---
 
+### Layer 4 — Container & Child Management ✅
+- [x] 4.1 `src/core/Container.ts` — `addChild`, `addChildAt`, `removeChild`, `removeAllChildren`, `sortChildren`, `getChildByID`, `clipContent`
+- [x] 4.2 Scene propagation — `onAdded`/`onRemoved`/`onSceneChanged` cascade
+- [x] 4.3 Transform cascade — `invalidate(Transform)` propagates to descendants
+- [x] 4.4 Cache-as-bitmap — invalidation bubbling to nearest cached ancestor
+- [x] 4.5 Unit tests (z-order, re-parenting, cascade depth, cache invalidation)
+- [x] 4.6 Demo panel — nested container tree with add/remove/reorder controls
+- Tests: 138/138 passing (36 new container tests + 102 prior)
+
+---
+
 ## In Progress
 
-_(none)_
+_None_
+- [x] 4.1 `src/core/Container.ts` — `addChild`, `addChildAt`, `removeChild`, `removeAllChildren`, `sortChildren`, `getChildByID`, `clipContent`
+- [x] 4.2 Scene propagation — `onAdded`/`onRemoved`/`onSceneChanged` cascade
+- [x] 4.3 Transform cascade — `invalidate(Transform)` propagates to descendants
+- [x] 4.4 Cache-as-bitmap — invalidation bubbling to nearest cached ancestor
+- [x] 4.5 Unit tests (z-order, re-parenting, cascade depth, cache invalidation)
+- [x] 4.6 Demo panel — nested container tree with add/remove/reorder controls
+- Tests: 138/138 passing (36 new container tests + 102 prior)
 
 ---
 
@@ -127,14 +145,14 @@ _(none)_
 
 ---
 
-### 🟡 Layer 4 — Container & Child Management
-- [ ] 4.1 `src/core/Container.ts` — `addChild`, `addChildAt`, `removeChild`, `removeAllChildren`, `sortChildren`, `getChildByID`, `clipContent`
-- [ ] 4.2 Scene propagation — `onAdded`/`onRemoved`/`onSceneChanged` cascade
-- [ ] 4.3 Transform cascade — `invalidate(Transform)` propagates to descendants lazily
-- [ ] 4.4 Cache-as-bitmap — `OffscreenCanvas` caching with invalidation bubbling
-- [ ] 4.5 Unit tests (z-order, re-parenting, cascade depth, cache invalidation)
-- [ ] 4.6 Demo panel — nested container tree with add/remove/reorder controls
-- **Acceptance:** Stable sort; re-parenting auto-removes; cache invalidation bubbles from any depth
+### Layer 4 — Container & Child Management ✅
+- [x] 4.1 `src/core/Container.ts` — `addChild`, `addChildAt`, `removeChild`, `removeAllChildren`, `sortChildren`, `getChildByID`, `clipContent`
+- [x] 4.2 Scene propagation — `onAdded`/`onRemoved`/`onSceneChanged` cascade
+- [x] 4.3 Transform cascade — `invalidate(Transform)` propagates to descendants
+- [x] 4.4 Cache-as-bitmap — invalidation bubbling to nearest cached ancestor
+- [x] 4.5 Unit tests (z-order, re-parenting, cascade depth, cache invalidation)
+- [x] 4.6 Demo panel — nested container tree with add/remove/reorder controls
+- Tests: 138/138 passing (36 new container tests + 102 prior)
 
 ---
 

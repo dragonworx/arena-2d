@@ -14,6 +14,8 @@ export enum DirtyFlags {
   Layout = 1 << 2,
   /** Spatial bounds changed — re-insert into SpatialHashGrid. */
   Spatial = 1 << 3,
+  /** Child order changed — sort children by zIndex. */
+  Order = 1 << 4,
   /** All flags set. */
-  All = 0b1111,
+  All = 0b11111,
 }

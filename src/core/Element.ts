@@ -13,10 +13,12 @@ import type { IRect } from "../math/aabb";
 import {
   type MatrixArray,
   identity,
+  invert,
   multiply,
   rotate,
   scale,
   skew,
+  transformPoint,
   translate,
 } from "../math/matrix";
 import { DirtyFlags } from "./DirtyFlags";
@@ -24,9 +26,6 @@ import { DirtyFlags } from "./DirtyFlags";
 // ── Helpers ──
 
 let _nextId = 0;
-function generateId(): string {
-  return `el_${++_nextId}`;
-}
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
@@ -37,14 +36,13 @@ function clamp(value: number, min: number, max: number): number {
 /**
  * Public interface for all elements in the scene graph.
  *
- * Container, Scene, and Layer references are stubbed as loose types here
- * because those classes don't exist yet (Layers 4 & 7). They will be
+ * Scene and Layer references are stubbed as loose types here
+ * because those classes don't exist yet (Layer 7). They will be
  * tightened in future layers.
  */
 export interface IElement {
   readonly id: string;
-  // biome-ignore lint/suspicious/noExplicitAny: Container type defined in Layer 4
-  parent: any | null;
+  parent: IElement | null;
   // biome-ignore lint/suspicious/noExplicitAny: Scene type defined in Layer 7
   scene: any | null;
   // biome-ignore lint/suspicious/noExplicitAny: Layer type defined in Layer 7
@@ -64,6 +62,10 @@ export interface IElement {
   pivotY: number;
   updateLocalMatrix(): void;
 
+  // Size
+  width: number;
+  height: number;
+
   // Visual state
   visible: boolean;
   alpha: number;
@@ -78,14 +80,16 @@ export interface IElement {
   // Local bounds (subclasses define actual content bounds)
   localBounds: IRect;
 
+  // Interaction
+  containsPoint(localX: number, localY: number): boolean;
+  hitTest(globalX: number, globalY: number): IElement | null;
+
   // Dirty system
   invalidate(flag: DirtyFlags): void;
 
-  // Lifecycle
-  // biome-ignore lint/suspicious/noExplicitAny: Container type defined in Layer 4
-  onAdded(parent: any): void;
-  // biome-ignore lint/suspicious/noExplicitAny: Container type defined in Layer 4
-  onRemoved(parent: any): void;
+  // Lifecycle (called by Container, not the user)
+  onAdded(parent: IElement): void;
+  onRemoved(parent: IElement): void;
   // biome-ignore lint/suspicious/noExplicitAny: Scene type defined in Layer 7
   onSceneChanged(scene: any | null): void;
 
@@ -105,6 +109,12 @@ export class Element extends EventEmitter implements IElement {
   parent: IElement | null = null;
   scene: unknown = null;
   layer: unknown = null;
+
+  // ── Dimensions ──
+  // Default to 0 until Layout layer (Layer 8) fully implements sizing.
+  // For now, these are set manually or by standard setters.
+  width = 0;
+  height = 0;
 
   // ── Local bounds ──
   localBounds: IRect = { x: 0, y: 0, width: 0, height: 0 };
@@ -131,13 +141,52 @@ export class Element extends EventEmitter implements IElement {
   private _cacheAsBitmap = false;
 
   // ── Dirty system ──
-  private _dirtyFlags: DirtyFlags = DirtyFlags.All;
+  protected _dirtyFlags: DirtyFlags = DirtyFlags.All;
 
   // ── Constructor ──
 
+  // Unique numeric ID for deterministic sorting
+  readonly uid: number;
+
   constructor(id?: string) {
     super();
-    this.id = id ?? generateId();
+    this.uid = ++_nextId;
+    this.id = id ?? `el_${this.uid}`;
+  }
+
+  // ── Interaction ──
+
+  /**
+   * Checks if a point in local coordinates is within this element's bounds.
+   * Default implementation checks the axis-aligned bounding box (0,0) -> (width,height).
+   */
+  containsPoint(localX: number, localY: number): boolean {
+    return (
+      localX >= 0 &&
+      localX <= this.width &&
+      localY >= 0 &&
+      localY <= this.height
+    );
+  }
+
+  /**
+   * Tests if the given global coordinates hit this element.
+   * Transforms global (x,y) to local space and checks containsPoint.
+   */
+  hitTest(globalX: number, globalY: number): IElement | null {
+    if (!this.visible) return null; // Invisible elements are not interactive
+
+    // Invert world matrix to transform point to local space
+    const inv = invert(this.worldMatrix);
+    if (!inv) return null; // Singular matrix (e.g. scale 0)
+
+    const local = transformPoint(inv, globalX, globalY);
+
+    if (this.containsPoint(local.x, local.y)) {
+      return this;
+    }
+
+    return null;
   }
 
   // ── Transform getters / setters ──
@@ -263,6 +312,14 @@ export class Element extends EventEmitter implements IElement {
   set zIndex(value: number) {
     if (this._zIndex !== value) {
       this._zIndex = value;
+      // Changing zIndex affects sort order, which is a property of the PARENT container.
+      // So we must invalidate the parent's Order flag.
+      if (this.parent) {
+        this.parent.invalidate(DirtyFlags.Order);
+      }
+      // It also affects visual stacking, but if we re-sort, the paint order changes.
+      // We don't necessarily need to repaint self, but parent might need partial repaint?
+      // In validated systems, Visual is usually enough. But here, Order is key.
       this.invalidate(DirtyFlags.Visual);
     }
   }
@@ -371,8 +428,8 @@ export class Element extends EventEmitter implements IElement {
   // ── Lifecycle hooks ──
   // These are called by Container (Layer 4). Stubbed here as no-ops.
 
-  onAdded(_parent: unknown): void {}
-  onRemoved(_parent: unknown): void {}
+  onAdded(_parent: IElement): void {}
+  onRemoved(_parent: IElement): void {}
   onSceneChanged(_scene: unknown): void {}
 
   // ── Disposal ──

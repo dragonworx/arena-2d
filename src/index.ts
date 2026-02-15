@@ -30,3 +30,10 @@ export { EventEmitter } from "./events/EventEmitter";
 export { DirtyFlags } from "./core/DirtyFlags";
 export type { IElement } from "./core/Element";
 export { Element } from "./core/Element";
+
+// --- Layer 4: Container & Child Management ---
+export type { IContainer } from "./core/Container";
+export { Container } from "./core/Container";
+
+// --- Interaction (Helpers for Layer 4+, full system in Layer 5/7) ---
+export { resolvePointerPosition } from "./core/Interaction";
