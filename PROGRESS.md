@@ -7,7 +7,7 @@
 
 ## Current Phase
 
-Layer 6 — Rendering Wrapper (CanvasUIContext)
+Layer 7 — Scene & Layering System
 
 ## Status
 
@@ -109,6 +109,18 @@ Layer 6 — Rendering Wrapper (CanvasUIContext)
 
 ---
 
+### Layer 6 — Rendering Wrapper (CanvasUIContext) ✅
+- [x] 6.1 `src/rendering/CanvasUIContext.ts` — all shape primitives
+- [x] 6.2 Image drawing (`drawImage`, `drawImageRegion`)
+- [x] 6.3 Text drawing (`drawText`, `measureText`)
+- [x] 6.4 Effects (`setShadow`, `clearShadow`)
+- [x] 6.5 Clipping (`clipRect`, `clipRoundedRect`)
+- [x] 6.6 Gradients (`createLinearGradient`, `createRadialGradient`)
+- [x] 6.7 Line style (`setLineWidth`, `setLineDash`)
+- [x] 6.8 Auto save/restore wrapping (`beginElement`, `endElement`)
+- [x] 6.9 Unit tests (save/restore balance, gradient stops, measureText)
+- [x] 6.10 Demo panel — shape gallery with every primitive
+- Tests: 194/194 passing (31 new context tests)
 
 ---
 
@@ -165,21 +177,6 @@ _(none)_
 - [x] 5.5 Unit tests (clamping, throttling, start/stop/restart, elapsed)
 - [x] 5.6 Demo panel — FPS counter, deltaTime readout, bouncing ball, nested ticker
 - **Acceptance:** `deltaTime` never exceeds `maxDeltaTime`; FPS throttle works; no spike on restart
-
----
-
-### 🟢 Layer 6 — Rendering Wrapper (CanvasUIContext)
-- [ ] 6.1 `src/rendering/CanvasUIContext.ts` — all shape primitives
-- [ ] 6.2 Image drawing (`drawImage`, `drawImageRegion`)
-- [ ] 6.3 Text drawing (`drawText`, `measureText`)
-- [ ] 6.4 Effects (`setShadow`, `clearShadow`)
-- [ ] 6.5 Clipping (`clipRect`, `clipRoundedRect`)
-- [ ] 6.6 Gradients (`createLinearGradient`, `createRadialGradient`)
-- [ ] 6.7 Line style (`setLineWidth`, `setLineDash`)
-- [ ] 6.8 Auto save/restore wrapping
-- [ ] 6.9 Unit tests (save/restore balance, gradient stops, measureText)
-- [ ] 6.10 Demo panel — shape gallery with every primitive
-- **Acceptance:** State stack never leaks; all primitives render correctly
 
 ---
 

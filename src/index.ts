@@ -39,5 +39,13 @@ export { Container } from "./core/Container";
 export type { ITicker } from "./core/Ticker";
 export { Ticker } from "./core/Ticker";
 
+// --- Layer 6: Rendering Wrapper (CanvasUIContext) ---
+export type {
+  FillStyle,
+  ITextStyle,
+  ICanvasUIContext,
+} from "./rendering/CanvasUIContext";
+export { CanvasUIContext, buildFontString } from "./rendering/CanvasUIContext";
+
 // --- Interaction (Helpers for Layer 4+, full system in Layer 5/7) ---
 export { resolvePointerPosition } from "./core/Interaction";
