@@ -7,7 +7,7 @@
 
 ## Current Phase
 
-Layer 8 — Layout Engine (Flex & Anchor)
+Layer 9 — Interaction & Focus System
 
 ## Status
 
@@ -136,7 +136,21 @@ Layer 8 — Layout Engine (Flex & Anchor)
 - [x] 7.9 Demo panel — two-layer scene with static background and interactive foreground
 - **Acceptance:** Elements render via Ticker; layers composite correctly; resize works; getElementById works
 - Tests: 225/225 passing (31 new scene/layer tests)
+---
 
+### Layer 8 — Layout Engine (Flex & Anchor) ✅
+- [x] 8.1 `src/layout/LayoutResolver.ts` — two-pass walker (measure bottom-up, arrange top-down)
+- [x] 8.2 `src/layout/Style.ts` — `IStyle` with defaults and unit resolution
+- [x] 8.3 Manual mode (skip layout, user-set position/size)
+- [x] 8.4 Flex mode (direction, justify, align, grow, shrink, basis, wrap, gap)
+- [x] 8.5 Anchor mode (top/left/right/bottom, opposing = stretch)
+- [x] 8.6 Margin (sibling spacing in flex, inset in anchor)
+- [x] 8.7 Min/max constraints
+- [x] 8.8 Integration with update() phase on `DirtyFlags.Layout`
+- [x] 8.9 Unit tests (flex distribution, wrap, percentages, anchors, min/max, nested flex, auto)
+- [x] 8.10 Demo panel — interactive layout playground
+- **Acceptance:** Flex distributes space correctly; anchors stretch; percentages resolve against parent
+- Tests: 270/270 passing (45 new layout tests + 225 prior)
 ---
 
 ## Layer Checklist
@@ -189,22 +203,11 @@ Layer 8 — Layout Engine (Flex & Anchor)
 
 ---
 
-### 🔴 Layer 8 — Layout Engine (Flex & Anchor)
-- [ ] 8.1 `src/layout/LayoutResolver.ts` — two-pass walker (measure bottom-up, arrange top-down)
-- [ ] 8.2 `src/layout/Style.ts` — `IStyle` with defaults and unit resolution
-- [ ] 8.3 Manual mode (skip layout, user-set position/size)
-- [ ] 8.4 Flex mode (direction, justify, align, grow, shrink, basis, wrap, gap)
-- [ ] 8.5 Anchor mode (top/left/right/bottom, opposing = stretch)
-- [ ] 8.6 Margin (sibling spacing in flex, inset in anchor)
-- [ ] 8.7 Min/max constraints
-- [ ] 8.8 Integration with update() phase on `DirtyFlags.Layout`
-- [ ] 8.9 Unit tests (flex distribution, wrap, percentages, anchors, min/max, nested flex, auto)
-- [ ] 8.10 Demo panel — interactive layout playground
-- **Acceptance:** Flex distributes space correctly; anchors stretch; percentages resolve against parent
+
 
 ---
 
-### 🔴 Layer 9 — Interaction & Focus System
+### Layer 9 — Interaction & Focus System
 - [ ] 9.1 `src/interaction/SpatialHashGrid.ts` — insert/remove/query by AABB
 - [ ] 9.2 `src/interaction/InteractionManager.ts` — DOM event translation
 - [ ] 9.3 Hit-testing (broad phase → narrow phase, back-to-front)

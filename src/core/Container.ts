@@ -7,6 +7,7 @@
  * SPEC: §2.3–2.4 (IContainer), §12.1 (error handling)
  */
 
+import { resolveLayout } from "../layout/LayoutResolver";
 import { DirtyFlags } from "./DirtyFlags";
 import { Element, type IElement } from "./Element";
 
@@ -245,6 +246,14 @@ export class Container extends Element implements IContainer {
     if (this._dirtyFlags & DirtyFlags.Order) {
       this.sortChildren();
       this._dirtyFlags &= ~DirtyFlags.Order;
+    }
+
+    // Resolve layout if dirty (before transform, since layout sets x/y/width/height)
+    if (this._dirtyFlags & DirtyFlags.Layout) {
+      if (this.style.display !== "manual") {
+        resolveLayout(this);
+      }
+      this._dirtyFlags &= ~DirtyFlags.Layout;
     }
 
     super.update(dt);

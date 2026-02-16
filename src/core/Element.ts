@@ -9,6 +9,7 @@
  */
 
 import { EventEmitter } from "../events/EventEmitter";
+import { type IStyle, createDefaultStyle } from "../layout/Style";
 import type { IRect } from "../math/aabb";
 import {
   type MatrixArray,
@@ -66,6 +67,10 @@ export interface IElement {
   width: number;
   height: number;
 
+  // Layout style
+  readonly style: IStyle;
+  updateStyle(changes: Partial<IStyle>): void;
+
   // Visual state
   visible: boolean;
   alpha: number;
@@ -111,10 +116,11 @@ export class Element extends EventEmitter implements IElement {
   layer: unknown = null;
 
   // ── Dimensions ──
-  // Default to 0 until Layout layer (Layer 8) fully implements sizing.
-  // For now, these are set manually or by standard setters.
-  width = 0;
-  height = 0;
+  private _width = 0;
+  private _height = 0;
+
+  // ── Layout style ──
+  readonly style: IStyle = createDefaultStyle();
 
   // ── Local bounds ──
   localBounds: IRect = { x: 0, y: 0, width: 0, height: 0 };
@@ -280,6 +286,38 @@ export class Element extends EventEmitter implements IElement {
       this._pivotY = value;
       this.invalidate(DirtyFlags.Transform);
     }
+  }
+
+  // ── Dimension getters / setters ──
+
+  get width(): number {
+    return this._width;
+  }
+  set width(value: number) {
+    if (this._width !== value) {
+      this._width = value;
+      this.invalidate(DirtyFlags.Visual);
+    }
+  }
+
+  get height(): number {
+    return this._height;
+  }
+  set height(value: number) {
+    if (this._height !== value) {
+      this._height = value;
+      this.invalidate(DirtyFlags.Visual);
+    }
+  }
+
+  // ── Style update ──
+
+  /**
+   * Merge partial style changes and trigger layout invalidation.
+   */
+  updateStyle(changes: Partial<IStyle>): void {
+    Object.assign(this.style, changes);
+    this.invalidate(DirtyFlags.Layout);
   }
 
   // ── Visual getters / setters ──

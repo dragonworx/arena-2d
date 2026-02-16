@@ -53,5 +53,15 @@ export { Scene } from "./core/Scene";
 export type { ILayer } from "./core/Layer";
 export { Layer } from "./core/Layer";
 
+// --- Layer 8: Layout Engine (Flex & Anchor) ---
+export type { LayoutUnit, IStyle } from "./layout/Style";
+export {
+  createDefaultStyle,
+  resolveUnit,
+  applyConstraints,
+} from "./layout/Style";
+export type { LayoutData } from "./layout/LayoutResolver";
+export { resolveLayout, getLayoutData } from "./layout/LayoutResolver";
+
 // --- Interaction (Helpers for Layer 4+, full system in Layer 5/7) ---
 export { resolvePointerPosition } from "./core/Interaction";
