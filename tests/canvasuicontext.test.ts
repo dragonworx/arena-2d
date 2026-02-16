@@ -57,6 +57,8 @@ function createMockCtx() {
     closePath: record("closePath"),
     fill: record("fill"),
     stroke: record("stroke"),
+    fillRect: record("fillRect"),
+    strokeRect: record("strokeRect"),
     clip: record("clip"),
     fillText: record("fillText"),
     save: record("save"),
@@ -241,20 +243,21 @@ describe("CanvasUIContext — beginElement / endElement", () => {
 // ── Shape Primitives (6.1) ──
 
 describe("CanvasUIContext — shape primitives", () => {
-  test("drawRect calls beginPath, rect, fill, stroke", () => {
+  test("drawRect calls fillRect and strokeRect", () => {
     const mockCtx = createMockCtx();
     const uiCtx = new CanvasUIContext(mockCtx);
 
     uiCtx.drawRect(10, 20, 100, 50, "#f00", "#0f0");
 
     const methods = mockCtx._calls.map((c) => c.method);
-    expect(methods).toContain("beginPath");
-    expect(methods).toContain("rect");
-    expect(methods).toContain("fill");
-    expect(methods).toContain("stroke");
+    expect(methods).toContain("fillRect");
+    expect(methods).toContain("strokeRect");
 
-    const rectCall = mockCtx._calls.find((c) => c.method === "rect");
-    expect(rectCall?.args).toEqual([10, 20, 100, 50]);
+    const fillCall = mockCtx._calls.find((c) => c.method === "fillRect");
+    expect(fillCall?.args).toEqual([10, 20, 100, 50]);
+
+    const strokeCall = mockCtx._calls.find((c) => c.method === "strokeRect");
+    expect(strokeCall?.args).toEqual([10, 20, 100, 50]);
   });
 
   test("drawRect with only fill does not stroke", () => {
@@ -264,8 +267,8 @@ describe("CanvasUIContext — shape primitives", () => {
     uiCtx.drawRect(0, 0, 50, 50, "#f00");
 
     const methods = mockCtx._calls.map((c) => c.method);
-    expect(methods).toContain("fill");
-    expect(methods).not.toContain("stroke");
+    expect(methods).toContain("fillRect");
+    expect(methods).not.toContain("strokeRect");
   });
 
   test("drawRoundedRect calls roundRect with number radius", () => {

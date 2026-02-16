@@ -171,8 +171,9 @@ export class Container extends Element implements IContainer {
    */
   private _propagateScene(child: Element, newScene: unknown): void {
     if (child.scene === newScene) return;
+    const oldScene = child.scene;
     child.scene = newScene;
-    child.onSceneChanged(newScene);
+    child.onSceneChanged(newScene, oldScene);
 
     // Recurse into container children
     if (child instanceof Container) {

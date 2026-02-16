@@ -254,10 +254,10 @@ describe("Container — scene propagation", () => {
     child.onSceneChanged = spy;
 
     root.addChild(child);
-    expect(spy).toHaveBeenCalledWith("s1");
+    expect(spy).toHaveBeenCalledWith("s1", null);
 
     root.removeChild(child);
-    expect(spy).toHaveBeenCalledWith(null);
+    expect(spy).toHaveBeenCalledWith(null, "s1");
     expect(spy).toHaveBeenCalledTimes(2);
   });
 });

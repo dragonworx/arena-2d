@@ -173,15 +173,14 @@ export class CanvasUIContext implements ICanvasUIContext {
     stroke?: FillStyle,
   ): void {
     const ctx = this.raw;
-    ctx.beginPath();
-    ctx.rect(x, y, w, h);
+
     if (fill !== undefined) {
       ctx.fillStyle = fill;
-      ctx.fill();
+      ctx.fillRect(x, y, w, h);
     }
     if (stroke !== undefined) {
       ctx.strokeStyle = stroke;
-      ctx.stroke();
+      ctx.strokeRect(x, y, w, h);
     }
   }
 

@@ -47,5 +47,11 @@ export type {
 } from "./rendering/CanvasUIContext";
 export { CanvasUIContext, buildFontString } from "./rendering/CanvasUIContext";
 
+// --- Layer 7: Scene & Layering System ---
+export type { IScene } from "./core/Scene";
+export { Scene } from "./core/Scene";
+export type { ILayer } from "./core/Layer";
+export { Layer } from "./core/Layer";
+
 // --- Interaction (Helpers for Layer 4+, full system in Layer 5/7) ---
 export { resolvePointerPosition } from "./core/Interaction";

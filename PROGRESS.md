@@ -7,7 +7,7 @@
 
 ## Current Phase
 
-Layer 7 — Scene & Layering System
+Layer 8 — Layout Engine (Flex & Anchor)
 
 ## Status
 
@@ -124,9 +124,18 @@ Layer 7 — Scene & Layering System
 
 ---
 
-## Blocked / Awaiting Review
-
-_(none)_
+### Layer 7 — Scene & Layering System
+- [x] 7.1 `src/core/Scene.ts` — host `<div>`, root container, resize, DPI handling
+- [x] 7.2 `src/core/Layer.ts` — create/remove/get layers, CSS z-index ordering
+- [x] 7.3 Layer assignment (inherit from parent unless overridden)
+- [x] 7.4 Hit buffer (`OffscreenCanvas` with unique per-element colors)
+- [x] 7.5 Coordinate transforms (`screenToScene`, `sceneToScreen`)
+- [x] 7.6 `getElementById` with ID→element index
+- [x] 7.7 Full frame pipeline wiring (Ticker → Elements → Context → Layers)
+- [x] 7.8 Unit tests (layer ordering, DPR math, resize, hit buffer uniqueness)
+- [x] 7.9 Demo panel — two-layer scene with static background and interactive foreground
+- **Acceptance:** Elements render via Ticker; layers composite correctly; resize works; getElementById works
+- Tests: 225/225 passing (31 new scene/layer tests)
 
 ---
 
@@ -177,20 +186,6 @@ _(none)_
 - [x] 5.5 Unit tests (clamping, throttling, start/stop/restart, elapsed)
 - [x] 5.6 Demo panel — FPS counter, deltaTime readout, bouncing ball, nested ticker
 - **Acceptance:** `deltaTime` never exceeds `maxDeltaTime`; FPS throttle works; no spike on restart
-
----
-
-### 🔴 Layer 7 — Scene & Layering System
-- [ ] 7.1 `src/core/Scene.ts` — host `<div>`, root container, resize, DPI handling
-- [ ] 7.2 `src/core/Layer.ts` — create/remove/get layers, CSS z-index ordering
-- [ ] 7.3 Layer assignment (inherit from parent unless overridden)
-- [ ] 7.4 Hit buffer (`OffscreenCanvas` with unique per-element colors)
-- [ ] 7.5 Coordinate transforms (`screenToScene`, `sceneToScreen`)
-- [ ] 7.6 `getElementById` with ID→element index
-- [ ] 7.7 Full frame pipeline wiring (Ticker → Elements → Context → Layers)
-- [ ] 7.8 Unit tests (layer ordering, DPR math, resize, hit buffer uniqueness)
-- [ ] 7.9 Demo panel — two-layer scene with static background and interactive foreground
-- **Acceptance:** Elements render via Ticker; layers composite correctly; resize works; getElementById works
 
 ---
 

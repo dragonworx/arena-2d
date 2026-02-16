@@ -20,11 +20,19 @@ export interface ITicker {
   readonly deltaTime: number;
   /** Total accumulated seconds since start(). */
   readonly elapsedTime: number;
+  /** Whether the ticker is currently running. */
+  readonly running: boolean;
 
   add(element: IElement): void;
   remove(element: IElement): void;
   start(): void;
   stop(): void;
+
+  /** Set a callback to be invoked after the update phase (for rendering). */
+  setRenderCallback(callback: (() => void) | null): void;
+
+  /** @internal Manual tick for testing. Do not use in production. */
+  _tick(timestamp: number): void;
 }
 
 // ── Ticker Class ──
@@ -40,6 +48,7 @@ export class Ticker implements ITicker {
   private _rafId: number | null = null;
   private _running = false;
   private _elements: Set<IElement> = new Set();
+  private _renderCallback: (() => void) | null = null;
 
   /**
    * Accumulated time since last tick in ms.
@@ -69,6 +78,10 @@ export class Ticker implements ITicker {
 
   remove(element: IElement): void {
     this._elements.delete(element);
+  }
+
+  setRenderCallback(callback: (() => void) | null): void {
+    this._renderCallback = callback;
   }
 
   // ── Loop control ──
@@ -154,6 +167,11 @@ export class Ticker implements ITicker {
     // Pipeline step: Update registered elements
     for (const element of this._elements) {
       element.update(dt);
+    }
+
+    // Pipeline step: Render (if callback registered)
+    if (this._renderCallback) {
+      this._renderCallback();
     }
 
     // Request next frame

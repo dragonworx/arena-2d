@@ -91,7 +91,7 @@ export interface IElement {
   onAdded(parent: IElement): void;
   onRemoved(parent: IElement): void;
   // biome-ignore lint/suspicious/noExplicitAny: Scene type defined in Layer 7
-  onSceneChanged(scene: any | null): void;
+  onSceneChanged(newScene: any | null, oldScene?: any | null): void;
 
   // Frame loop
   update(dt: number): void;
@@ -426,11 +426,47 @@ export class Element extends EventEmitter implements IElement {
   }
 
   // ── Lifecycle hooks ──
-  // These are called by Container (Layer 4). Stubbed here as no-ops.
+  // These are called by Container (Layer 4).
 
-  onAdded(_parent: IElement): void {}
-  onRemoved(_parent: IElement): void {}
-  onSceneChanged(_scene: unknown): void {}
+  onAdded(_parent: IElement): void {
+    // Inherit layer from parent if not explicitly set
+    if (!this.layer && _parent.layer) {
+      this.layer = _parent.layer;
+      // Register with layer
+      const layer = this.layer as { addElement?: (el: IElement) => void };
+      if (layer.addElement) {
+        layer.addElement(this);
+      }
+    }
+  }
+
+  onRemoved(_parent: IElement): void {
+    // Unregister from layer
+    if (this.layer) {
+      const layer = this.layer as { removeElement?: (el: IElement) => void };
+      if (layer.removeElement) {
+        layer.removeElement(this);
+      }
+    }
+  }
+
+  onSceneChanged(newScene: unknown, oldScene?: unknown): void {
+    // Unregister from old scene
+    if (oldScene) {
+      const old = oldScene as { unregisterElement?: (el: IElement) => void };
+      if (old.unregisterElement) {
+        old.unregisterElement(this);
+      }
+    }
+
+    // Register with new scene
+    if (newScene) {
+      const scene = newScene as { registerElement?: (el: IElement) => void };
+      if (scene.registerElement) {
+        scene.registerElement(this);
+      }
+    }
+  }
 
   // ── Disposal ──
 
