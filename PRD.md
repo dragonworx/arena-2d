@@ -296,30 +296,78 @@ A full Scene with two layers: a "background" layer with static shapes and a "for
 > **Spec Reference:** §4
 
 ### Goal
-Implement the two-pass layout resolver: Measure (bottom-up) then Arrange (top-down), supporting `manual`, `flex`, and `anchor` display modes.
+Implement the two-pass layout resolver: Measure (bottom-up) then Arrange (top-down), supporting `manual`, `flex`, and `anchor` display modes. This layer drives the positioning of all elements.
 
 ### Deliverables
 
 | # | Item | Details |
 |---|---|---|
 | 8.1 | **`src/layout/LayoutResolver.ts`** | Two-pass walker. Measure: leaves first, intrinsic sizes. Arrange: root first, distribute space. |
-| 8.2 | **`src/layout/Style.ts`** | `IStyle` implementation with defaults. Unit resolution (`number`, `'%'`, `'auto'`). |
+| 8.2 | **`src/layout/Style.ts`** | `IStyle` implementation with defaults. Unit resolution (`number`, `'%'`, `'auto'`, `'min-content'`, `'max-content'`). |
 | 8.3 | **Manual mode** | Element's position/size set directly, skipped by parent flex. |
 | 8.4 | **Flex mode** | `flexDirection`, `justifyContent`, `alignItems`, `flexGrow`, `flexShrink`, `flexBasis`, `flexWrap`, `gap`. |
 | 8.5 | **Anchor mode** | `top`, `left`, `right`, `bottom`. Opposing anchors = stretch. |
 | 8.6 | **Margin** | Spacing between siblings in flex; inset in anchor mode. |
-| 8.7 | **Min/Max constraints** | `minWidth`, `maxWidth`, `minHeight`, `maxHeight` enforced after grow/shrink. |
-| 8.8 | **Integration** | Layout runs during `update()` phase when `DirtyFlags.Layout` is set. Runs once per frame. |
-| 8.9 | **Unit tests** | Flex row/column distribution, wrap behavior, percentage units, anchor stretching, min/max clamping, nested flex, auto sizing |
+| 8.7 | **Padding** | Spacing inside element's border. |
+| 8.8 | **Min/Max constraints** | `minWidth`, `maxWidth`, `minHeight`, `maxHeight` enforced after grow/shrink. |
+| 8.9 | **Integration** | Layout runs during `update()` phase when `DirtyFlags.Layout` is set. Runs once per frame. |
+| 8.10 | **Performance Strategy** | **Layout Boundaries**: Elements with fixed dimensions stop dirtiness bubbling. **Measurement Caching**: Cache `measure()` results based on input constraints. **Integer Snapping**: Snap final values to avoid sub-pixel blurring. |
+| 8.11 | **Unit tests** | Flex row/column distribution, wrap behavior, percentage units, anchor stretching, min/max clamping, nested flex, auto sizing, boundary optimization |
 
 ### Acceptance Criteria
-- A flex row with 3 children and `gap: 10` produces correctly spaced positions.
-- `flexGrow` distributes remaining space proportionally.
-- Anchor with `left: 10, right: 10` stretches element to `parentWidth - 20`.
-- Percentage units resolve against parent content area.
+- **Flex Layout Verification**:
+    - A `row` container with `justify-content: space-between` correctly positions first/last children against edges.
+    - `flex-wrap: wrap` moves overflowing items to a new line, respecting `align-content` (if implemented) or simple line stacking.
+    - `flex-grow` distributes free space proportionally (e.g., item A with grow 2 gets twice the extra space of item B with grow 1).
+    - `flex-shrink` correctly reduces sizes of items when container overflows, weighted by `flex-basis`.
+    - `align-items: center` correctly centers children of varying heights on the cross-axis.
+- **Constraints & Sizing**:
+    - `min-width` prevents an element from shrinking below a threshold even with `flex-shrink: 1`.
+    - `max-width` clamps an element even if `flex-grow` would expand it further.
+    - Percentage `width: 50%` resolves accurately against parent content box (parent width minus padding).
+    - `padding` on a container reduces the available space for children.
+    - `margin` creates correct spacing between siblings and successfully collapses (if implementing margin collapsing, otherwise specify no-collapse behavior).
+- **Advanced / Edge Cases**:
+    - **Nesting**: A flex column inside a flex row correctly calculates its own size before the parent finishes.
+    - **Anchoring**: An element with `position: absolute` (implemented via `display: manual` + anchors in this engine) inside a relative parent is removed from flex flow but positioned correctly.
+    - **Zero-size handling**: Elements with `0` width/height do not cause division-by-zero errors in alignment logic.
+- **Performance**:
+    - Modifying a child element's internal text (which changes its size) triggers layout *only* up to the nearest `Layout Boundary` (if the boundary has fixed size).
+    - Layout time scales linearly `O(n)` with number of elements for simple flex trees.
 
 ### Demo Panel
-Interactive layout playground: a container with configurable `display`, `flexDirection`, `justifyContent`, `alignItems`, `gap`. Child boxes can be added/removed with configurable `flexGrow`, `flexBasis`, margin.
+**Interactive Layout Playground:**
+A split-screen interface:
+1.  **Sidebar (Controls):**
+    - **Container Settings:**
+        - `flex-direction` (Row/Column)
+        - `justify-content` (Start/Center/End/Space-Between/Space-Around)
+        - `align-items` (Start/Center/End/Stretch)
+        - `flex-wrap` (NoWrap/Wrap)
+        - `gap` (Slider: 0-50px)
+        - `padding` (Slider: 0-50px)
+    - **Select Child:** Dropdown or click-to-select specific child box.
+        - `flex-grow` (Input/Slider)
+        - `flex-shrink` (Input/Slider)
+        - `flex-basis` (Input: px/%)
+        - `align-self` (Override parent align)
+        - `width` / `height` (Slider, toggle 'auto')
+    - **Actions:**
+        - [Add Child] (Adds random colored box)
+        - [Remove Selected]
+        - [Randomize Layout]
+2.  **Main View (Preview):**
+    - The flex container rendered with a dashed border to show bounds.
+    - Children rendered as colored boxes with their index number.
+    - **Visual Debug Overlays** (Toggleable):
+        - Show Padding (Green overlay)
+        - Show Margins (Orange overlay)
+        - Show Gaps (Hatched overlay)
+    - **Performance HUD:**
+        - "Layout Time: 0.12ms"
+        - "Nodes Visited: 15"
+        - "Reflows/sec"
+
 
 ---
 
@@ -360,26 +408,28 @@ Interactive scene with overlapping, nested elements. Click displays event propag
 > **Spec Reference:** §6.1–6.3 (IText, ITextLayout, word-wrap)
 
 ### Goal
-Implement the read-only `IText` element with greedy word-wrap, per-character advancement tracking, and text styling.
+Implement the **Inline Layout** system. This is a specialized sub-engine that handles glyph positioning, efficient wrapping, and text metrics. It is opaque to the main Layout Engine (Layer 8) — providing only intrinsic size measurements.
 
 ### Deliverables
 
 | # | Item | Details |
 |---|---|---|
 | 10.1 | **`src/elements/Text.ts`** | Implements `IText`. Renders via `ctx.fillText()` using pre-measured advancements. |
-| 10.2 | **`src/text/TextLayout.ts`** | Greedy word-wrap algorithm. Produces `ITextLine[]` with per-character `advancements`. Hard line breaks on `\n`. |
-| 10.3 | **Intrinsic sizing** | Width = widest line. Height = `lines.length * lineHeight`. Reports to layout engine for `'auto'` sizing. |
-| 10.4 | **`ITextStyle`** | `fontFamily`, `fontSize`, `fontWeight`, `fontStyle`, `color`, `lineHeight`, `textAlign` |
-| 10.5 | **`fontReady` utility** | Check font availability via `document.fonts.check()`. |
-| 10.6 | **Unit tests** | Word wrap at exact boundary, hard line breaks, empty string, single word wider than container, alignment offsets |
+| 10.2 | **`src/text/TextLayout.ts`** | specialized resolver for **Inline Layout**. Handles word-wrapping, kerning (via canvas), and line breaking. |
+| 10.3 | **Measure Contract** | `measure(availableWidth, availableHeight)` returns intrinsic size. Caches results to avoid potentially expensive `ctx.measureText` calls. |
+| 10.4 | **Intrinsic Sizing** | Reports proper `min-content` (widest word) and `max-content` (full single line) widths to Layer 8. |
+| 10.5 | **`ITextStyle`** | `fontFamily`, `fontSize`, `fontWeight`, `fontStyle`, `color`, `lineHeight`, `textAlign` |
+| 10.6 | **`fontReady` utility** | Check font availability via `document.fonts.check()`. |
+| 10.7 | **Unit tests** | Word wrap at exact boundary, hard line breaks, empty string, single word wider than container, alignment offsets |
 
 ### Acceptance Criteria
 - Text wraps correctly at container width boundaries.
-- Changing `fontSize` triggers layout re-measure.
+- Changing `fontSize` triggers layout re-measure in Layer 8.
 - `textAlign: 'center'` centers each line within the element's width.
+- Thousands of characters can be rendered without creating thousands of `IElement` nodes.
 
 ### Demo Panel
-A text block with editable content (via browser textarea), font controls, and width slider showing live word-wrap behavior. Advancements visualized as vertical tick marks.
+A text block with editable content (via browser textarea), font controls, and width slider showing live word-wrap behavior. Advancements visualized as vertical tick marks. Performance test with large text blocks.
 
 ---
 
