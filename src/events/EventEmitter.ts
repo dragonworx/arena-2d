@@ -60,4 +60,8 @@ export class EventEmitter implements IEventEmitter {
   removeAllListeners(): void {
     this._events.clear();
   }
+
+  listenerCount(event: string): number {
+    return this._events.get(event)?.length || 0;
+  }
 }

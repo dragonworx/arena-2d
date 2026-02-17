@@ -161,7 +161,21 @@ export class DragManager {
       this._dragTarget.worldMatrix,
     );
 
-    const hit = this._interactionManager.hitTestAABB(aabb, this._dragTarget);
+    const hit = this._interactionManager.hitTestAABB(
+      aabb,
+      this._dragTarget,
+      (el: IElement) => {
+        // Filter: element must be a potential drop target
+        // i.e., it must listen for 'dragenter' or 'drop'
+        // biome-ignore lint/suspicious/noExplicitAny: need access to listenerCount
+        const emitter = el as any;
+        return (
+          emitter.listenerCount &&
+          (emitter.listenerCount("dragenter") > 0 ||
+            emitter.listenerCount("drop") > 0)
+        );
+      },
+    );
 
     if (hit !== this._dropTarget) {
       if (this._dropTarget && this._dragTarget) {

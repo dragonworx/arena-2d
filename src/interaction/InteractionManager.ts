@@ -75,8 +75,13 @@ export interface IInteractionManager {
     sceneX: number,
     sceneY: number,
     exclude?: IElement | null,
+    filter?: (el: IElement) => boolean,
   ): IElement | null;
-  hitTestAABB(sceneAABB: IRect, exclude?: IElement | null): IElement | null;
+  hitTestAABB(
+    sceneAABB: IRect,
+    exclude?: IElement | null,
+    filter?: (el: IElement) => boolean,
+  ): IElement | null;
 }
 
 // ── Pointer Event Implementation ──
@@ -379,6 +384,7 @@ export class InteractionManager implements IInteractionManager {
     sceneX: number,
     sceneY: number,
     exclude?: IElement | null,
+    filter?: (el: IElement) => boolean,
   ): IElement | null {
     // Broad phase: query spatial hash
     const candidates = this._spatialHash.query(sceneX, sceneY);
@@ -404,6 +410,7 @@ export class InteractionManager implements IInteractionManager {
           if (isExcluded) continue;
         }
 
+        if (filter && !filter(el)) continue;
         elements.push(el);
       }
     }
@@ -458,7 +465,11 @@ export class InteractionManager implements IInteractionManager {
   /**
    * Find the topmost interactive element intersecting the given AABB.
    */
-  hitTestAABB(sceneAABB: IRect, exclude?: IElement | null): IElement | null {
+  hitTestAABB(
+    sceneAABB: IRect,
+    exclude?: IElement | null,
+    filter?: (el: IElement) => boolean,
+  ): IElement | null {
     // Broad phase: query spatial hash with AABB
     const candidates = this._spatialHash.queryAABB(sceneAABB);
     if (candidates.length === 0) return null;
@@ -482,6 +493,7 @@ export class InteractionManager implements IInteractionManager {
           }
           if (isExcluded) continue;
         }
+        if (filter && !filter(el)) continue;
         elements.push(el);
       }
     }
