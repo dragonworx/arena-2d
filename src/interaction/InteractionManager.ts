@@ -14,7 +14,7 @@ import { DirtyFlags } from "../core/DirtyFlags";
 import type { IElement } from "../core/Element";
 import type { IEventEmitter } from "../events/EventEmitter";
 import type { IRect } from "../math/aabb";
-import { computeAABB } from "../math/aabb";
+import { computeAABB, intersect } from "../math/aabb";
 import { invert, transformPoint } from "../math/matrix";
 import { DragManager } from "./DragManager";
 import { type ISpatialEntry, SpatialHashGrid } from "./SpatialHashGrid";
@@ -76,6 +76,7 @@ export interface IInteractionManager {
     sceneY: number,
     exclude?: IElement | null,
   ): IElement | null;
+  hitTestAABB(sceneAABB: IRect, exclude?: IElement | null): IElement | null;
 }
 
 // ── Pointer Event Implementation ──
@@ -437,6 +438,62 @@ export class InteractionManager implements IInteractionManager {
       current = current.parent as IElement | null;
     }
     return order;
+  }
+
+  /**
+   * Find the topmost interactive element intersecting the given AABB.
+   */
+  hitTestAABB(sceneAABB: IRect, exclude?: IElement | null): IElement | null {
+    // Broad phase: query spatial hash with AABB
+    const candidates = this._spatialHash.queryAABB(sceneAABB);
+    if (candidates.length === 0) return null;
+
+    // Get the actual elements from entries
+    const elements: IElement[] = [];
+    for (const entry of candidates) {
+      const el = (entry as ISpatialEntry & { element: IElement }).element;
+
+      // Must be interactive, visible, and NOT the exclude target (or its child)
+      if (el?.interactive && el.visible) {
+        if (exclude) {
+          let current: IElement | null = el;
+          let isExcluded = false;
+          while (current) {
+            if (current === exclude) {
+              isExcluded = true;
+              break;
+            }
+            current = current.parent;
+          }
+          if (isExcluded) continue;
+        }
+        elements.push(el);
+      }
+    }
+
+    if (elements.length === 0) return null;
+
+    // Narrow phase: Sort by Z-order (topmost first)
+    elements.sort((a, b) => {
+      const za = this._getGlobalZOrder(a);
+      const zb = this._getGlobalZOrder(b);
+      if (za !== zb) return za - zb;
+      return (a as InteractiveElement).uid - (b as InteractiveElement).uid;
+    });
+
+    // Check intersection from top to bottom
+    for (let i = elements.length - 1; i >= 0; i--) {
+      const el = elements[i];
+      // Get the element's world AABB
+      // Note: In a real engine we might want to cache this or use the spatial entry's AABB if accurate enough.
+      // Spatial entry AABB is updated once per frame.
+      const entry = this._spatialEntries.get(el);
+      if (entry && intersect(sceneAABB, entry.aabb)) {
+        return el;
+      }
+    }
+
+    return null;
   }
 
   // ── Event Dispatch ──

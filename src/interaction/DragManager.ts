@@ -5,6 +5,7 @@
  */
 
 import type { IElement } from "../core/Element";
+import { computeAABB } from "../math/aabb";
 import type { InteractionManager } from "./InteractionManager"; // Circular dep potentially, use loose type or interface?
 import type { IPointerEvent } from "./InteractionManager";
 
@@ -131,13 +132,16 @@ export class DragManager {
   }
 
   private _checkDropTarget(event: IPointerEvent): void {
-    // We need to hit-test excluding the dragged element
-    // The InteractionManager needs to expose a method for this, or we rely on it being public.
-    const hit = this._interactionManager.hitTest(
-      event.sceneX,
-      event.sceneY,
-      this._dragTarget,
+    if (!this._dragTarget) return;
+
+    // Use AABB intersection for drag target detection
+    // Calculate current world AABB of the dragged element
+    const aabb = computeAABB(
+      { x: 0, y: 0, width: this._dragTarget.width, height: this._dragTarget.height },
+      this._dragTarget.worldMatrix,
     );
+
+    const hit = this._interactionManager.hitTestAABB(aabb, this._dragTarget);
 
     if (hit !== this._dropTarget) {
       if (this._dropTarget && this._dragTarget) {

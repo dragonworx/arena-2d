@@ -239,6 +239,22 @@ import("../../dist/canvasui.js").then(async (CanvasUI) => {
   scene.root.addChild(constraintItem);
   allElements.push({ el: constraintItem, color: "#0984e3", label: "drag-x" });
 
+  // 4. Unreachable Item (for testing AABB drag)
+  // This item is constrained to X axis at Y=100.
+  // The drop zone is at Y=300.
+  // Dragging this and moving cursor over drop zone should NOT fire dragenter.
+  const unreachableItem = new Element("unreachable");
+  unreachableItem.x = 500;
+  unreachableItem.y = 100;
+  unreachableItem.width = 80;
+  unreachableItem.height = 60;
+  unreachableItem.interactive = true;
+  unreachableItem.draggable = true;
+  unreachableItem.dragConstraint = "x";
+  unreachableItem.cursor = "ew-resize";
+  scene.root.addChild(unreachableItem);
+  allElements.push({ el: unreachableItem, color: "#636e72", label: "unreachable" });
+
   // Wire Drag Controls
   const radios = document.querySelectorAll('input[name="drag-constraint"]');
   for (const radio of radios) {
@@ -266,6 +282,7 @@ import("../../dist/canvasui.js").then(async (CanvasUI) => {
   const draggables = [
     dragItem,
     constraintItem,
+    unreachableItem,
     boxes.find((b) => b.label === "box-C")?.el,
   ].filter(Boolean);
 
