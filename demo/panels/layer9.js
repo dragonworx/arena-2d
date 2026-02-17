@@ -245,16 +245,18 @@ import("../../dist/canvasui.js").then(async (CanvasUI) => {
     radio.addEventListener("change", (e) => {
       if (e.target.checked) {
         const val = e.target.value;
-        const boxC = boxes.find((b) => b.label === "box-C")?.el;
-        if (boxC) {
+        // Target the "drag-me" item instead of box-C
+        const target = dragItem;
+
+        if (target) {
           if (val === "none") {
-            boxC.dragConstraint = undefined;
-            boxC.cursor = "grab";
+            target.dragConstraint = undefined;
+            target.cursor = "grab";
           } else {
-            boxC.dragConstraint = val;
-            boxC.cursor = val === "x" ? "ew-resize" : "ns-resize";
+            target.dragConstraint = val;
+            target.cursor = val === "x" ? "ew-resize" : "ns-resize";
           }
-          addLog(`box-C constraint: ${val}`, "#fff");
+          addLog(`drag-me constraint: ${val}`, "#fff");
         }
       }
     });
@@ -271,6 +273,13 @@ import("../../dist/canvasui.js").then(async (CanvasUI) => {
     el.on("dragstart", (e) => {
       addLog(`dragstart → ${el.id}`, "#ff7675");
       el.alpha = 0.8;
+
+      // Boost Z-Index for "drag-me"
+      if (el.id === "drag-me") {
+        el.originalZIndex = el.zIndex; // Store original
+        el.zIndex = 100; // Bring to front
+      }
+
       // Preserve cursor if it's a resize one
       if (el.cursor !== "ew-resize" && el.cursor !== "ns-resize") {
         el.cursor = "grabbing";
@@ -279,6 +288,13 @@ import("../../dist/canvasui.js").then(async (CanvasUI) => {
     el.on("dragend", (e) => {
       addLog(`dragend → ${el.id}`, "#ff7675");
       el.alpha = 1.0;
+
+      // Restore Z-Index for "drag-me"
+      if (el.id === "drag-me" && el.originalZIndex !== undefined) {
+        el.zIndex = el.originalZIndex;
+        delete el.originalZIndex;
+      }
+
       // Restore cursor based on constraint
       if (el.dragConstraint === "x") el.cursor = "ew-resize";
       else if (el.dragConstraint === "y") el.cursor = "ns-resize";
