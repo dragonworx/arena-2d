@@ -9,6 +9,7 @@ import { computeAABB } from "../math/aabb";
 import type { InteractionManager } from "./InteractionManager"; // Circular dep potentially, use loose type or interface?
 import type { IPointerEvent } from "./InteractionManager";
 import { multiply } from "../math/matrix";
+import { doPolygonsIntersect, getGlobalQuad } from "../math/collision";
 
 export interface IDragEvent {
   type:
@@ -169,11 +170,35 @@ export class DragManager {
         // i.e., it must listen for 'dragenter' or 'drop'
         // biome-ignore lint/suspicious/noExplicitAny: need access to listenerCount
         const emitter = el as any;
-        return (
+        const isTarget =
           emitter.listenerCount &&
           (emitter.listenerCount("dragenter") > 0 ||
-            emitter.listenerCount("drop") > 0)
-        );
+            emitter.listenerCount("drop") > 0);
+
+        if (!isTarget) return false;
+
+        // If using Quad mode, perform precise check
+        if (this._dragTarget?.dragHitTestMode === "quad") {
+          // Get quads for both elements
+          const dragQuad = getGlobalQuad(
+            {
+              x: 0,
+              y: 0,
+              width: this._dragTarget.width,
+              height: this._dragTarget.height,
+            },
+            this._dragTarget.worldMatrix,
+          );
+          
+          const targetQuad = getGlobalQuad(
+            { x: 0, y: 0, width: el.width, height: el.height },
+            el.worldMatrix,
+          );
+
+          return doPolygonsIntersect(dragQuad, targetQuad);
+        }
+
+        return true;
       },
     );
 

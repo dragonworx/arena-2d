@@ -90,6 +90,7 @@ export interface IElement {
   interactive: boolean;
   draggable: boolean;
   dragConstraint: "none" | "x" | "y";
+  dragHitTestMode: "aabb" | "quad";
   focusable: boolean;
   cursor: string;
   containsPoint(localX: number, localY: number): boolean;
@@ -158,6 +159,8 @@ export class Element extends EventEmitter implements IElement {
   draggable = false;
   dragConstraint: "none" | "x" | "y" = "none";
   focusable = false;
+  customHitTest?: (x: number, y: number) => boolean;
+  dragHitTestMode: "aabb" | "quad" = "aabb";
   cursor = "default";
 
   // ── Dirty system ──

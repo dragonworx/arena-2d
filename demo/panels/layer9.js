@@ -278,6 +278,19 @@ import("../../dist/canvasui.js").then(async (CanvasUI) => {
     });
   }
 
+  // Wire Quad Toggle
+  const quadToggle = document.getElementById("l9-quad-toggle");
+  quadToggle?.addEventListener("change", (e) => {
+    const useQuad = e.target.checked;
+    // Update all draggables
+    [dragItem, constraintItem, unreachableItem, ...boxes.map(b => b.el).filter(b => b.draggable)].forEach(el => {
+      if (el) {
+        el.dragHitTestMode = useQuad ? "quad" : "aabb";
+      }
+    });
+    addLog(`Quad Hit Test: ${useQuad ? "ENABLED" : "DISABLED"}`, "#fab1a0");
+  });
+
   // Wire Drag Events
   const draggables = [
     dragItem,
