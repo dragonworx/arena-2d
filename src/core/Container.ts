@@ -258,7 +258,9 @@ export class Container extends Element implements IContainer {
 
     super.update(dt);
     for (const child of this._children) {
-      child.update(dt);
+      if (child.visible) {
+        child.update(dt);
+      }
     }
   }
 

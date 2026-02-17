@@ -47,6 +47,8 @@ import("../../dist/canvasui.js").then(async (CanvasUI) => {
   const btnReset = document.getElementById("l8-btn-reset");
   const showPadding = document.getElementById("l8-ctrl-show-padding");
   const showMargins = document.getElementById("l8-ctrl-show-margins");
+  const childVisible = document.getElementById("l8-child-visible");
+  const childDisplay = document.getElementById("l8-child-display");
   const childInfo = document.getElementById("l8-child-info");
   const statTime = document.getElementById("l8-stat-time");
   const statChildren = document.getElementById("l8-stat-children");
@@ -203,6 +205,8 @@ import("../../dist/canvasui.js").then(async (CanvasUI) => {
     // Draw children
     for (let i = 0; i < root.children.length; i++) {
       const child = root.children[i];
+      if (!child.visible || child.display === "hidden") continue;
+
       const ld = getLayoutData(child);
       const meta = childMeta[i];
       const x = ld.computedX;
@@ -242,6 +246,33 @@ import("../../dist/canvasui.js").then(async (CanvasUI) => {
       ctx.textBaseline = "middle";
       ctx.fillText(`${i}`, x + w / 2, y + h / 2);
     }
+
+    // Draw ghost outlines for invisible/hidden elements (for debugging/demo purposes)
+    for (let i = 0; i < root.children.length; i++) {
+      const child = root.children[i];
+      // If NOT visible (removed from layout), we can't draw it because it has no computed layout positions?
+      // Actually, if visible=false, LayoutResolver skips it, so computedX/Y might be stale or 0.
+      // So we only visualize "display: hidden" (which IS in layout but not painted).
+
+      if (child.display === "hidden" && child.visible) {
+        const ld = getLayoutData(child);
+        const x = ld.computedX;
+        const y = ld.computedY;
+        const w = ld.computedWidth;
+        const h = ld.computedHeight;
+
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
+        ctx.lineWidth = 1;
+        ctx.setLineDash([2, 2]);
+        ctx.strokeRect(x, y, w, h);
+        ctx.setLineDash([]);
+
+        // Ghost label
+        ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
+        ctx.font = "italic 10px monospace";
+        ctx.fillText("(hidden)", x + w / 2, y + h / 2);
+      }
+    }
   }
 
   // ── Click handling ──
@@ -278,6 +309,10 @@ import("../../dist/canvasui.js").then(async (CanvasUI) => {
         child.style.flexShrink;
       document.getElementById("l8-width-val").textContent = child.width;
       document.getElementById("l8-height-val").textContent = child.height;
+
+      // Update visibility controls
+      childVisible.checked = child.visible;
+      childDisplay.value = child.display;
     } else {
       childInfo.textContent = "Click a box to select";
     }
@@ -363,6 +398,20 @@ import("../../dist/canvasui.js").then(async (CanvasUI) => {
   for (const el of [showPadding, showMargins]) {
     el.addEventListener("change", render);
   }
+
+  childVisible.addEventListener("change", () => {
+    if (selectedIndex >= 0) {
+      root.children[selectedIndex].visible = childVisible.checked;
+      render();
+    }
+  });
+
+  childDisplay.addEventListener("change", () => {
+    if (selectedIndex >= 0) {
+      root.children[selectedIndex].display = childDisplay.value;
+      render();
+    }
+  });
 
   btnAdd.addEventListener("click", addChild);
   btnRemove.addEventListener("click", removeSelectedChild);

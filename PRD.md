@@ -382,24 +382,27 @@ Implement unified pointer/keyboard event handling, hit-testing via SpatialHashGr
 
 | # | Item | Details |
 |---|---|---|
-| 9.1 | **`src/interaction/SpatialHashGrid.ts`** | 2D grid (default cell size `128`). Insert/remove/query by world AABB. Updated on `DirtyFlags.Spatial`. |
-| 9.2 | **`src/interaction/InteractionManager.ts`** | Listens on scene's topmost canvas for pointer/keyboard DOM events. Translates to `IPointerEvent` / `IKeyboardEvent`. |
-| 9.3 | **Hit-testing** | Broad phase: query `SpatialHashGrid`. Narrow phase: inverse world matrix point-in-bounds test, back-to-front ordering. |
-| 9.4 | **Event dispatch** | `pointerdown`, `pointerup`, `pointermove`, `pointerenter/leave`, `click`, `wheel`. Bubbling (no capture phase). `stopPropagation()`. `pointerenter`/`leave` do not bubble. |
-| 9.5 | **Keyboard dispatch** | `keydown`, `keyup` to focused element. |
-| 9.6 | **Focus management** | `setFocus()`, `tabNext()`, `tabPrev()`. Depth-first traversal for tab order. `focus`/`blur` events. |
-| 9.7 | **Interactive passthrough** | Hit buffer alpha sampling for HTML pass-through (CSS `pointer-events: none`). |
-| 9.8 | **Cursor** | Set `container.style.cursor` based on hovered element's `cursor` property. |
-| 9.9 | **Unit tests** | Hit-test ordering, bubbling chain, stopPropagation, enter/leave non-bubbling, tab order, focus/blur, spatial hash grid insert/query |
+| 9.1 | **Drag & Drop System** | `src/interaction/DragManager.ts`. `draggable` property on elements. Events: `dragstart`, `dragmove`, `dragend`, `dragenter`, `dragleave`, `drop`. Supports drag targets, axis constraints (lock X/Y), and cancellation via `Escape` or invalid drop. Integrates with `InteractionManager`. |
+| 9.2 | **`src/interaction/SpatialHashGrid.ts`** | 2D grid (default cell size `128`). Insert/remove/query by world AABB. Updated on `DirtyFlags.Spatial`. |
+| 9.3 | **`src/interaction/InteractionManager.ts`** | Listens on scene's topmost canvas for pointer/keyboard DOM events. Translates to `IPointerEvent` / `IKeyboardEvent`. Hooks for drag initiation. |
+| 9.4 | **Hit-testing** | Broad phase: query `SpatialHashGrid`. Narrow phase: inverse world matrix point-in-bounds test, back-to-front ordering. |
+| 9.5 | **Event dispatch** | `pointerdown`, `pointerup`, `pointermove`, `pointerenter/leave`, `click`, `wheel`. Bubbling (no capture phase). `stopPropagation()`. `pointerenter`/`leave` do not bubble. |
+| 9.6 | **Keyboard dispatch** | `keydown`, `keyup` to focused element. |
+| 9.7 | **Focus management** | `setFocus()`, `tabNext()`, `tabPrev()`. Depth-first traversal for tab order. `focus`/`blur` events. |
+| 9.8 | **Interactive passthrough** | Hit buffer alpha sampling for HTML pass-through (CSS `pointer-events: none`). |
+| 9.9 | **Cursor** | Set `container.style.cursor` based on hovered element's `cursor` property. |
+| 9.10 | **Unit tests** | Hit-test ordering, bubbling chain, stopPropagation, enter/leave non-bubbling, tab order, focus/blur, spatial hash grid insert/query, drag constraints, drop events. |
 
 ### Acceptance Criteria
 - Clicking overlapping elements hits the topmost by z-index.
 - Event bubbles from target to root unless stopped.
 - `pointerenter`/`pointerleave` fire only on the target, not ancestors.
 - Tab cycles through focusable elements in depth-first order.
+- Dragging an element moves it visually and fires drag events.
+- Releasing a drag over a drop target fires `drop`. Esc cancels.
 
 ### Demo Panel
-Interactive scene with overlapping, nested elements. Click displays event propagation path. Focus ring drawn around focused element. Tab key cycles focus. Hover shows cursor change.
+Interactive scene with overlapping, nested elements. Click displays event propagation path. Focus ring drawn around focused element. Tab key cycles focus. Hover shows cursor change. Draggable box with "Drop Zone" targets.
 
 ---
 

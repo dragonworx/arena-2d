@@ -1,0 +1,242 @@
+$ bunx biome check src/ tests/ demo/ build.ts
+tests/drag.test.ts:3:8 lint/style/useImportType  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × All these imports are only used as types.
+  
+    1 │ import { beforeAll, afterAll, beforeEach, describe, expect, test, mock } from "bun:test";
+    2 │ import { Window } from "happy-dom";
+  > 3 │ import { Container } from "../src/core/Container";
+      │        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    4 │ import { Element } from "../src/core/Element";
+    5 │ import { Scene } from "../src/core/Scene";
+  
+  i Importing the types with import type ensures that they are removed by the compilers and avoids loading unnecessary modules.
+  
+  i Safe fix: Use import type.
+  
+    3 │ import·type·{·Container·}·from·"../src/core/Container";
+      │        +++++                                           
+
+tests/drag.test.ts:25:3 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    23 │     window.document,
+    24 │   );
+  > 25 │   // biome-ignore lint/suspicious/noExplicitAny: mock
+       │   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    26 │   window.document.createElement = (
+    27 │     tagName: string,
+  
+
+tests/drag.test.ts:76:7 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+    74 │       const originalGetContext = element.getContext;
+    75 │       // @ts-expect-error - Polyfilling canvas context for happy-dom
+  > 76 │       // biome-ignore lint/suspicious/noExplicitAny: mock
+       │       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    77 │       element.getContext = function (contextType: string) {
+    78 │         if (contextType === "2d") {
+  
+
+tests/drag.test.ts:98:11 suppressions/unused ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Suppression comment has no effect. Remove the suppression or make sure you are suppressing the correct rule.
+  
+     96 │         canvas: this,
+     97 │         getImageData: () => ({
+   > 98 │           // biome-ignore lint/suspicious/noExplicitAny: mock
+        │           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     99 │           data: new Uint8ClampedArray(this.width * this.height * 4),
+    100 │         }),
+  
+
+tests/drag.test.ts organizeImports ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Import statements could be sorted:
+  
+      1     │ - import·{·beforeAll,·afterAll,·beforeEach,·describe,·expect,·test,·mock·}·from·"bun:test";
+          1 │ + import·{·afterAll,·beforeAll,·beforeEach,·describe,·expect,·mock,·test·}·from·"bun:test";
+      2   2 │   import { Window } from "happy-dom";
+      3   3 │   import { Container } from "../src/core/Container";
+  
+
+tests/drag.test.ts format ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Formatter would have printed the following content:
+  
+      1     │ - import·{·beforeAll,·afterAll,·beforeEach,·describe,·expect,·test,·mock·}·from·"bun:test";
+          1 │ + import·{
+          2 │ + ··beforeAll,
+          3 │ + ··afterAll,
+          4 │ + ··beforeEach,
+          5 │ + ··describe,
+          6 │ + ··expect,
+          7 │ + ··test,
+          8 │ + ··mock,
+          9 │ + }·from·"bun:test";
+      2  10 │   import { Window } from "happy-dom";
+      3  11 │   import { Container } from "../src/core/Container";
+    ······· │ 
+    115 123 │     global.requestAnimationFrame = (cb) => setTimeout(cb, 16);
+    116 124 │     global.cancelAnimationFrame = (id) => clearTimeout(id);
+    117     │ - ···//·@ts-expect-error·-·happy-dom·types
+        125 │ + ··//·@ts-expect-error·-·happy-dom·types
+    118 126 │     global.getComputedStyle = window.getComputedStyle.bind(window);
+    119 127 │   });
+    ······· │ 
+    131 139 │       const app = document.getElementById("app");
+    132 140 │       if (!app) throw new Error("App element not found");
+    133     │ - ····
+        141 │ + 
+    134 142 │       scene = new Scene(app, 800, 600);
+    135 143 │       root = scene.root as Container;
+    136 144 │     });
+    137 145 │   
+    138     │ - ··function·dispatchPointer(
+    139     │ - ····type:·string,
+    140     │ - ····x:·number,
+    141     │ - ····y:·number,
+    142     │ - ····button·=·0
+    143     │ - ··)·{
+        146 │ + ··function·dispatchPointer(type:·string,·x:·number,·y:·number,·button·=·0)·{
+    144 147 │       const event = new PointerEvent(type, {
+    145 148 │         clientX: x,
+    ······· │ 
+    187 190 │       draggable.height = 100;
+    188 191 │       draggable.draggable = true;
+    189     │ - ····
+        192 │ + 
+    190 193 │       root.addChild(draggable);
+    191 194 │       // Force layout/transform update? Ticker isn't running in tests usually.
+    192 195 │       // InteractionManager uses scene.root, so it should be fine if connected.
+    193     │ - ····
+        196 │ + 
+    194 197 │       // We need to ensure world matrices are updated for hit testing
+    195     │ - ····scene.root.update(0.016);·
+        198 │ + ····scene.root.update(0.016);
+    196 199 │       scene.interaction.updateSpatialHash();
+    197 200 │   
+    ······· │ 
+    204 207 │   
+    205 208 │       expect(onDragMove).toHaveBeenCalled();
+    206     │ - ····
+    207     │ - ····//·Check·if·element·moved.·
+        209 │ + 
+        210 │ + ····//·Check·if·element·moved.
+    208 211 │       // Initial: 10,10. Click at 50,50. Move to 60,60. Delta +10,+10.
+    209 212 │       // However, threshold logic might eat the first few pixels or jump?
+    ······· │ 
+    212 215 │       // So dx=10, dy=10.
+    213 216 │       // Element should be at 20, 20.
+    214     │ - ····
+        217 │ + 
+    215 218 │       expect(draggable.x).toBe(20);
+    216 219 │       expect(draggable.y).toBe(20);
+    ······· │ 
+    223 226 │       el.draggable = false;
+    224 227 │       root.addChild(el);
+    225     │ - ····
+        228 │ + 
+    226 229 │       scene.root.update(0.016);
+    227 230 │       scene.interaction.updateSpatialHash();
+    ······· │ 
+    281 284 │       // Pick up draggable
+    282 285 │       dispatchPointer("pointerdown", 25, 25);
+    283     │ - ····
+        286 │ + 
+    284 287 │       // Move to drop zone
+    285 288 │       dispatchPointer("pointermove", 250, 250);
+    286     │ - ····
+        289 │ + 
+    287 290 │       // Release
+    288 291 │       dispatchPointer("pointerup", 250, 250);
+    ······· │ 
+    293 296 │       expect(event.target).toBe(dropZone);
+    294 297 │     });
+    295     │ - ··
+        298 │ + 
+    296 299 │     test("dragenter/dragleave events", () => {
+    297     │ - ······const·draggable·=·new·Element();
+    298     │ - ······draggable.width·=·50;
+    299     │ - ······draggable.height·=·50;
+    300     │ - ······draggable.draggable·=·true;
+    301     │ - ······
+    302     │ - ······const·dropZone·=·new·Element();
+    303     │ - ······dropZone.width·=·100;
+    304     │ - ······dropZone.height·=·100;
+    305     │ - ······dropZone.x·=·200;
+    306     │ - ······dropZone.y·=·0;
+    307     │ - ······dropZone.interactive·=·true;
+    308     │ - ······
+    309     │ - ······root.addChild(draggable);
+    310     │ - ······root.addChild(dropZone);
+    311     │ - ······
+    312     │ - ······scene.root.update(0.016);
+    313     │ - ······scene.interaction.updateSpatialHash();
+    314     │ - ······
+    315     │ - ······const·onEnter·=·mock((_e:·IDragEvent)·=>·{});
+    316     │ - ······const·onLeave·=·mock((_e:·IDragEvent)·=>·{});
+    317     │ - ······dropZone.on("dragenter",·onEnter);
+    318     │ - ······dropZone.on("dragleave",·onLeave);
+    319     │ - ······
+    320     │ - ······//·Start·drag
+    321     │ - ······dispatchPointer("pointerdown",·25,·25);
+    322     │ - ······
+    323     │ - ······//·Enter·dropzone
+    324     │ - ······dispatchPointer("pointermove",·250,·50);
+    325     │ - ······expect(onEnter).toHaveBeenCalled();
+    326     │ - ······expect(onLeave).not.toHaveBeenCalled();
+    327     │ - ······
+    328     │ - ······//·Leave·dropzone
+    329     │ - ······dispatchPointer("pointermove",·50,·50);
+    330     │ - ······expect(onLeave).toHaveBeenCalled();
+        300 │ + ····const·draggable·=·new·Element();
+        301 │ + ····draggable.width·=·50;
+        302 │ + ····draggable.height·=·50;
+        303 │ + ····draggable.draggable·=·true;
+        304 │ + 
+        305 │ + ····const·dropZone·=·new·Element();
+        306 │ + ····dropZone.width·=·100;
+        307 │ + ····dropZone.height·=·100;
+        308 │ + ····dropZone.x·=·200;
+        309 │ + ····dropZone.y·=·0;
+        310 │ + ····dropZone.interactive·=·true;
+        311 │ + 
+        312 │ + ····root.addChild(draggable);
+        313 │ + ····root.addChild(dropZone);
+        314 │ + 
+        315 │ + ····scene.root.update(0.016);
+        316 │ + ····scene.interaction.updateSpatialHash();
+        317 │ + 
+        318 │ + ····const·onEnter·=·mock((_e:·IDragEvent)·=>·{});
+        319 │ + ····const·onLeave·=·mock((_e:·IDragEvent)·=>·{});
+        320 │ + ····dropZone.on("dragenter",·onEnter);
+        321 │ + ····dropZone.on("dragleave",·onLeave);
+        322 │ + 
+        323 │ + ····//·Start·drag
+        324 │ + ····dispatchPointer("pointerdown",·25,·25);
+        325 │ + 
+        326 │ + ····//·Enter·dropzone
+        327 │ + ····dispatchPointer("pointermove",·250,·50);
+        328 │ + ····expect(onEnter).toHaveBeenCalled();
+        329 │ + ····expect(onLeave).not.toHaveBeenCalled();
+        330 │ + 
+        331 │ + ····//·Leave·dropzone
+  4 more lines truncated
+  
+
+Skipped 1 suggested fixes.
+If you wish to apply the suggested (unsafe) fixes, use the command biome check --fix --unsafe
+
+Checked 42 files in 22ms. No fixes applied.
+Found 3 errors.
+Found 3 warnings.
+check ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Some errors were emitted while running checks.
+  
+
+error: script "lint" exited with code 1

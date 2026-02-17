@@ -6,7 +6,7 @@ import {
   Element,
   getLayoutData,
   resolveLayout,
-// @ts-ignore
+  // @ts-ignore
 } from "../dist/canvasui.js";
 
 function runTest() {

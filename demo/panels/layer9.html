@@ -1,0 +1,54 @@
+<div class="main-header">
+  <h2>Layer 9 — Interaction & Focus System</h2>
+  <p>Pointer events, hit-testing, event bubbling, keyboard dispatch, and focus/tab management.</p>
+</div>
+
+<div class="card" style="margin-bottom: 1rem;">
+  <h3>Interactive Scene</h3>
+  <p style="color: #888; font-size: 0.85rem; margin-bottom: 0.75rem;">
+    Click elements to see event paths. Use <kbd style="background:#333;padding:2px 6px;border-radius:3px;border:1px solid #555;">Tab</kbd> to cycle focus. Hover to see cursor changes.
+  </p>
+  <div id="l9-scene-container" style="width: 800px; height: 400px; border: 1px solid #444; border-radius: 4px; position: relative; margin-bottom: 1rem;"></div>
+
+  <!-- Drag Controls -->
+  <div style="margin-bottom: 1rem; padding: 0.5rem; background: #1a1a2e; border: 1px solid #333; border-radius: 4px; display: inline-flex; align-items: center; gap: 1rem;">
+    <span style="color: #aaa; font-size: 0.85rem;">Drag Constraint (Box C):</span>
+    <label style="color: #ccc; font-size: 0.85rem; cursor: pointer;">
+      <input type="radio" name="drag-constraint" value="none" checked> None
+    </label>
+    <label style="color: #ccc; font-size: 0.85rem; cursor: pointer;">
+      <input type="radio" name="drag-constraint" value="x"> X-Axis
+    </label>
+    <label style="color: #ccc; font-size: 0.85rem; cursor: pointer;">
+      <input type="radio" name="drag-constraint" value="y"> Y-Axis
+    </label>
+  </div>
+
+  <div style="display: flex; gap: 1.5rem; flex-wrap: wrap;">
+    <!-- Event Log -->
+    <div style="flex: 1; min-width: 250px;">
+      <h4 style="margin: 0 0 0.5rem 0; color: #aaa; font-size: 0.85rem;">Event Log</h4>
+      <div id="l9-event-log" style="background: #1a1a2e; border: 1px solid #333; border-radius: 4px; padding: 0.5rem; height: 160px; overflow-y: auto; font-family: monospace; font-size: 0.75rem; color: #ccc;"></div>
+      <button id="l9-clear-log" style="margin-top: 0.5rem; padding: 4px 12px; background: #333; border: 1px solid #555; border-radius: 3px; color: #ccc; cursor: pointer; font-size: 0.75rem;">Clear Log</button>
+    </div>
+
+    <!-- Focus Info -->
+    <div style="flex: 1; min-width: 200px;">
+      <h4 style="margin: 0 0 0.5rem 0; color: #aaa; font-size: 0.85rem;">Focus State</h4>
+      <div style="background: #1a1a2e; border: 1px solid #333; border-radius: 4px; padding: 0.75rem; font-size: 0.85rem;">
+        <div>Focused: <span id="l9-focused" style="color: #6ecf6e;">none</span></div>
+        <div>Hovered: <span id="l9-hovered" style="color: #6ecfa0;">none</span></div>
+        <div style="margin-top: 0.5rem;">
+          <button id="l9-tab-next" style="padding: 4px 10px; background: #2a4a6a; border: 1px solid #4a6a8a; border-radius: 3px; color: #ccc; cursor: pointer; font-size: 0.75rem; margin-right: 0.25rem;">Tab Next</button>
+          <button id="l9-tab-prev" style="padding: 4px 10px; background: #2a4a6a; border: 1px solid #4a6a8a; border-radius: 3px; color: #ccc; cursor: pointer; font-size: 0.75rem;">Tab Prev</button>
+        </div>
+      </div>
+
+      <h4 style="margin: 0.75rem 0 0.5rem 0; color: #aaa; font-size: 0.85rem;">Hit Test Info</h4>
+      <div style="background: #1a1a2e; border: 1px solid #333; border-radius: 4px; padding: 0.75rem; font-size: 0.85rem;">
+        <div>Last Click: <span id="l9-last-click" style="color: #cf6e6e;">—</span></div>
+        <div>Bubble Path: <span id="l9-bubble-path" style="color: #cfcf6e;">—</span></div>
+      </div>
+    </div>
+  </div>
+</div>

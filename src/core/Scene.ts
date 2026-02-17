@@ -8,6 +8,10 @@
  * SPEC: §3 (Scene & Layering System)
  */
 
+import {
+  type IInteractionManager,
+  InteractionManager,
+} from "../interaction/InteractionManager";
 import { CanvasUIContext } from "../rendering/CanvasUIContext";
 import { Container, type IContainer } from "./Container";
 import { DirtyFlags } from "./DirtyFlags";
@@ -26,6 +30,7 @@ export interface IScene {
   readonly root: IContainer;
   readonly hitBuffer: OffscreenCanvas;
   readonly ticker: ITicker;
+  readonly interaction: IInteractionManager;
 
   // Layer management
   createLayer(id: string, zIndex: number): ILayer;
@@ -51,6 +56,7 @@ export class Scene implements IScene {
   readonly root: IContainer;
   readonly hitBuffer: OffscreenCanvas;
   readonly ticker: ITicker;
+  readonly interaction: IInteractionManager;
 
   private _width: number;
   private _height: number;
@@ -95,6 +101,9 @@ export class Scene implements IScene {
     this.ticker = new Ticker();
     this.ticker.add(this.root as IElement);
     this.ticker.setRenderCallback(() => this.render());
+
+    // Create interaction manager
+    this.interaction = new InteractionManager(this);
 
     // Listen for DPR changes
     this._setupDPRListener();
@@ -236,6 +245,9 @@ export class Scene implements IScene {
   }
 
   destroy(): void {
+    // Destroy interaction manager
+    this.interaction.destroy();
+
     // Stop ticker
     this.ticker.stop();
     this.ticker.remove(this.root as IElement);
@@ -278,6 +290,7 @@ export class Scene implements IScene {
    */
   unregisterElement(element: IElement): void {
     this._elementIndex.delete(element.id);
+    (this.interaction as InteractionManager).unregisterElement(element);
   }
 
   // ── Frame Pipeline ──
@@ -289,6 +302,9 @@ export class Scene implements IScene {
    * We walk the scene graph and paint each element to its assigned layer.
    */
   render(): void {
+    // Update spatial hash for interaction hit-testing
+    (this.interaction as InteractionManager).updateSpatialHash();
+
     // Clear all layers
     for (const layer of this._layers.values()) {
       layer.render();
@@ -304,6 +320,11 @@ export class Scene implements IScene {
   private _paintRecursive(element: IElement): void {
     // Skip invisible elements
     if (!element.visible || element.alpha <= 0) {
+      return;
+    }
+
+    // Skip hidden display elements
+    if (element.display === "hidden") {
       return;
     }
 

@@ -157,6 +157,19 @@
           <input type="range" id="l8-ctrl-height" min="20" max="150" value="40" class="l8-compact-input">
         </label>
       </div>
+      
+      <div class="l8-grid" style="margin-top:8px; border-top:1px dashed #444; padding-top:8px;">
+        <label class="control-label l8-compact-label l8-full" style="justify-content:flex-start; gap:8px;">
+          <input type="checkbox" id="l8-child-visible" checked> Visible (Layout + Paint)
+        </label>
+        <label class="control-label l8-compact-label l8-full" style="justify-content:flex-start; gap:8px;">
+          Render:
+          <select id="l8-child-display" style="padding:2px; margin-left:auto;">
+            <option value="visible" selected>Visible</option>
+            <option value="hidden">Hidden (Layout only)</option>
+          </select>
+        </label>
+      </div>
 
        <div class="btn-group" style="margin-top:8px;">
         <button id="l8-btn-add" class="btn">+ Add</button>

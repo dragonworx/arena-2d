@@ -73,6 +73,7 @@ export interface IElement {
 
   // Visual state
   visible: boolean;
+  display: "visible" | "hidden";
   alpha: number;
   zIndex: number;
   blendMode: GlobalCompositeOperation;
@@ -86,6 +87,11 @@ export interface IElement {
   localBounds: IRect;
 
   // Interaction
+  interactive: boolean;
+  draggable: boolean;
+  dragConstraint: "none" | "x" | "y";
+  focusable: boolean;
+  cursor: string;
   containsPoint(localX: number, localY: number): boolean;
   hitTest(globalX: number, globalY: number): IElement | null;
 
@@ -141,10 +147,18 @@ export class Element extends EventEmitter implements IElement {
 
   // ── Visual state ──
   private _visible = true;
+  private _display: "visible" | "hidden" = "visible";
   private _alpha = 1;
   private _zIndex = 0;
   private _blendMode: GlobalCompositeOperation = "source-over";
   private _cacheAsBitmap = false;
+
+  // ── Interaction ──
+  interactive = true;
+  draggable = false;
+  dragConstraint: "none" | "x" | "y" = "none";
+  focusable = false;
+  cursor = "default";
 
   // ── Dirty system ──
   protected _dirtyFlags: DirtyFlags = DirtyFlags.All;
@@ -330,6 +344,21 @@ export class Element extends EventEmitter implements IElement {
     if (this._visible !== value) {
       this._visible = value;
       this.invalidate(DirtyFlags.Visual);
+      // Toggling visibility changes layout presence -> invalidate parent layout
+      if (this.parent) {
+        this.parent.invalidate(DirtyFlags.Layout);
+      }
+    }
+  }
+
+  get display(): "visible" | "hidden" {
+    return this._display;
+  }
+  set display(value: "visible" | "hidden") {
+    if (this._display !== value) {
+      this._display = value;
+      this.invalidate(DirtyFlags.Visual);
+      // Changing display 'hidden' <-> 'visible' DOES NOT affect layout.
     }
   }
 

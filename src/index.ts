@@ -65,3 +65,13 @@ export { resolveLayout, getLayoutData } from "./layout/LayoutResolver";
 
 // --- Interaction (Helpers for Layer 4+, full system in Layer 5/7) ---
 export { resolvePointerPosition } from "./core/Interaction";
+
+// --- Layer 9: Interaction & Focus System ---
+export type {
+  IPointerEvent,
+  IKeyboardEvent,
+  IInteractionManager,
+} from "./interaction/InteractionManager";
+export { InteractionManager } from "./interaction/InteractionManager";
+export type { ISpatialEntry } from "./interaction/SpatialHashGrid";
+export { SpatialHashGrid } from "./interaction/SpatialHashGrid";

@@ -7,7 +7,7 @@
 
 ## Current Phase
 
-Layer 9 — Interaction & Focus System
+Layer 10 — Text & Text Layout
 
 ## Status
 
@@ -153,6 +153,22 @@ Layer 9 — Interaction & Focus System
 - Tests: 270/270 passing (45 new layout tests + 225 prior)
 ---
 
+### Layer 9 — Interaction & Focus System ✅
+- [x] 9.1 Drag & Drop System — `src/interaction/DragManager.ts`, `draggable` property, drag events, drop targets, constraints
+- [x] 9.2 `src/interaction/SpatialHashGrid.ts` — insert/remove/query by AABB
+- [x] 9.3 `src/interaction/InteractionManager.ts` — DOM event translation
+- [x] 9.4 Hit-testing (broad phase → narrow phase, back-to-front)
+- [x] 9.5 Pointer event dispatch with bubbling
+- [x] 9.6 Keyboard dispatch to focused element
+- [x] 9.7 Focus management (`setFocus`, `tabNext`, `tabPrev`, depth-first order)
+- [x] 9.8 Interactive passthrough (hit buffer alpha → `pointer-events: none`)
+- [x] 9.9 Cursor management
+- [x] 9.10 Unit tests (drag constraints, drop events, in addition to existing tests)
+- [x] 9.11 Demo panel — overlapping elements, focus ring, plus NEW draggable box with drop zones
+- **Acceptance:** Topmost element wins click; bubbling works; tab cycles; dragging moves visually; drop fires events
+- Tests: 307/307 passing (37 new interaction tests + 270 prior)
+---
+
 ## Layer Checklist
 
 ### 🔴 Layer 0 — Project Scaffold & Demo Site
@@ -207,20 +223,7 @@ Layer 9 — Interaction & Focus System
 
 ---
 
-### Layer 9 — Interaction & Focus System
-- [ ] 9.1 `src/interaction/SpatialHashGrid.ts` — insert/remove/query by AABB
-- [ ] 9.2 `src/interaction/InteractionManager.ts` — DOM event translation
-- [ ] 9.3 Hit-testing (broad phase → narrow phase, back-to-front)
-- [ ] 9.4 Pointer event dispatch with bubbling
-- [ ] 9.5 Keyboard dispatch to focused element
-- [ ] 9.6 Focus management (`setFocus`, `tabNext`, `tabPrev`, depth-first order)
-- [ ] 9.7 Interactive passthrough (hit buffer alpha → `pointer-events: none`)
-- [ ] 9.8 Cursor management
-- [ ] 9.9 Unit tests (hit ordering, bubbling, stopPropagation, enter/leave, tab order, spatial hash)
-- [ ] 9.10 Demo panel — overlapping elements showing event path, focus ring, tab cycling
-- **Acceptance:** Topmost element wins click; bubbling works; enter/leave don't bubble; tab cycles correctly
 
----
 
 ### 🟡 Layer 10 — Text & Text Layout
 - [ ] 10.1 `src/elements/Text.ts` — `IText` with `fillText()` rendering

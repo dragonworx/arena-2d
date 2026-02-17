@@ -73,6 +73,7 @@ function getStyle(el: IElement): IStyle {
 function getFlexChildren(el: ElementWithLayout): ElementWithLayout[] {
   if (!hasChildren(el)) return [];
   return (el.children as ElementWithLayout[]).filter((c) => {
+    if (!c.visible) return false;
     const d = getStyle(c).display;
     return d !== "manual" && d !== "anchor";
   });
@@ -141,6 +142,7 @@ function measure(
   // Measure children first (bottom-up)
   if (hasChildren(el)) {
     for (const child of el.children) {
+      if (!child.visible) continue;
       const childEl = child as ElementWithLayout;
       const childStyle = getStyle(child);
       if (childStyle.display === "manual") continue;
@@ -224,6 +226,7 @@ function arrange(el: ElementWithLayout, width: number, height: number): void {
   const allChildren = getAllChildren(el);
 
   for (const child of allChildren) {
+    if (!child.visible) continue; // Skip invisible elements
     const childStyle = getStyle(child);
 
     if (childStyle.display === "anchor") {
@@ -237,6 +240,7 @@ function arrange(el: ElementWithLayout, width: number, height: number): void {
 
   // Recurse: arrange children's children
   for (const child of allChildren) {
+    if (!child.visible) continue; // Skip invisible elements
     const childStyle = getStyle(child);
     if (childStyle.display === "manual") continue;
 
