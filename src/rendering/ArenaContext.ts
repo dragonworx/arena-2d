@@ -1,11 +1,11 @@
 /**
- * CanvasUIContext — Safe wrapper around CanvasRenderingContext2D.
+ * ArenaContext — Safe wrapper around CanvasRenderingContext2D.
  *
  * Provides high-level drawing primitives and automatic save/restore
  * state management. Every element's paint() call is sandwiched between
  * save() and restore() — elements never manage canvas state manually.
  *
- * SPEC: §8 — Rendering Wrapper (CanvasUIContext)
+ * SPEC: §8 — Rendering Wrapper (ArenaContext)
  */
 
 import type { IElement } from "../core/Element";
@@ -28,7 +28,7 @@ export interface ITextStyle {
   textAlign?: CanvasTextAlign;
 }
 
-export interface ICanvasUIContext {
+export interface IArenaContext {
   readonly raw: CanvasRenderingContext2D;
 
   // Shape primitives (6.1)
@@ -153,9 +153,9 @@ export function buildFontString(style: ITextStyle): string {
   return `${weight} ${fontStyle} ${style.fontSize}px ${style.fontFamily}`;
 }
 
-// ── CanvasUIContext Class ──
+// ── ArenaContext Class ──
 
-export class CanvasUIContext implements ICanvasUIContext {
+export class ArenaContext implements IArenaContext {
   readonly raw: CanvasRenderingContext2D;
 
   constructor(ctx: CanvasRenderingContext2D) {

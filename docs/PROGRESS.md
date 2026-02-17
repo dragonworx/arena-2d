@@ -1,4 +1,4 @@
-# CanvasUI — Implementation Progress
+# Arena-2D — Implementation Progress
 
 > This file is the single source of truth for implementation state.
 > An AI agent reads this at the start of every session to know where to pick up.
@@ -51,7 +51,7 @@ Layer 10 — Text & Text Layout
 - [x] 0.3 `tsconfig.json`
 - [x] 0.4 Bun dev server with WebSocket live-reload
 - [x] 0.5 Demo shell page
-- [x] 0.6 `bun build` entry producing `dist/canvasui.js`
+- [x] 0.6 `bun build` entry producing `dist/arena-2d.js`
 - [x] 0.7 Smoke test
 - Tests: 4/4 passing
 
@@ -304,7 +304,7 @@ Layer 10 — Text & Text Layout
 
 ### 🔴 Layer 16 — API Surface, Bundle & Documentation
 - [ ] 16.1 `src/index.ts` barrel export (public API only)
-- [ ] 16.2 Production bundle (`dist/canvasui.js` minified + `dist/canvasui.d.ts`)
+- [ ] 16.2 Production bundle (`dist/arena-2d.js` minified + `dist/arena-2d.d.ts`)
 - [ ] 16.3 Demo site polish (all panels reviewed, responsive, nav complete)
 - [ ] 16.4 `README.md` (quick-start, link to demo + SPEC)
 - [ ] 16.5 Final test sweep (all suites green, manual walkthrough)

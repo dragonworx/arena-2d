@@ -43,9 +43,9 @@ export { Ticker } from "./core/Ticker";
 export type {
   FillStyle,
   ITextStyle,
-  ICanvasUIContext,
-} from "./rendering/CanvasUIContext";
-export { CanvasUIContext, buildFontString } from "./rendering/CanvasUIContext";
+  IArenaContext,
+} from "./rendering/ArenaContext";
+export { ArenaContext, buildFontString } from "./rendering/ArenaContext";
 
 // --- Layer 7: Scene & Layering System ---
 export type { IScene } from "./core/Scene";

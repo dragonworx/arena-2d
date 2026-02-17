@@ -4,7 +4,7 @@ description: Mark the current layer as complete, commit changes, and advance to 
 
 # Finish Current Layer
 
-1. **Read `PROGRESS.md`** to identify the **Current Phase**.
+1. **Read `docs/PROGRESS.md`** to identify the **Current Phase**.
 
 2. **Run Quality Gates** (Auto-fix if possible):
    // turbo
@@ -14,7 +14,7 @@ description: Mark the current layer as complete, commit changes, and advance to 
    // turbo
    - Run `bun test`
 
-3. **Update `PROGRESS.md`**:
+3. **Update `docs/PROGRESS.md`**:
    - Locate the **Current Phase** layer in `## Layer Checklist`.
    - Update its header icon to ✅.
    - Mark all its checklist items as completed (`[x]`).

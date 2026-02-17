@@ -7,7 +7,7 @@ import {
   getLayoutData,
   resolveLayout,
   // @ts-ignore
-} from "../dist/canvasui.js";
+} from "../dist/arena-2d.js";
 
 function runTest() {
   console.log("Starting Layout Reproduction Test (Corrected)");

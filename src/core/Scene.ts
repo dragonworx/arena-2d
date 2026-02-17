@@ -12,7 +12,7 @@ import {
   type IInteractionManager,
   InteractionManager,
 } from "../interaction/InteractionManager";
-import { CanvasUIContext } from "../rendering/CanvasUIContext";
+import { ArenaContext } from "../rendering/ArenaContext";
 import { Container, type IContainer } from "./Container";
 import { DirtyFlags } from "./DirtyFlags";
 import type { IElement } from "./Element";
@@ -338,8 +338,8 @@ export class Scene implements IScene {
       return;
     }
 
-    // Create CanvasUIContext wrapper
-    const ctx = new CanvasUIContext(layer.ctx);
+    // Create ArenaContext wrapper
+    const ctx = new ArenaContext(layer.ctx);
 
     // Save canvas state
     layer.ctx.save();

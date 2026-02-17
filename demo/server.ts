@@ -42,13 +42,13 @@ function startWatcher(dir: string, label: string) {
         const result = await Bun.build({
           entrypoints: [join(SRC_DIR, "index.ts")],
           outdir: join(PROJECT_ROOT, "dist"),
-          naming: "canvasui.js",
+          naming: "arena-2d.js",
           format: "esm",
           target: "browser",
           minify: false,
         });
         if (result.success) {
-          console.log("  ✓ Rebuilt dist/canvasui.js");
+          console.log("  ✓ Rebuilt dist/arena-2d.js");
         }
       } catch {
         // Build errors are non-fatal for the dev server
@@ -89,8 +89,8 @@ const server = Bun.serve({
     if (pathname === "/") pathname = "/index.html";
 
     // Serve the built bundle
-    if (pathname === "/dist/canvasui.js") {
-      const file = Bun.file(join(PROJECT_ROOT, "dist", "canvasui.js"));
+    if (pathname === "/dist/arena-2d.js") {
+      const file = Bun.file(join(PROJECT_ROOT, "dist", "arena-2d.js"));
       if (await file.exists()) {
         return new Response(file, {
           headers: { "Content-Type": "application/javascript" },
@@ -129,7 +129,7 @@ const server = Bun.serve({
   },
 });
 
-console.log("\n  CanvasUI Dev Server");
+console.log("\n  Arena-2D Dev Server");
 console.log("  ───────────────────");
 console.log(`  → http://localhost:${PORT}`);
 console.log("");

@@ -13,7 +13,7 @@ import {
   skew,
   transformPoint,
   translate,
-} from "/dist/canvasui.js";
+} from "/dist/arena-2d.js";
 
 // Composition: T(x,y) × R × Skew × S × T(-px,-py)
 function computeLocalMatrix(x, y, rot, sx, sy, skx, sky, px, py) {

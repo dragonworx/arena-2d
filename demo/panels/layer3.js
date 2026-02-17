@@ -7,7 +7,7 @@
  * "auto" checkbox controls whether update() + render happen
  * immediately on property changes, or only on manual "Update" press.
  */
-import { DirtyFlags, Element } from "/dist/canvasui.js";
+import { DirtyFlags, Element } from "/dist/arena-2d.js";
 
 (async () => {
   const response = await fetch("panels/layer3.html");

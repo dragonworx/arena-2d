@@ -4,7 +4,7 @@ import { join } from "node:path";
 
 const PROJECT_ROOT = join(import.meta.dir, "..");
 const DIST_DIR = join(PROJECT_ROOT, "dist");
-const BUNDLE_PATH = join(DIST_DIR, "canvasui.js");
+const BUNDLE_PATH = join(DIST_DIR, "arena-2d.js");
 
 describe("Layer 0 — Project Scaffold", () => {
   beforeAll(async () => {
@@ -16,7 +16,7 @@ describe("Layer 0 — Project Scaffold", () => {
     const result = await Bun.build({
       entrypoints: [join(PROJECT_ROOT, "src", "index.ts")],
       outdir: DIST_DIR,
-      naming: "canvasui.js",
+      naming: "arena-2d.js",
       format: "esm",
       target: "browser",
       minify: false,

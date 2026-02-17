@@ -1,11 +1,15 @@
 {
-  "name": "canvasui",
+  "name": "arena-2d",
   "version": "0.0.1",
   "type": "module",
-  "main": "dist/canvasui.js",
-  "module": "dist/canvasui.js",
+  "main": "dist/arena-2d.js",
+  "module": "dist/arena-2d.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dragonworx/arena-2d.git"
+  },
   "scripts": {
-    "dev": "bun demo/server.ts",
+    "dev": "lsof -ti:3000 | xargs kill -9 2>/dev/null || true && bun demo/server.ts",
     "build": "bun run build.ts",
     "test": "bun test",
     "typecheck": "tsc --noEmit",

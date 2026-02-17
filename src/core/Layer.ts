@@ -8,7 +8,7 @@
  * SPEC: §3.2–3.4 (Scene & Layering System)
  */
 
-import type { CanvasUIContext } from "../rendering/CanvasUIContext";
+import type { ArenaContext } from "../rendering/ArenaContext";
 import type { IElement } from "./Element";
 
 // ── ILayer Interface ──

@@ -1,4 +1,4 @@
-# CanvasUI — Product Requirements Document
+# Arena-2D — Product Requirements Document
 
 > A layered implementation plan for building CanvasUI from the ground up, where each stage can be tested and refined before the next begins.
 
@@ -82,16 +82,16 @@ Establish the project skeleton, build pipeline, and a live-reloading demo site t
 | # | Item | Details |
 |---|---|---|
 | 0.1 | **Directory structure** | `src/`, `src/internal/`, `tests/`, `demo/`, `demo/panels/`, `dist/` |
-| 0.2 | **`package.json`** | `name: "canvasui"`, `type: "module"`, scripts: `dev`, `build`, `test` |
+| 0.2 | **`package.json`** | `name: "arena-2d"`, `type: "module"`, scripts: `dev`, `build`, `test` |
 | 0.3 | **`tsconfig.json`** | `strict: true`, `target: "ESNext"`, `module: "ESNext"`, `outDir: "dist"` |
 | 0.4 | **Bun dev server** | `demo/server.ts` — serves `demo/index.html` + live-reload via WebSocket on file change |
 | 0.5 | **Demo shell page** | `demo/index.html` — dark-themed page with a sidebar listing each layer's demo panel and a main content area. Each layer's interactive JS lives in `demo/panels/layerN.js` and is loaded via `<script src>`. Initially shows "Layer 0 — Scaffold Ready" |
-| 0.6 | **`bun build` entry** | Bundles `src/index.ts` → `dist/canvasui.js` (ESM) |
+| 0.6 | **`bun build` entry** | Bundles `src/index.ts` → `dist/arena-2d.js` (ESM) |
 | 0.7 | **Smoke test** | `tests/scaffold.test.ts` — validates the build produces a valid ESM bundle |
 
 ### Acceptance Criteria
 - `bun run dev` starts the server on `localhost:3000` and opens the demo page.
-- `bun run build` produces `dist/canvasui.js`.
+- `bun run build` produces `dist/arena-2d.js`.
 - `bun test` passes.
 - Editing any file under `src/` or `demo/` triggers a browser reload.
 
@@ -593,7 +593,7 @@ Finalize the public API surface, produce the production bundle, and ensure the d
 | # | Item | Details |
 |---|---|---|
 | 16.1 | **`src/index.ts`** | Single barrel export. Export only public API types and classes. |
-| 16.2 | **Production bundle** | `bun build` → `dist/canvasui.js` (minified ESM) + `dist/canvasui.d.ts` (type declarations). |
+| 16.2 | **Production bundle** | `bun build` → `dist/arena-2d.js` (minified ESM) + `dist/arena-2d.d.ts` (type declarations). |
 | 16.3 | **Demo site polish** | All layer demo panels reviewed, navigation polished, mobile responsive. |
 | 16.4 | **README.md** | Quick-start guide linking to demo site and SPEC.md. |
 | 16.5 | **Final test sweep** | All `bun test` suites green. Manual walkthrough of every demo panel. |

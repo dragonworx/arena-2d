@@ -3,7 +3,7 @@ export {};
 const result = await Bun.build({
   entrypoints: ["./src/index.ts"],
   outdir: "./dist",
-  naming: "canvasui.js",
+  naming: "arena-2d.js",
   format: "esm",
   target: "browser",
   minify: false,
@@ -17,4 +17,4 @@ if (!result.success) {
   process.exit(1);
 }
 
-console.log("✓ Built dist/canvasui.js");
+console.log("✓ Built dist/arena-2d.js");

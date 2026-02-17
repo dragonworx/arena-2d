@@ -10,7 +10,7 @@ import {
   DirtyFlags,
   Element,
   resolvePointerPosition,
-} from "/dist/canvasui.js";
+} from "/dist/arena-2d.js";
 
 (async () => {
   // ── Inject HTML panel ──

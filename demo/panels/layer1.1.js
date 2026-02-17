@@ -3,7 +3,7 @@
  *
  * Visualizes AABB calculations and intersection tests.
  */
-import("../../dist/canvasui.js").then(async (CanvasUI) => {
+import("../../dist/arena-2d.js").then(async (CanvasUI) => {
   // Load panel HTML
   const response = await fetch("panels/layer1.1.html");
   document.getElementById("layer-1.1").innerHTML = await response.text();

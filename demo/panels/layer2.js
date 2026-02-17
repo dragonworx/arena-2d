@@ -1,7 +1,7 @@
 /**
  * Layer 2 — Event Emitter — Demo Panel
  */
-import { EventEmitter } from "/dist/canvasui.js";
+import { EventEmitter } from "/dist/arena-2d.js";
 
 (async () => {
   // ── Fetch and inject panel HTML ──

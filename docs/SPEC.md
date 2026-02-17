@@ -1,6 +1,6 @@
-# CanvasUI: High-Performance TypeScript Rendering Specification
+# Arena-2D: High-Performance TypeScript Rendering Specification
 
-CanvasUI is a retained-mode, hardware-accelerated UI library for TypeScript and Bun. It abstracts HTML5 Canvas into a high-level Virtual DOM (VDOM) featuring a multi-canvas layering system, hybrid layout engine, and pixel-perfect interaction.
+Arena-2D is a retained-mode, hardware-accelerated UI library for TypeScript and Bun. It abstracts HTML5 Canvas into a high-level Virtual DOM (VDOM) featuring a multi-canvas layering system, hybrid layout engine, and pixel-perfect interaction.
 
 > **Audience.** This specification is intended to be read and implemented by an AI coding agent. Every section follows a consistent structure — Philosophy (why), Mechanics (how), Behavioral Rules (edge cases and invariants), and API Contract (TypeScript interfaces). When a rule is not stated, the implementing agent should raise it as an ambiguity rather than guess.
 

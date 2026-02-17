@@ -1,22 +1,22 @@
 /**
- * Layer 6 — CanvasUIContext Demo
+ * Layer 6 — ArenaContext Demo
  *
- * Demonstrates all drawing primitives provided by CanvasUIContext:
+ * Demonstrates all drawing primitives provided by ArenaContext:
  * shapes, gradients, shadows, clipping, and text rendering.
  */
 
-import("../../dist/canvasui.js").then(async (CanvasUI) => {
+import("../../dist/arena-2d.js").then(async (CanvasUI) => {
   // Load panel HTML
   const response = await fetch("panels/layer6.html");
   document.getElementById("layer-6").innerHTML = await response.text();
 
-  const { CanvasUIContext } = CanvasUI;
+  const { ArenaContext } = CanvasUI;
 
   // ── Helper to wrap a canvas ──
   function wrapCanvas(id) {
     const canvas = document.getElementById(id);
     const rawCtx = canvas.getContext("2d");
-    return { canvas, ctx: new CanvasUIContext(rawCtx) };
+    return { canvas, ctx: new ArenaContext(rawCtx) };
   }
 
   // ═══════════════════════════════════════
@@ -297,8 +297,8 @@ import("../../dist/canvasui.js").then(async (CanvasUI) => {
     fontFamily: "monospace",
     fill: "#22d3ee",
   };
-  const measured = tc.measureText("CanvasUIContext", demoStyle);
-  tc.drawText("CanvasUIContext", 15, 115, demoStyle);
+  const measured = tc.measureText("ArenaContext", demoStyle);
+  tc.drawText("ArenaContext", 15, 115, demoStyle);
   // Underline using measured width
   tc.drawLine(15, 120, 15 + measured.width, 120, "#22d3ee", 1);
   tc.drawText(

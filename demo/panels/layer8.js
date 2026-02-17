@@ -11,7 +11,7 @@
  * - Interactive controls
  */
 
-import("../../dist/canvasui.js").then(async (CanvasUI) => {
+import("../../dist/arena-2d.js").then(async (CanvasUI) => {
   // Load panel HTML
   const response = await fetch("panels/layer8.html");
   document.getElementById("layer-8").innerHTML = await response.text();

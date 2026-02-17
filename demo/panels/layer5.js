@@ -9,7 +9,7 @@
  * while the ball continues bouncing smoothly — showing nested timelines.
  */
 
-import("../../dist/canvasui.js").then(async (CanvasUI) => {
+import("../../dist/arena-2d.js").then(async (CanvasUI) => {
   // Load panel HTML
   const response = await fetch("panels/layer5.html");
   document.getElementById("layer-5").innerHTML = await response.text();
