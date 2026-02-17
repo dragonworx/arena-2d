@@ -311,6 +311,7 @@ export class Scene implements IScene {
     }
 
     // Paint elements to their layers in scene-graph order
+    // console.log("Rendering scene...");
     this._paintRecursive(this.root as IElement);
   }
 
@@ -320,6 +321,7 @@ export class Scene implements IScene {
   private _paintRecursive(element: IElement): void {
     // Skip invisible elements
     if (!element.visible || element.alpha <= 0) {
+      // console.log("Skipping invisible:", element.id, element.visible, element.alpha);
       return;
     }
 
@@ -360,8 +362,9 @@ export class Scene implements IScene {
     layer.ctx.globalCompositeOperation = element.blendMode;
 
     // Call element's paint method
-    if (element.paint) {
-      element.paint(ctx);
+    if ((element as any).paint) {
+      // console.log("Painting:", element.id, "at", element.worldMatrix);
+      (element as any).paint(ctx);
     }
 
     // Restore canvas state

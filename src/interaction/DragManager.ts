@@ -8,6 +8,7 @@ import type { IElement } from "../core/Element";
 import { computeAABB } from "../math/aabb";
 import type { InteractionManager } from "./InteractionManager"; // Circular dep potentially, use loose type or interface?
 import type { IPointerEvent } from "./InteractionManager";
+import { multiply } from "../math/matrix";
 
 export interface IDragEvent {
   type:
@@ -133,6 +134,25 @@ export class DragManager {
 
   private _checkDropTarget(event: IPointerEvent): void {
     if (!this._dragTarget) return;
+
+    // Constraint check handled above
+    
+    // Force update of the dragged element's matrices so AABB is accurate for this frame
+    this._dragTarget.updateLocalMatrix();
+
+    if (this._dragTarget.parent && "worldMatrix" in this._dragTarget.parent) {
+      // We assume parent's worldMatrix is up-to-date from the last update pass
+      // or hasn't changed. If parent moves *during* the drag (e.g. auto-scroll),
+      // we might need to update parent too. For now, just update self relative to parent.
+      // biome-ignore lint/suspicious/noExplicitAny: loose typing for now
+      const parent = this._dragTarget.parent as any;
+      this._dragTarget.worldMatrix = multiply(
+        parent.worldMatrix,
+        this._dragTarget.localMatrix,
+      );
+    } else {
+      this._dragTarget.worldMatrix = new Float32Array(this._dragTarget.localMatrix);
+    }
 
     // Use AABB intersection for drag target detection
     // Calculate current world AABB of the dragged element

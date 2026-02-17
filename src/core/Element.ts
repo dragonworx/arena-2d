@@ -311,6 +311,7 @@ export class Element extends EventEmitter implements IElement {
     if (this._width !== value) {
       this._width = value;
       this.invalidate(DirtyFlags.Visual);
+      this.localBounds.width = value; // Sync localBounds
     }
   }
 
@@ -321,6 +322,7 @@ export class Element extends EventEmitter implements IElement {
     if (this._height !== value) {
       this._height = value;
       this.invalidate(DirtyFlags.Visual);
+      this.localBounds.height = value; // Sync localBounds
     }
   }
 

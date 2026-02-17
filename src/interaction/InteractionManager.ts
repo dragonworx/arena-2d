@@ -297,10 +297,25 @@ export class InteractionManager implements IInteractionManager {
   private _updateSpatialRecursive(element: IElement): void {
     // Update this element's spatial entry if it's interactive
     if (element.interactive && element.visible) {
-      const aabb = computeAABB(
+        const aabb = computeAABB(
         { x: 0, y: 0, width: element.width, height: element.height },
         element.worldMatrix,
       );
+
+      if ((element as any).id && ((element as any).id.includes("Rotated-45"))) {
+         // Only log once to avoid spam
+         if (!(window as any)._loggedAABB) {
+             (window as any)._loggedAABB = true;
+             console.log("DEBUG AABB " + element.id + ":", {
+                width: element.width,
+                height: element.height,
+                rotation: element.rotation,
+                localMatrix: Array.from(element.localMatrix),
+                worldMatrix: Array.from(element.worldMatrix),
+                aabb
+             });
+         }
+      }
 
       let entry = this._spatialEntries.get(element);
       if (entry) {

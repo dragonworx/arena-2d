@@ -290,6 +290,9 @@ import("../../dist/canvasui.js").then(async (CanvasUI) => {
     el.on("dragstart", (e) => {
       addLog(`dragstart → ${el.id}`, "#ff7675");
       el.alpha = 0.8;
+      el.isDragging = true;
+      selectedElement = el; // Auto-select on drag
+      updateControls();
 
       // Boost Z-Index for "drag-me"
       if (el.id === "drag-me") {
@@ -305,6 +308,8 @@ import("../../dist/canvasui.js").then(async (CanvasUI) => {
     el.on("dragend", (e) => {
       addLog(`dragend → ${el.id}`, "#ff7675");
       el.alpha = 1.0;
+      el.isDragging = false;
+      updateControls();
 
       // Restore Z-Index for "drag-me"
       if (el.id === "drag-me" && el.originalZIndex !== undefined) {
@@ -363,6 +368,10 @@ import("../../dist/canvasui.js").then(async (CanvasUI) => {
         "#e74c3c",
       );
       if (lastClickSpan) lastClickSpan.textContent = label;
+
+      // Select for dragging/transform
+      selectedElement = el;
+      updateControls();
     });
 
     // Pointer down
@@ -498,6 +507,116 @@ import("../../dist/canvasui.js").then(async (CanvasUI) => {
         : hovered
           ? hovered.id
           : "none";
+    }
+
+    // Update transform controls if dragging
+    if (selectedElement && selectedElement.isDragging) {
+      updateControls();
+    }
+  });
+
+  // ── Transform Controls ──
+  let selectedElement = null; // The element currently selected for transformation
+
+  const selectedIdSpan = document.getElementById("l9-selected-id");
+  const ctrlX = document.getElementById("l9-ctrl-x");
+  const valX = document.getElementById("l9-val-x");
+  const ctrlY = document.getElementById("l9-ctrl-y");
+  const valY = document.getElementById("l9-val-y");
+  const ctrlW = document.getElementById("l9-ctrl-w");
+  const valW = document.getElementById("l9-val-w");
+  const ctrlH = document.getElementById("l9-ctrl-h");
+  const valH = document.getElementById("l9-val-h");
+  const ctrlR = document.getElementById("l9-ctrl-r");
+  const valR = document.getElementById("l9-val-r");
+
+  function updateControls() {
+    if (!selectedElement) {
+      if (selectedIdSpan) {
+        selectedIdSpan.textContent = "(none)";
+        selectedIdSpan.style.color = "#888";
+      }
+      [ctrlX, ctrlY, ctrlW, ctrlH, ctrlR].forEach((c) => {
+        if (c) {
+          c.disabled = true;
+          c.value = 0;
+        }
+      });
+      [valX, valY, valW, valH].forEach((v) => {
+        if (v) v.textContent = "0";
+      });
+      if (valR) valR.textContent = "0°";
+      return;
+    }
+
+    // Update UI from Element
+    const { x, y, width, height, rotation } = selectedElement;
+    const item = allElements.find((i) => i.el === selectedElement);
+    const label = item ? item.label : selectedElement.id;
+
+    if (selectedIdSpan) {
+      selectedIdSpan.textContent = label;
+      selectedIdSpan.style.color = item ? item.color : "#6ecf6e";
+    }
+
+    if (ctrlX && valX) {
+      ctrlX.disabled = false;
+      ctrlX.value = x;
+      valX.textContent = Math.round(x);
+    }
+    if (ctrlY && valY) {
+      ctrlY.disabled = false;
+      ctrlY.value = y;
+      valY.textContent = Math.round(y);
+    }
+    if (ctrlW && valW) {
+      ctrlW.disabled = false;
+      ctrlW.value = width;
+      valW.textContent = Math.round(width);
+    }
+    if (ctrlH && valH) {
+      ctrlH.disabled = false;
+      ctrlH.value = height;
+      valH.textContent = Math.round(height);
+    }
+    if (ctrlR && valR) {
+      ctrlR.disabled = false;
+      const deg = Math.round((rotation * 180) / Math.PI);
+      ctrlR.value = deg;
+      valR.textContent = `${deg}°`;
+    }
+  }
+
+  // Bind Inputs to Element
+  ctrlX?.addEventListener("input", (e) => {
+    if (selectedElement) {
+      selectedElement.x = Number(e.target.value);
+      updateControls(); // Sync text
+    }
+  });
+  ctrlY?.addEventListener("input", (e) => {
+    if (selectedElement) {
+      selectedElement.y = Number(e.target.value);
+      updateControls();
+    }
+  });
+  ctrlW?.addEventListener("input", (e) => {
+    if (selectedElement) {
+      selectedElement.width = Number(e.target.value);
+      updateControls();
+    }
+  });
+  ctrlH?.addEventListener("input", (e) => {
+    if (selectedElement) {
+      selectedElement.height = Number(e.target.value);
+      updateControls();
+    }
+  });
+  ctrlR?.addEventListener("input", (e) => {
+    if (selectedElement) {
+      const deg = Number(e.target.value);
+      selectedElement.rotation = (deg * Math.PI) / 180;
+      updateControls();
     }
   });
 
