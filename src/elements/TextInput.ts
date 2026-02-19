@@ -27,6 +27,7 @@ export class TextInput extends Text {
   private _readOnly = false;
   private _maxLength = Number.POSITIVE_INFINITY;
   private _multiline = false;
+  private _filter: RegExp | ((val: string) => boolean | string) | null = null;
 
   // Caret blink state
   private _caretVisible = true;
@@ -144,6 +145,14 @@ export class TextInput extends Text {
 
   set multiline(value: boolean) {
     this._multiline = value;
+  }
+
+  get filter(): RegExp | ((val: string) => boolean | string) | null {
+    return this._filter;
+  }
+
+  set filter(value: RegExp | ((val: string) => boolean | string) | null) {
+    this._filter = value;
   }
 
   // ── Selection helpers ──
@@ -647,11 +656,19 @@ export class TextInput extends Text {
   // ── Text editing operations ──
 
   private _setText(newText: string): void {
+    // Apply filter
+    const filtered = this._applyFilter(newText);
+    if (filtered === null) {
+      // If rejected, sync back the current text to textarea if it exists
+      this._syncTextareaValue();
+      return;
+    }
+
     // Enforce maxLength
     const truncated =
-      newText.length > this._maxLength
-        ? newText.substring(0, this._maxLength)
-        : newText;
+      filtered.length > this._maxLength
+        ? filtered.substring(0, this._maxLength)
+        : filtered;
 
     // Enforce single-line if not multiline
     const sanitized = this._multiline
@@ -662,6 +679,20 @@ export class TextInput extends Text {
       this.text = sanitized;
       this.emit("change", { value: this.text });
     }
+  }
+
+  private _applyFilter(newText: string): string | null {
+    if (!this._filter) return newText;
+
+    if (this._filter instanceof RegExp) {
+      return this._filter.test(newText) ? newText : null;
+    } else if (typeof this._filter === "function") {
+      const result = this._filter(newText);
+      if (result === false) return null;
+      if (typeof result === "string") return result;
+      return newText;
+    }
+    return newText;
   }
 
   _insertText(str: string): void {
@@ -688,7 +719,15 @@ export class TextInput extends Text {
     const newPos =
       start +
       Math.min(str.length, newText.length - before.length - after.length);
-    this.text = newText;
+
+    // Apply filter
+    const filtered = this._applyFilter(newText);
+    if (filtered === null) {
+      this._syncTextareaValue();
+      return;
+    }
+
+    this.text = filtered;
     this._selectionStart = newPos;
     this._selectionEnd = newPos;
     this._resetCaretBlink();

@@ -27,7 +27,7 @@ import("../../dist/arena-2d.js").then(async (CanvasUI) => {
 
   // ── Create Scene ──
   const sceneContainer = document.getElementById("l11-canvas-wrap");
-  const scene = new Scene(sceneContainer, 600, 450);
+  const scene = new Scene(sceneContainer, 600, 600);
 
   // Helper to log events
   function logEvent(msg) {
@@ -214,6 +214,56 @@ import("../../dist/arena-2d.js").then(async (CanvasUI) => {
     logSubmit("MaxLen", e.value);
   });
 
+  // 6. Regex Filter (Numbers Only)
+  const label6 = new Text("label-numbers");
+  label6.text = "Numbers Only (Regex Filter)";
+  label6.x = 20;
+  label6.y = 450;
+  label6.updateTextStyle({ fontSize: 13, color: "#888899" });
+  scene.root.addChild(label6);
+
+  const bg6 = createInputBackground(467, inputWidth, inputHeight);
+  scene.root.addChild(bg6);
+
+  const numbersInput = new TextInput("numbers-input");
+  numbersInput.x = 20 + inputPadding;
+  numbersInput.y = 467 + 7;
+  numbersInput.width = inputWidth - inputPadding * 2;
+  numbersInput.height = inputHeight;
+  numbersInput.filter = /^\d*$/;
+  numbersInput.placeholder = "Numbers only...";
+  numbersInput.updateTextStyle({ fontSize: 16, color: "#e0e0e0" });
+  scene.root.addChild(numbersInput);
+
+  numbersInput.on("change", (e) => {
+    logEvent(`change: Numbers = "${e.value}"`);
+  });
+
+  // 7. Function Filter (Uppercase)
+  const label7 = new Text("label-upper");
+  label7.text = "Uppercase (Function Filter)";
+  label7.x = 20;
+  label7.y = 515;
+  label7.updateTextStyle({ fontSize: 13, color: "#888899" });
+  scene.root.addChild(label7);
+
+  const bg7 = createInputBackground(532, inputWidth, inputHeight);
+  scene.root.addChild(bg7);
+
+  const upperInput = new TextInput("upper-input");
+  upperInput.x = 20 + inputPadding;
+  upperInput.y = 532 + 7;
+  upperInput.width = inputWidth - inputPadding * 2;
+  upperInput.height = inputHeight;
+  upperInput.filter = (val) => val.toUpperCase();
+  upperInput.placeholder = "Will be uppercased...";
+  upperInput.updateTextStyle({ fontSize: 16, color: "#e0e0e0" });
+  scene.root.addChild(upperInput);
+
+  upperInput.on("change", (e) => {
+    logEvent(`change: Upper = "${e.value}"`);
+  });
+
   // ── Start render loop ──
   scene.ticker.start();
 
@@ -231,6 +281,8 @@ import("../../dist/arena-2d.js").then(async (CanvasUI) => {
       readOnlyInput,
       multiInput,
       maxLenInput,
+      numbersInput,
+      upperInput,
     ];
     for (const inp of inputs) {
       inp.updateTextStyle({ fontSize });
@@ -238,7 +290,7 @@ import("../../dist/arena-2d.js").then(async (CanvasUI) => {
     }
 
     // Update backgrounds
-    const bgs = [bg1, bg2, bg3, bg4, bg5];
+    const bgs = [bg1, bg2, bg3, bg4, bg5, bg6, bg7];
     for (const bg of bgs) {
       bg.width = inputWidth;
       bg.paint = (ctx) => {
