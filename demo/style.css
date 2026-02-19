@@ -487,6 +487,7 @@ select:focus {
 /* ---Prism Overwrites */
 pre[class*=language-].line-numbers {
   padding-left: 4.8em !important;
+  line-height: 20px !important;
 }
 
 /* ── Demo Layouts ──────────────────────── */
@@ -544,9 +545,9 @@ pre[class*=language-].line-numbers {
   margin: 0;
   padding: 24px;
   background: transparent !important;
-  font-family: var(--font-mono);
-  font-size: 13px;
-  line-height: 1.5;
+  font-family: var(--font-mono) !important;
+  font-size: 13px !important;
+  line-height: 20px !important;
 }
 
 /* Ensure line numbers are not selectable */
@@ -554,8 +555,11 @@ pre[class*=language-].line-numbers {
   user-select: none;
   border-right: 1px solid var(--border) !important;
   padding-right: 8px !important;
+  line-height: 20px !important;
 }
 
 .line-numbers-rows > span:before {
   color: var(--text-muted) !important;
+  font-family: var(--font-mono) !important;
+  font-size: 13px !important;
 }

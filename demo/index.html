@@ -304,18 +304,24 @@
 
     // Automatic injection of "View Source" link
     const observer = new MutationObserver(() => {
-      const headers = document.querySelectorAll('.main-header h2');
-      headers.forEach(h2 => {
-        if (!h2.querySelector('.view-source-btn')) {
-          const panel = h2.closest('.panel');
+      const headers = document.querySelectorAll('h1, h2');
+      headers.forEach(h => {
+        // Skip global sidebar header
+        if (h.closest('.sidebar-header')) return;
+        
+        if (!h.querySelector('.view-source-btn')) {
+          const panel = h.closest('.panel');
           // Only sub-panels (except layer-0 which is scaffold)
           if (panel && panel.id !== 'layer-0') {
             const btn = document.createElement('span');
             btn.className = 'view-source-btn';
             btn.textContent = 'View Source';
             btn.title = 'Click to view the JavaScript source for this demo';
-            btn.onclick = () => showSource(panel.id);
-            h2.appendChild(btn);
+            btn.onclick = (e) => {
+              e.stopPropagation();
+              showSource(panel.id);
+            };
+            h.appendChild(btn);
           }
         }
       });
