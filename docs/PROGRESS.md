@@ -7,11 +7,11 @@
 
 ## Current Phase
 
-Layer 12 — Image & Nine-Slice
+Layer 13 — Animation System
 
 ## Status
 
-🔍 AWAITING REVIEW
+🚧 IN PROGRESS
 
 ---
 
@@ -197,11 +197,7 @@ Layer 12 — Image & Nine-Slice
 
 ---
 
-## Layer Checklist
-
----
-
-### 🟢 Layer 12 — Image & Nine-Slice
+### Layer 12 — Image & Nine-Slice ✅
 - [x] 12.1 `src/elements/Image.ts` — `IImage` rendering
 - [x] 12.2 Source rect for sprite sheets
 - [x] 12.3 Nine-slice rendering
@@ -211,6 +207,10 @@ Layer 12 — Image & Nine-Slice
 - [x] 12.7 Demo panel — image gallery with sprite sheet, nine-slice, drag-resize
 - **Acceptance:** Nine-slice preserves corners; sprite region clips correctly; null source clears
 - Tests: 473/473 passing (33 new Image tests + 440 prior)
+
+---
+
+## Layer Checklist
 
 ---
 
