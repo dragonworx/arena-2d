@@ -476,9 +476,15 @@ Text is a first-class entity with greedy word-wrap and character-level interacti
 
 1. **Word wrap** uses a greedy algorithm: words are added to the current line until the line exceeds the element's available width, at which point a new line starts. A "word" is a sequence of non-whitespace characters. Hard line breaks (`\n`) always start a new line.
 2. **Intrinsic content size**: For auto-sized `IText` elements, the intrinsic width is the widest line, and the intrinsic height is `lines.length * lineHeight`.
-3. **Selection rendering**: Selection is drawn as a filled rectangle behind the selected text range. The rectangle is computed from the advancements array: `startX = advancements[selectionStart]`, `endX = advancements[selectionEnd]`.
-4. **Clipboard**: Copy and Paste are delegated to the hidden `<textarea>`. The `ITextInput` receives `onPaste(text: string)` and `onCopy(): string` callbacks.
-5. `IText` is a read-only display element. `ITextInput` extends `IText` with editing capabilities.
+3. **Selection rendering**: Selection is drawn as filled rectangles behind the selected text range. For multiline text, one rectangle is computed and drawn per line involved in the selection. The rectangle bounds per line are computed from the advancements array: `startX = advancements[selectionStartRelLine]`, `endX = advancements[selectionEndRelLine]`.
+4. **Clipboard**: Copy, **Cut**, and Paste are delegated to the hidden `<textarea>`. The `ITextInput` receives `onPaste(text: string)`, `onCopy(): string`, and `onCut(): string` (Copy + Delete) callbacks.
+5. **Keyboard Navigation & Interception**:
+   - **Option + Arrow (Left/Right)**: Move cursor by skipping to the start/end of the current or adjacent word.
+   - **Command + Arrow (Left/Right)**: Move cursor to the start/end of the current line or text block.
+   - **Command + Arrow (Up/Down)**: Move cursor to the very start/end of the text content.
+   - **Selection (Shift Key)**: Holding the **Shift key** in combination with any of the navigation shortcuts above (Arrow, Cmd+Arrow, Option+Arrow) will start a new selection or expand/contract the existing selection range accordingly.
+   - **CRITICAL**: Browser default behaviors for Command + Arrow shortcuts (e.g., navigating history) MUST be intercepted via `preventDefault()` when the `ITextInput` is focused and active.
+6. `IText` is a read-only display element. `ITextInput` extends `IText` with editing capabilities.
 
 ### 6.4 API Contract
 
@@ -491,6 +497,7 @@ export interface ITextStyle {
   color: string;                   // CSS color string. Default: '#000000'.
   lineHeight: number;              // In pixels. Default: fontSize * 1.2.
   textAlign: 'left' | 'center' | 'right'; // Default: 'left'.
+  selectionColor?: string;         // Default: 'rgba(0, 0, 255, 0.3)'.
 }
 
 export interface ITextLine {

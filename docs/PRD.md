@@ -448,12 +448,13 @@ Extend `IText` into an editable `ITextInput` with cursor, selection, clipboard, 
 | # | Item | Details |
 |---|---|---|
 | 11.1 | **`src/elements/TextInput.ts`** | Extends `Text`. `selectionStart`, `selectionEnd`, cursor rendering (blinking caret). |
-| 11.2 | **Selection rendering** | Filled rectangle behind selected text computed from advancements array. |
+| 11.2 | **Selection rendering** | Multi-rect rendering behind selected text (one rect per line). Selection color configurable via `ITextStyle`. |
 | 11.3 | **IME bridge** | Hidden 1×1 `<textarea>` positioned at cursor world position. Forwards input events to `ITextInput`. |
-| 11.4 | **Clipboard** | Copy/Paste via hidden textarea delegation. `onCopy`, `onPaste` callbacks. |
+| 11.4 | **Clipboard** | Copy, **Cut**, and Paste via hidden textarea delegation. `onCopy`, `onCut`, `onPaste` callbacks. |
 | 11.5 | **Input properties** | `isPassword` (bullet masking), `placeholder`, `readOnly`, `maxLength`, `multiline`. |
 | 11.6 | **Events** | Emits `change`, `submit` (Enter on single-line), `focus`, `blur`. |
-| 11.7 | **Unit tests** | Cursor movement (arrow keys), selection expand/collapse, password masking, maxLength enforcement, multiline Enter vs single-line submit |
+| 11.7 | **Keyboard Navigation** | **Intercepted Browser behavior**: Option + Left/Right (jump words), Cmd + Left/Right (move to start/end of line). **Selection**: Holding the **Shift key** in combination with any navigation shortcut starts or expands a selection range. |
+| 11.8 | **Unit tests** | Cursor movement (arrow keys, word jumps), selection bounds, password masking, maxLength enforcement, multiline Enter vs single-line submit |
 
 ### Acceptance Criteria
 - Clicking in text positions cursor at the correct character.
