@@ -37,6 +37,8 @@ export interface ITextStyle {
   color: string;
   lineHeight: number;
   textAlign: "left" | "center" | "right";
+  selectionColor: string;
+  placeholderColor?: string;
 }
 
 /**
@@ -51,6 +53,7 @@ export function createDefaultTextStyle(): ITextStyle {
     color: "#000000",
     lineHeight: Math.ceil(14 * 1.2),
     textAlign: "left",
+    selectionColor: "rgba(0, 120, 215, 0.4)",
   };
 }
 
@@ -59,8 +62,8 @@ export function createDefaultTextStyle(): ITextStyle {
 export class Text extends Element {
   private _text = "";
   private _textStyle: ITextStyle = createDefaultTextStyle();
-  private _textLayout: ITextLayout | null = null;
-  private _layoutDirty = true;
+  protected _textLayout: ITextLayout | null = null;
+  protected _layoutDirty = true;
 
   // ── Text content ──
 
@@ -115,7 +118,7 @@ export class Text extends Element {
   /**
    * Recompute text layout using the current text, style, and available width.
    */
-  private _recomputeLayout(): void {
+  protected _recomputeLayout(): void {
     const availableWidth =
       this.width > 0 ? this.width : Number.POSITIVE_INFINITY;
     this._textLayout = computeTextLayout(

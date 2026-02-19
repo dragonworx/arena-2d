@@ -7,7 +7,7 @@
 
 ## Current Phase
 
-Layer 11 — Text Input & IME
+Layer 12 — Image & Nine-Slice
 
 ## Status
 
@@ -183,23 +183,21 @@ Layer 11 — Text Input & IME
 
 ---
 
-## Layer Checklist
-
----
-
-
----
-
-### 🔴 Layer 11 — Text Input & IME
-- [ ] 11.1 `src/elements/TextInput.ts` — cursor, selection, caret blinking
-- [ ] 11.2 Selection rendering (filled rect from advancements)
-- [ ] 11.3 IME bridge (hidden 1×1 `<textarea>`)
-- [ ] 11.4 Clipboard (copy/paste via hidden textarea)
-- [ ] 11.5 Input properties (`isPassword`, `placeholder`, `readOnly`, `maxLength`, `multiline`)
-- [ ] 11.6 Events (`change`, `submit`, `focus`, `blur`)
-- [ ] 11.7 Unit tests (cursor movement, selection, password masking, maxLength, multiline vs single-line)
-- [ ] 11.8 Demo panel — form with single-line, password, and multiline inputs
+### Layer 11 — Text Input & IME ✅
+- [x] 11.1 `src/elements/TextInput.ts` — cursor, selection, caret blinking
+- [x] 11.2 Selection rendering (filled rect from advancements)
+- [x] 11.3 IME bridge (hidden 1×1 `<textarea>`)
+- [x] 11.4 Clipboard (copy/paste via hidden textarea)
+- [x] 11.5 Input properties (`isPassword`, `placeholder`, `readOnly`, `maxLength`, `multiline`)
+- [x] 11.6 Events (`change`, `submit`, `focus`, `blur`)
+- [x] 11.7 Unit tests (cursor movement, selection, password masking, maxLength, multiline vs single-line)
+- [x] 11.8 Demo panel — form with single-line, password, and multiline inputs
 - **Acceptance:** Click positions cursor correctly; shift+arrow selects; copy/paste works; password shows bullets
+- Tests: 428/428 passing (64 new TextInput tests + 364 prior)
+
+---
+
+## Layer Checklist
 
 ---
 

@@ -156,7 +156,7 @@ describe("TextLayout", () => {
       // With available width = 50, "Hello" fits alone but "Hello world" doesn't
       const layout = computeTextLayout("Hello world", makeStyle(), 50);
       expect(layout.lines.length).toBe(2);
-      expect(layout.lines[0].text).toBe("Hello");
+      expect(layout.lines[0].text).toBe("Hello ");
       expect(layout.lines[1].text).toBe("world");
     });
 
@@ -172,7 +172,7 @@ describe("TextLayout", () => {
       // available = 60 -> "one two" = 24 + 8 + 24 = 56 fits, adding "three" = 56 + 8 + 40 = 104 doesn't
       const layout = computeTextLayout("one two three", makeStyle(), 60);
       expect(layout.lines.length).toBe(2);
-      expect(layout.lines[0].text).toBe("one two");
+      expect(layout.lines[0].text).toBe("one two ");
       expect(layout.lines[1].text).toBe("three");
     });
 
@@ -180,8 +180,8 @@ describe("TextLayout", () => {
       // available = 30 -> "one" = 24 fits, "one" + space + "two" = 56 doesn't
       const layout = computeTextLayout("one two three", makeStyle(), 30);
       expect(layout.lines.length).toBe(3);
-      expect(layout.lines[0].text).toBe("one");
-      expect(layout.lines[1].text).toBe("two");
+      expect(layout.lines[0].text).toBe("one ");
+      expect(layout.lines[1].text).toBe("two ");
       expect(layout.lines[2].text).toBe("three");
     });
   });
@@ -192,7 +192,7 @@ describe("TextLayout", () => {
       const layout = computeTextLayout("Hello\nworld foo", makeStyle(), 50);
       expect(layout.lines.length).toBe(3);
       expect(layout.lines[0].text).toBe("Hello");
-      expect(layout.lines[1].text).toBe("world");
+      expect(layout.lines[1].text).toBe("world ");
       expect(layout.lines[2].text).toBe("foo");
     });
   });
@@ -394,14 +394,14 @@ describe("TextLayout edge cases", () => {
     clearLayoutCache();
   });
 
-  test("only whitespace produces single empty line", () => {
+  test("only whitespace produces single line with whitespace", () => {
     const layout = computeTextLayout(
       "   ",
       makeStyle(),
       Number.POSITIVE_INFINITY,
     );
     expect(layout.lines.length).toBe(1);
-    expect(layout.lines[0].text).toBe("");
+    expect(layout.lines[0].text).toBe("   ");
   });
 
   test("only newlines produce correct number of empty lines", () => {
@@ -423,22 +423,22 @@ describe("TextLayout edge cases", () => {
     expect(layout.lines[0].text).toBe("hello world");
   });
 
-  test("leading whitespace is ignored", () => {
+  test("leading whitespace is preserved", () => {
     const layout = computeTextLayout(
       "  hello",
       makeStyle(),
       Number.POSITIVE_INFINITY,
     );
-    expect(layout.lines[0].text).toBe("hello");
+    expect(layout.lines[0].text).toBe("  hello");
   });
 
-  test("trailing whitespace is ignored", () => {
+  test("trailing whitespace is preserved", () => {
     const layout = computeTextLayout(
       "hello  ",
       makeStyle(),
       Number.POSITIVE_INFINITY,
     );
-    expect(layout.lines[0].text).toBe("hello");
+    expect(layout.lines[0].text).toBe("hello  ");
   });
 
   test("exact fit at boundary doesn't wrap", () => {

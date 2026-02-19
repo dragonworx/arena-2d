@@ -170,14 +170,7 @@ function splitIntoSegments(text: string): string[] {
         segments.push(current);
         current = "";
       }
-      // Consume consecutive whitespace as a single separator
-      if (
-        segments.length > 0 &&
-        segments[segments.length - 1] !== "\n" &&
-        segments[segments.length - 1] !== " "
-      ) {
-        segments.push(" ");
-      }
+      segments.push(" ");
     } else {
       current += ch;
     }
@@ -229,10 +222,10 @@ export function computeTextLayout(
   const spaceWidth = measureWidth(" ");
 
   function finishLine(): void {
-    const trimmed = currentLineText;
-    const advancements = computeAdvancements(trimmed);
-    const width = trimmed.length > 0 ? measureWidth(trimmed) : 0;
-    lines.push({ text: trimmed, width, advancements });
+    const content = currentLineText;
+    const advancements = computeAdvancements(content);
+    const width = content.length > 0 ? measureWidth(content) : 0;
+    lines.push({ text: content, width, advancements });
     currentLineText = "";
     currentLineWidth = 0;
   }
@@ -244,6 +237,10 @@ export function computeTextLayout(
     }
 
     if (segment === " ") {
+      // Spaces ALWAYS stay on the current line (they can overflow)
+      // This is crucial for caret positioning at the end of a line.
+      currentLineText += " ";
+      currentLineWidth += spaceWidth;
       continue;
     }
 
@@ -251,17 +248,16 @@ export function computeTextLayout(
     const wordWidth = measureWidth(segment);
 
     if (currentLineText.length === 0) {
-      // First word on the line — always place it (even if wider than available)
+      // First word on the line — always place it
       currentLineText = segment;
       currentLineWidth = wordWidth;
     } else {
-      // Check if adding this word (with space) fits
-      const testWidth = currentLineWidth + spaceWidth + wordWidth;
-
-      if (testWidth <= availableWidth) {
-        currentLineText += ` ${segment}`;
-        currentLineWidth = testWidth;
+      // Check if adding this word fits
+      if (currentLineWidth + wordWidth <= availableWidth) {
+        currentLineText += segment;
+        currentLineWidth += wordWidth;
       } else {
+        // Doesn't fit, start a new line
         finishLine();
         currentLineText = segment;
         currentLineWidth = wordWidth;

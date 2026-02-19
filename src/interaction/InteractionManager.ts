@@ -195,6 +195,7 @@ export class InteractionManager implements IInteractionManager {
   private _onWheel: (e: WheelEvent) => void;
   private _onKeyDown: (e: KeyboardEvent) => void;
   private _onKeyUp: (e: KeyboardEvent) => void;
+  private _onDoubleClick: (e: MouseEvent) => void;
 
   constructor(scene: ISceneRef, cellSize = 128) {
     this._scene = scene;
@@ -208,6 +209,7 @@ export class InteractionManager implements IInteractionManager {
     this._onWheel = this._handleWheel.bind(this);
     this._onKeyDown = this._handleKeyDown.bind(this);
     this._onKeyUp = this._handleKeyUp.bind(this);
+    this._onDoubleClick = this._handleDoubleClick.bind(this);
 
     // Attach listeners to the scene container
     const container = this._scene.container;
@@ -217,11 +219,14 @@ export class InteractionManager implements IInteractionManager {
     container.addEventListener("wheel", this._onWheel, { passive: false });
     container.addEventListener("keydown", this._onKeyDown);
     container.addEventListener("keyup", this._onKeyUp);
+    container.addEventListener("dblclick", this._onDoubleClick);
 
     // Make container focusable so it can receive keyboard events
     if (!container.getAttribute("tabindex")) {
       container.setAttribute("tabindex", "0");
       container.style.outline = "none";
+      container.style.userSelect = "none";
+      container.style.webkitUserSelect = "none";
     }
   }
 
@@ -781,6 +786,29 @@ export class InteractionManager implements IInteractionManager {
 
     if (event.defaultPrevented) {
       domEvent.preventDefault();
+    }
+  }
+
+  private _handleDoubleClick(domEvent: MouseEvent): void {
+    const scene = this._getSceneCoords(domEvent as unknown as PointerEvent);
+    const target = this.hitTest(scene.x, scene.y);
+
+    if (target) {
+      const local = this._getLocalCoords(target, scene.x, scene.y);
+      const event = new CanvasPointerEvent(
+        "dblclick",
+        target,
+        scene.x,
+        scene.y,
+        local.x,
+        local.y,
+        domEvent.button,
+      );
+      this._dispatchPointerEvent(event);
+
+      if (event.defaultPrevented) {
+        domEvent.preventDefault();
+      }
     }
   }
 

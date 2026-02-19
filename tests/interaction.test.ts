@@ -858,4 +858,39 @@ describe("InteractionManager", () => {
     mgr.destroy();
     cleanupMockScene(scene);
   });
+
+  test("dblclick is dispatched to target", () => {
+    const scene = createMockScene();
+    const mgr = new InteractionManager(scene);
+
+    const el = new Element("test-el");
+    el.width = 100;
+    el.height = 100;
+    el.interactive = true;
+
+    scene.root.addChild(el);
+    (scene.root as Container).update(0);
+    mgr.updateSpatialHash();
+
+    let dblClicked = false;
+    el.on("dblclick", () => {
+      dblClicked = true;
+    });
+
+    // Mock dblclick event
+    const container = scene.container;
+    // biome-ignore lint/suspicious/noExplicitAny: testing private state
+    const MouseEvent = (container.ownerDocument.defaultView as any).MouseEvent;
+    const event = new MouseEvent("dblclick", {
+      clientX: 10,
+      clientY: 10,
+      button: 0,
+    });
+    container.dispatchEvent(event);
+
+    expect(dblClicked).toBe(true);
+
+    mgr.destroy();
+    cleanupMockScene(scene);
+  });
 });

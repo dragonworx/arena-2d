@@ -93,3 +93,6 @@ export {
   setMeasureContext,
 } from "./text/TextLayout";
 export { isFontReady, waitForFont } from "./text/fontReady";
+
+// --- Layer 11: Text Input & IME ---
+export { TextInput } from "./elements/TextInput";
