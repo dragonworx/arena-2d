@@ -1,5 +1,5 @@
-export default async function(CanvasUI) {
-const { Scene, Text } = CanvasUI;
+export default async function (CanvasUI) {
+  const { Scene, Text } = CanvasUI;
 
   // ── Control elements ──
   const textArea = document.getElementById("l10-text");

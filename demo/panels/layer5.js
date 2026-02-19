@@ -1,5 +1,5 @@
-export default async function(CanvasUI) {
-const { Ticker, Element } = CanvasUI;
+export default async function (CanvasUI) {
+  const { Ticker, Element } = CanvasUI;
 
   // ── Canvas setup ──
 

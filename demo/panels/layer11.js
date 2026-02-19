@@ -1,5 +1,5 @@
-export default async function(CanvasUI) {
-const { Scene, Container, TextInput, Text } = CanvasUI;
+export default async function (CanvasUI) {
+  const { Scene, Container, TextInput, Text } = CanvasUI;
 
   // ── Controls ──
   const fontSizeSlider = document.getElementById("l11-font-size");

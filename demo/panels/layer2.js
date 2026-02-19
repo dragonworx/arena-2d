@@ -1,6 +1,5 @@
-export default async function(CanvasUI) {
-// ── Fetch and inject panel HTML ──
-  
+export default async function (CanvasUI) {
+  // ── Fetch and inject panel HTML ──
 
   // ── Setup ──
   const logs = document.getElementById("event-logs");

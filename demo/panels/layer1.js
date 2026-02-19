@@ -27,7 +27,9 @@ export default async function (CanvasUI) {
   if (ctx) {
     // ── Slider helpers ──
     const sliderVal = (id) => +document.getElementById(id).value;
-    const setText = (id, v) => document.getElementById(id).textContent = v;
+    const setText = (id, v) => {
+      document.getElementById(id).textContent = v;
+    };
 
     // ── Draw loop ──
     function draw() {
@@ -147,7 +149,9 @@ export default async function (CanvasUI) {
       ctx.fillText("(0,0)", c0.x + 4, c0.y - 4);
     }
 
-    for (const slider of document.querySelectorAll("#layer-1 input[type=range]")) {
+    for (const slider of document.querySelectorAll(
+      "#layer-1 input[type=range]",
+    )) {
       slider.addEventListener("input", draw);
     }
 

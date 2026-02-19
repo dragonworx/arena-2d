@@ -1,5 +1,5 @@
-export default async function(CanvasUI) {
-const { ArenaContext } = CanvasUI;
+export default async function (CanvasUI) {
+  const { ArenaContext } = CanvasUI;
 
   // ── Helper to wrap a canvas ──
   function wrapCanvas(id) {

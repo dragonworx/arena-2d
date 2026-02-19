@@ -1,5 +1,5 @@
-export default async function(CanvasUI) {
-const { Scene, Container, Element } = CanvasUI;
+export default async function (CanvasUI) {
+  const { Scene, Container, Element } = CanvasUI;
 
   // ── Control elements ──
 

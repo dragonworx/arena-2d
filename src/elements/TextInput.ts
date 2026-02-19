@@ -686,7 +686,8 @@ export class TextInput extends Text {
 
     if (this._filter instanceof RegExp) {
       return this._filter.test(newText) ? newText : null;
-    } else if (typeof this._filter === "function") {
+    }
+    if (typeof this._filter === "function") {
       const result = this._filter(newText);
       if (result === false) return null;
       if (typeof result === "string") return result;

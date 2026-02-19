@@ -1,5 +1,5 @@
-export default async function(CanvasUI) {
-const { Container, Element, resolveLayout, getLayoutData } = CanvasUI;
+export default async function (CanvasUI) {
+  const { Container, Element, resolveLayout, getLayoutData } = CanvasUI;
 
   // ── Flex Demo ──
 

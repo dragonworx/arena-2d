@@ -1,5 +1,5 @@
-export default async function(CanvasUI) {
-// ── DOM refs ──
+export default async function (CanvasUI) {
+  // ── DOM refs ──
   const canvas = document.getElementById("l3-canvas");
   const ctx = canvas.getContext("2d");
   const chkAuto = document.getElementById("chk-auto");

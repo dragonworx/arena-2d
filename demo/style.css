@@ -484,6 +484,56 @@ select:focus {
   opacity: 1;
 }
 
+/* ── Demo Layouts ──────────────────────── */
+.demo-layout {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.demo-canvas-container {
+  flex: 1;
+  min-width: 0;
+}
+
+.demo-controls-sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.compact-control-group {
+  margin-bottom: 8px;
+}
+
+.compact-control-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.compact-control-header label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+.compact-control-header .value {
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.compact-slider {
+  margin-top: 0 !important;
+}
+
 /* ── Prism Customization ──────────────── */
 .modal-content pre[class*="language-"] {
   margin: 0;

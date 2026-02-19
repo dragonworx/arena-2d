@@ -1,6 +1,5 @@
-export default async function(CanvasUI) {
-// ── Inject HTML panel ──
-  
+export default async function (CanvasUI) {
+  // ── Inject HTML panel ──
 
   // ── Palette ──
   const COLORS = [
