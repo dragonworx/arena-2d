@@ -1,22 +1,5 @@
-/**
- * Layer 8 — Layout Engine (Flex & Anchor) Demo
- *
- * Demonstrates:
- * - Flex layout with row/column direction
- * - Justify content, align items
- * - Flex grow/shrink
- * - Gap, padding, margin
- * - Anchor positioning with stretching
- * - Resizable containers
- * - Interactive controls
- */
-
-import("../../dist/arena-2d.js").then(async (CanvasUI) => {
-  // Load panel HTML
-  const response = await fetch("panels/layer8.html");
-  document.getElementById("layer-8").innerHTML = await response.text();
-
-  const { Container, Element, resolveLayout, getLayoutData } = CanvasUI;
+export default async function(CanvasUI) {
+const { Container, Element, resolveLayout, getLayoutData } = CanvasUI;
 
   // ── Flex Demo ──
 
@@ -578,4 +561,4 @@ import("../../dist/arena-2d.js").then(async (CanvasUI) => {
   });
 
   renderAnchor();
-});
+}

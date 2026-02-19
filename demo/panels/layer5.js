@@ -1,20 +1,5 @@
-/**
- * Layer 5 — Ticker Demo (Nested Timelines)
- *
- * Demonstrates two independent Tickers:
- * - Parent ticker drives the bouncing ball
- * - Child ticker drives an orbiting moon at its own FPS
- *
- * Lowering the child FPS makes the moon orbit in choppy steps
- * while the ball continues bouncing smoothly — showing nested timelines.
- */
-
-import("../../dist/arena-2d.js").then(async (CanvasUI) => {
-  // Load panel HTML
-  const response = await fetch("panels/layer5.html");
-  document.getElementById("layer-5").innerHTML = await response.text();
-
-  const { Ticker, Element } = CanvasUI;
+export default async function(CanvasUI) {
+const { Ticker, Element } = CanvasUI;
 
   // ── Canvas setup ──
 
@@ -363,4 +348,4 @@ import("../../dist/arena-2d.js").then(async (CanvasUI) => {
   // ── Auto-start both tickers ──
   parentTicker.start();
   childTicker.start();
-});
+}

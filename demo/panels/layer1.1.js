@@ -1,18 +1,5 @@
-/**
- * Layer 1.1 — AABB Visual Debugger
- *
- * Visualizes AABB calculations and intersection tests.
- */
-import("../../dist/arena-2d.js").then(async (CanvasUI) => {
-  // Load panel HTML
-  const response = await fetch("panels/layer1.1.html");
-  document.getElementById("layer-1.1").innerHTML = await response.text();
-
+export default async function (CanvasUI) {
   const { Scene, Element, Container } = CanvasUI;
-
-  // We need to access internal math functions if possible, or reimplement visualization logic based on public properties.
-  // Since we can't easily import internal modules here without exposing them in the bundle,
-  // we will rely on projected coordinates manually calculated to verify against the system's behavior.
 
   const sceneContainer = document.getElementById("l1.1-scene-container");
   if (!sceneContainer) return;
@@ -25,11 +12,9 @@ import("../../dist/arena-2d.js").then(async (CanvasUI) => {
     if (config.x !== undefined) el.x = config.x;
     if (config.y !== undefined) el.y = config.y;
     if (config.width !== undefined) {
-      console.log(`Setting width for ${el.id} to ${config.width}`);
       el.width = config.width;
     }
     if (config.height !== undefined) {
-      console.log(`Setting height for ${el.id} to ${config.height}`);
       el.height = config.height;
     }
     if (config.rotation !== undefined) el.rotation = config.rotation;
@@ -76,7 +61,6 @@ import("../../dist/arena-2d.js").then(async (CanvasUI) => {
   );
 
   // 2. Rotated 45deg overlapping
-  // console.log("Creating Rotated-45 pair");
   createPair(
     200,
     50,
@@ -169,54 +153,22 @@ import("../../dist/arena-2d.js").then(async (CanvasUI) => {
   scene.ticker.setRenderCallback(() => {
     scene.render();
 
-    // Get the generic context from the default layer to draw debug info
     const layer = scene.getLayer("default");
     const ctx = layer.ctx;
 
     ctx.save();
-    ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform to screen space (taking DPR into account? render() handles layer transform... wait. layer.ctx is raw 2D context)
-    // The layer has already been cleared and rendered to.
-    // If we draw here, we are drawing ON TOP of everything.
-    // We need to account for DPR.
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.scale(scene.dpr, scene.dpr);
 
-    // We can access the spatial hash to see what the system "thinks" the AABBs are.
     const interaction = scene.interaction;
-    const entries = interaction._spatialEntries; // internal access
-
-    // DEBUG LOGGING ONCE
-    if (!window._demoLogged) {
-      window._demoLogged = true;
-      const pair = pairs.find((p) => p.label === "Rotated-45");
-      if (pair) {
-        const { computeAABB } = CanvasUI;
-        const wm = pair.a.worldMatrix;
-        const calculatedAABB = computeAABB(
-          { x: 0, y: 0, width: pair.a.width, height: pair.a.height },
-          wm,
-        );
-        console.log("DEMO DEBUG Rotated-45-A:", {
-          worldMatrix: Array.from(wm),
-          computedAABB: calculatedAABB,
-          pos: { x: pair.a.x, y: pair.a.y },
-          parentPos: { x: pair.a.parent.x, y: pair.a.parent.y },
-        });
-      }
-    }
+    const entries = interaction._spatialEntries;
 
     for (const { a, b, label } of pairs) {
-      // Check intersection using system
-      // We use hitTestAABB on the interaction manager
-      // But hitTestAABB takes an AABB and finds elements.
-      // Let's use the internal AABBs from spatial hash to check intersection manually
-      // and verify if they match what we see.
-
       const entryA = entries.get(a);
       const entryB = entries.get(b);
 
       let intersects = false;
       if (entryA && entryB) {
-        // Check intersection (AABB vs AABB)
         const rectA = entryA.aabb;
         const rectB = entryB.aabb;
 
@@ -226,20 +178,17 @@ import("../../dist/arena-2d.js").then(async (CanvasUI) => {
           rectA.y < rectB.y + rectB.height &&
           rectA.y + rectB.height > rectB.y;
 
-        // Draw AABBs
         ctx.strokeStyle = "yellow";
         ctx.lineWidth = 1;
         ctx.strokeRect(rectA.x, rectA.y, rectA.width, rectA.height);
 
-        ctx.strokeStyle = "orange"; // B is orange
+        ctx.strokeStyle = "orange";
         ctx.strokeRect(rectB.x, rectB.y, rectB.width, rectB.height);
       }
 
-      // Update colors based on intersection
       a.color = intersects ? "red" : "green";
       b.color = intersects ? "red" : "green";
 
-      // Also draw label
       const pos = a.parent ? { x: a.parent.x, y: a.parent.y } : { x: 0, y: 0 };
       ctx.fillStyle = "#fff";
       ctx.font = "10px monospace";
@@ -249,7 +198,6 @@ import("../../dist/arena-2d.js").then(async (CanvasUI) => {
     ctx.restore();
   });
 
-  // Custom paint for elements to use their 'color' property
   for (const pair of scene.root.children) {
     if ("children" in pair) {
       for (const child of pair.children) {
@@ -259,4 +207,4 @@ import("../../dist/arena-2d.js").then(async (CanvasUI) => {
       }
     }
   }
-});
+}

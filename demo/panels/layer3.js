@@ -1,19 +1,5 @@
-/**
- * Layer 3 — Element Base & Dirty Flagging — Demo
- *
- * Single-element demo exercising the full dirty flag lifecycle:
- * invalidate → accumulate → update (resolve).
- *
- * "auto" checkbox controls whether update() + render happen
- * immediately on property changes, or only on manual "Update" press.
- */
-import { DirtyFlags, Element } from "/dist/arena-2d.js";
-
-(async () => {
-  const response = await fetch("panels/layer3.html");
-  document.getElementById("layer-3").innerHTML = await response.text();
-
-  // ── DOM refs ──
+export default async function(CanvasUI) {
+// ── DOM refs ──
   const canvas = document.getElementById("l3-canvas");
   const ctx = canvas.getContext("2d");
   const chkAuto = document.getElementById("chk-auto");
@@ -330,4 +316,4 @@ import { DirtyFlags, Element } from "/dist/arena-2d.js";
 
   log("Ready. Adjust sliders with 'auto' on to see instant updates.");
   log("Uncheck 'auto' → changes accumulate flags → press 'Update' to resolve.");
-})();
+}

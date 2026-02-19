@@ -1,21 +1,5 @@
-/**
- * Layer 11 — Text Input & IME Demo
- *
- * Demonstrates:
- * - Single-line text input with cursor and selection
- * - Password input with bullet masking
- * - Multiline text input (textarea)
- * - Placeholder text
- * - Submit event (Enter on single-line)
- * - Keyboard navigation (arrows, word jumps, line jumps)
- * - ReadOnly mode
- */
-
-import("../../dist/arena-2d.js").then(async (CanvasUI) => {
-  const response = await fetch("panels/layer11.html");
-  document.getElementById("layer-11").innerHTML = await response.text();
-
-  const { Scene, Container, TextInput, Text } = CanvasUI;
+export default async function(CanvasUI) {
+const { Scene, Container, TextInput, Text } = CanvasUI;
 
   // ── Controls ──
   const fontSizeSlider = document.getElementById("l11-font-size");
@@ -308,4 +292,4 @@ import("../../dist/arena-2d.js").then(async (CanvasUI) => {
 
   fontSizeSlider.addEventListener("input", updateInputs);
   inputWidthSlider.addEventListener("input", updateInputs);
-});
+}

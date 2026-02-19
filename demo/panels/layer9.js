@@ -1,21 +1,5 @@
-/**
- * Layer 9 — Interaction & Focus System Demo
- *
- * Demonstrates:
- * - Pointer events (click, hover, enter/leave)
- * - Hit-testing with overlapping elements (topmost wins)
- * - Event bubbling with propagation path
- * - Focus management and tab cycling
- * - Cursor management
- * - Keyboard events dispatched to focused element
- */
-
-import("../../dist/arena-2d.js").then(async (CanvasUI) => {
-  // Load panel HTML
-  const response = await fetch("panels/layer9.html");
-  document.getElementById("layer-9").innerHTML = await response.text();
-
-  const { Scene, Container, Element } = CanvasUI;
+export default async function(CanvasUI) {
+const { Scene, Container, Element } = CanvasUI;
 
   // ── Setup Scene ──
   const sceneContainer = document.getElementById("l9-scene-container");
@@ -647,4 +631,4 @@ import("../../dist/arena-2d.js").then(async (CanvasUI) => {
     "Interaction system ready. Click, hover, and tab through elements.",
     "#6ecf6e",
   );
-});
+}

@@ -1,19 +1,5 @@
-/**
- * Layer 7 — Scene & Layering System Demo
- *
- * Demonstrates:
- * - Scene creation with multiple layers
- * - Layer ordering and opacity
- * - Frame pipeline (Ticker → Update → Render)
- * - Element rendering via the Scene
- */
-
-import("../../dist/arena-2d.js").then(async (CanvasUI) => {
-  // Load panel HTML
-  const response = await fetch("panels/layer7.html");
-  document.getElementById("layer-7").innerHTML = await response.text();
-
-  const { Scene, Container, Element } = CanvasUI;
+export default async function(CanvasUI) {
+const { Scene, Container, Element } = CanvasUI;
 
   // ── Control elements ──
 
@@ -289,4 +275,4 @@ import("../../dist/arena-2d.js").then(async (CanvasUI) => {
   window.addEventListener("beforeunload", () => {
     scene.destroy();
   });
-});
+}

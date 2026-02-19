@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Arena-2D — Demo</title>
   <link rel="stylesheet" href="style.css">
+  <!-- PrismJS for syntax highlighting -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.css">
 </head>
 <body>
   <!-- Sidebar -->
@@ -155,7 +158,11 @@
 
   <!-- Routing -->
   <script>
-    function navigateTo(panelId, pushHistory = true) {
+    const loadedPanels = new Set(['layer-0']);
+    const initializedPanels = new Set();
+    let Arena2D = null;
+
+    async function navigateTo(panelId, pushHistory = true) {
       // Update nav active state
       document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
       const link = document.querySelector(`.nav-link[data-panel="${panelId}"]`);
@@ -169,6 +176,45 @@
       // Update URL hash and history
       if (pushHistory) {
         history.pushState({ panel: panelId }, '', `#${panelId}`);
+      }
+
+      // Dynamic demo loading
+      if (panelId !== 'layer-0' && !initializedPanels.has(panelId)) {
+        await initPanel(panelId);
+      }
+    }
+
+    async function initPanel(panelId) {
+      const panel = document.getElementById(panelId);
+      if (!panel) return;
+
+      try {
+        // Load library if not loaded
+        if (!Arena2D) {
+          const mod = await import("../dist/arena-2d.js");
+          Arena2D = mod;
+        }
+
+        // Load panel HTML
+        const htmlFilename = `panels/${panelId.replace(/^layer-/, 'layer')}.html`;
+        const response = await fetch(htmlFilename);
+        if (response.ok) {
+          panel.innerHTML = await response.text();
+        }
+
+        // Load and init panel JS
+        const jsFilename = `./panels/${panelId.replace(/^layer-/, 'layer')}.js`;
+        const module = await import(jsFilename);
+        if (module.default) {
+          await module.default(Arena2D);
+          initializedPanels.add(panelId);
+        }
+      } catch (err) {
+        console.error(`Error initializing panel ${panelId}:`, err);
+        panel.innerHTML = `<div class="card" style="border-color: #f06060; color: #f06060;">
+          <h3>Failed to load demo</h3>
+          <p>${err.message}</p>
+        </div>`;
       }
     }
 
@@ -195,32 +241,88 @@
     })();
   </script>
 
-  <!-- Layer 1 Demo Script -->
-  <script type="module" src="panels/layer1.js"></script>
-  <!-- Layer 1 Demo Script -->
-  <script type="module" src="panels/layer1.js"></script>
-  <!-- Layer 1.1 Demo Script -->
-  <script type="module" src="panels/layer1.1.js"></script>
-  <!-- Layer 2 Demo Script -->
-  <script type="module" src="panels/layer2.js"></script>
-  <!-- Layer 3 Demo Script -->
-  <script type="module" src="panels/layer3.js"></script>
-  <!-- Layer 4 Demo Script -->
-  <script type="module" src="panels/layer4.js"></script>
-  <!-- Layer 5 Demo Script -->
-  <script type="module" src="panels/layer5.js"></script>
-  <!-- Layer 6 Demo Script -->
-  <script type="module" src="panels/layer6.js"></script>
 
-  <script type="module" src="panels/layer7.js"></script>
-  <!-- Layer 8 Demo Script -->
-  <script type="module" src="panels/layer8.js"></script>
-  <!-- Layer 9 Demo Script -->
-  <script type="module" src="panels/layer9.js"></script>
-  <!-- Layer 10 Demo Script -->
-  <script type="module" src="panels/layer10.js"></script>
-  <!-- Layer 11 Demo Script -->
-  <script type="module" src="panels/layer11.js"></script>
+  <!-- Source View Modal -->
+  <div id="source-modal" class="modal-overlay">
+    <div class="modal-container">
+      <div class="modal-header">
+        <div class="modal-title">Source View: <span id="source-filename" style="opacity: 0.6;"></span></div>
+        <button class="modal-close" onclick="closeSource()">&times;</button>
+      </div>
+      <div class="modal-content">
+        <pre class="line-numbers"><code id="source-code" class="language-javascript"></code></pre>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.js"></script>
+
+  <script>
+    async function showSource(panelId) {
+      const filename = `panels/${panelId.replace(/^layer-/, 'layer')}.js`;
+      const modal = document.getElementById('source-modal');
+      const codeElem = document.getElementById('source-code');
+      const filenameElem = document.getElementById('source-filename');
+
+      filenameElem.textContent = filename;
+      codeElem.textContent = 'Loading...';
+      modal.classList.add('active');
+
+      try {
+        const response = await fetch(filename);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        let code = await response.text();
+        
+        // Strip export default boilerplate
+        code = code.replace(/export default async function\(CanvasUI\) \{/, '');
+        code = code.replace(/export default function\(CanvasUI\) \{/, '');
+        // Strip closing brace at the end
+        code = code.trim();
+        if (code.endsWith('}')) {
+          code = code.slice(0, -1);
+        }
+        
+        codeElem.textContent = code.trim();
+        Prism.highlightElement(codeElem);
+      } catch (err) {
+        codeElem.textContent = `Error loading source: ${err.message}\n(Make sure ${filename} exists)`;
+      }
+    }
+
+    function closeSource() {
+      document.getElementById('source-modal').classList.remove('active');
+    }
+
+    // Close modal on escape key or clicking outside
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeSource();
+    });
+    document.getElementById('source-modal').addEventListener('click', (e) => {
+      if (e.target.id === 'source-modal') closeSource();
+    });
+
+    // Automatic injection of "View Source" link
+    const observer = new MutationObserver(() => {
+      const headers = document.querySelectorAll('.main-header h2');
+      headers.forEach(h2 => {
+        if (!h2.querySelector('.view-source-btn')) {
+          const panel = h2.closest('.panel');
+          // Only sub-panels (except layer-0 which is scaffold)
+          if (panel && panel.id !== 'layer-0') {
+            const btn = document.createElement('span');
+            btn.className = 'view-source-btn';
+            btn.textContent = 'View Source';
+            btn.title = 'Click to view the JavaScript source for this demo';
+            btn.onclick = () => showSource(panel.id);
+            h2.appendChild(btn);
+          }
+        }
+      });
+    });
+
+    observer.observe(document.querySelector('.main'), { childList: true, subtree: true });
+  </script>
 
   <!-- Live Reload -->
   <script>

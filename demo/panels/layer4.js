@@ -1,21 +1,6 @@
-/**
- * Layer 4 — Container & Child Management Demo
- *
- * Interactive demo rendering a nested container tree as colored boxes.
- * Supports add/remove, re-parenting, z-sort, property editing,
- * and click-to-select via hit testing.
- */
-import {
-  Container,
-  DirtyFlags,
-  Element,
-  resolvePointerPosition,
-} from "/dist/arena-2d.js";
-
-(async () => {
-  // ── Inject HTML panel ──
-  const response = await fetch("panels/layer4.html");
-  document.getElementById("layer-4").innerHTML = await response.text();
+export default async function(CanvasUI) {
+// ── Inject HTML panel ──
+  
 
   // ── Palette ──
   const COLORS = [
@@ -430,4 +415,4 @@ import {
 
   selectElement(root);
   logEvent("Refinements: Core Hit Test + Pointer Logic");
-})();
+}

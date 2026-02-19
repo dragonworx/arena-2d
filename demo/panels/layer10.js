@@ -1,22 +1,5 @@
-/**
- * Layer 10 — Text & Text Layout Demo
- *
- * Demonstrates:
- * - Text element with word-wrap
- * - Per-character advancements visualization
- * - Font controls (family, size, weight, style)
- * - Text alignment (left, center, right)
- * - Width slider for live wrap behavior
- * - Intrinsic sizing stats (min-content, max-content)
- * - Performance test with large text blocks
- */
-
-import("../../dist/arena-2d.js").then(async (CanvasUI) => {
-  // Load panel HTML
-  const response = await fetch("panels/layer10.html");
-  document.getElementById("layer-10").innerHTML = await response.text();
-
-  const { Scene, Text } = CanvasUI;
+export default async function(CanvasUI) {
+const { Scene, Text } = CanvasUI;
 
   // ── Control elements ──
   const textArea = document.getElementById("l10-text");
@@ -261,4 +244,4 @@ import("../../dist/arena-2d.js").then(async (CanvasUI) => {
 
   // Initial update
   updateText();
-});
+}

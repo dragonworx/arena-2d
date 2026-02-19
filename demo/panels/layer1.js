@@ -1,55 +1,35 @@
-/**
- * Layer 1 — Core Math & Transformation Engine — Demo Panel
- *
- * Interactive transform playground: manipulate a rectangle with
- * position, rotation, scale, skew, pivot, and dimensions sliders.
- * Visualises the localMatrix, AABB, and pivot point.
- */
-import {
-  computeAABB,
-  multiply,
-  rotate,
-  scale,
-  skew,
-  transformPoint,
-  translate,
-} from "/dist/arena-2d.js";
+export default async function (CanvasUI) {
+  const {
+    computeAABB,
+    multiply,
+    rotate,
+    scale,
+    skew,
+    transformPoint,
+    translate,
+  } = CanvasUI;
 
-// Composition: T(x,y) × R × Skew × S × T(-px,-py)
-function computeLocalMatrix(x, y, rot, sx, sy, skx, sky, px, py) {
-  const t1 = translate(x, y);
-  const r = rotate(rot);
-  const sk = skew(skx, sky);
-  const s = scale(sx, sy);
-  const t2 = translate(-px, -py);
+  // Composition: T(x,y) × R × Skew × S × T(-px,-py)
+  function computeLocalMatrix(x, y, rot, sx, sy, skx, sky, px, py) {
+    const t1 = translate(x, y);
+    const r = rotate(rot);
+    const sk = skew(skx, sky);
+    const s = scale(sx, sy);
+    const t2 = translate(-px, -py);
 
-  // multiply(a, b) = a * b
-  // T1 * R * Sk * S * T2
-  return multiply(multiply(multiply(multiply(t1, r), sk), s), t2);
-}
-
-(async () => {
-  // ── Fetch and inject panel HTML ──
-  const response = await fetch("panels/layer1.html");
-  document.getElementById("layer-1").innerHTML = await response.text();
+    return multiply(multiply(multiply(multiply(t1, r), sk), s), t2);
+  }
 
   // ── DOM references ──
-
   const canvas = document.getElementById("math-canvas");
   const ctx = canvas ? canvas.getContext("2d") : null;
 
   if (ctx) {
     // ── Slider helpers ──
-
-    function sliderVal(id) {
-      return +document.getElementById(id).value;
-    }
-    function setText(id, v) {
-      document.getElementById(id).textContent = v;
-    }
+    const sliderVal = (id) => +document.getElementById(id).value;
+    const setText = (id, v) => document.getElementById(id).textContent = v;
 
     // ── Draw loop ──
-
     function draw() {
       const x = sliderVal("slider-x");
       const y = sliderVal("slider-y");
@@ -66,11 +46,9 @@ function computeLocalMatrix(x, y, rot, sx, sy, skx, sky, px, py) {
       const skx = (skxDeg * Math.PI) / 180;
       const sky = (skyDeg * Math.PI) / 180;
 
-      // Update pivot slider max to match current width/height
       document.getElementById("slider-px").max = rectW;
       document.getElementById("slider-py").max = rectH;
 
-      // Update readout labels
       setText("val-x", x);
       setText("val-y", y);
       setText("val-rot", rotDeg);
@@ -84,17 +62,11 @@ function computeLocalMatrix(x, y, rot, sx, sy, skx, sky, px, py) {
       setText("val-h", rectH);
 
       const mat = computeLocalMatrix(x, y, rot, sx, sy, skx, sky, px, py);
-
-      // Create IRect-compatible object for computeAABB
       const localBounds = { x: 0, y: 0, width: rectW, height: rectH };
       const aabb = computeAABB(localBounds, mat);
 
-      // Matrix readout
       const readout = document.getElementById("matrix-readout");
       if (readout) {
-        // Float32Array doesn't have .map returning array by default in some envs?
-        // Actually typed arrays have map but return typed array.
-        // We want simple array for join.
         const values = Array.from(mat).map((v) => v.toFixed(3));
         readout.textContent =
           `localMatrix: [${values.join(", ")}]\n` +
@@ -102,10 +74,8 @@ function computeLocalMatrix(x, y, rot, sx, sy, skx, sky, px, py) {
       }
 
       // ── Render ──
-
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Grid
       ctx.strokeStyle = "rgba(108, 108, 240, 0.08)";
       ctx.lineWidth = 1;
       for (let gx = 0; gx < canvas.width; gx += 50) {
@@ -121,7 +91,6 @@ function computeLocalMatrix(x, y, rot, sx, sy, skx, sky, px, py) {
         ctx.stroke();
       }
 
-      // AABB (dashed orange)
       ctx.save();
       ctx.setLineDash([6, 4]);
       ctx.strokeStyle = "#f0a040";
@@ -129,9 +98,7 @@ function computeLocalMatrix(x, y, rot, sx, sy, skx, sky, px, py) {
       ctx.strokeRect(aabb.x, aabb.y, aabb.width, aabb.height);
       ctx.restore();
 
-      // Transformed rectangle
       ctx.save();
-      // setTransform accepts 6 args
       ctx.setTransform(mat[0], mat[1], mat[2], mat[3], mat[4], mat[5]);
       ctx.fillStyle = "rgba(108, 108, 240, 0.4)";
       ctx.strokeStyle = "#6c6cf0";
@@ -140,7 +107,6 @@ function computeLocalMatrix(x, y, rot, sx, sy, skx, sky, px, py) {
       ctx.fillRect(0, 0, rectW, rectH);
       ctx.strokeRect(0, 0, rectW, rectH);
 
-      // Skew distortion diagonal
       if (Math.abs(skxDeg) > 0.5 || Math.abs(skyDeg) > 0.5) {
         ctx.setLineDash([3 / absScale, 3 / absScale]);
         ctx.strokeStyle = "rgba(96, 192, 240, 0.6)";
@@ -153,7 +119,6 @@ function computeLocalMatrix(x, y, rot, sx, sy, skx, sky, px, py) {
       }
       ctx.restore();
 
-      // Pivot point
       const pivotWorld = transformPoint(mat, px, py);
       ctx.beginPath();
       ctx.arc(pivotWorld.x, pivotWorld.y, 5, 0, Math.PI * 2);
@@ -163,7 +128,6 @@ function computeLocalMatrix(x, y, rot, sx, sy, skx, sky, px, py) {
       ctx.lineWidth = 1.5;
       ctx.stroke();
 
-      // Crosshair at pivot
       ctx.strokeStyle = "rgba(240, 96, 96, 0.5)";
       ctx.lineWidth = 1;
       ctx.setLineDash([3, 3]);
@@ -177,22 +141,16 @@ function computeLocalMatrix(x, y, rot, sx, sy, skx, sky, px, py) {
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // Corner label
       ctx.font = "9px monospace";
       ctx.fillStyle = "rgba(108, 108, 240, 0.5)";
       const c0 = transformPoint(mat, 0, 0);
       ctx.fillText("(0,0)", c0.x + 4, c0.y - 4);
     }
 
-    // ── Bind sliders ──
-
-    for (const slider of document.querySelectorAll(
-      "#layer-1 input[type=range]",
-    )) {
+    for (const slider of document.querySelectorAll("#layer-1 input[type=range]")) {
       slider.addEventListener("input", draw);
     }
 
-    // Initial draw (deferred so panel is measured)
     requestAnimationFrame(draw);
   }
-})();
+}

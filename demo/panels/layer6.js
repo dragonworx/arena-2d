@@ -1,16 +1,5 @@
-/**
- * Layer 6 — ArenaContext Demo
- *
- * Demonstrates all drawing primitives provided by ArenaContext:
- * shapes, gradients, shadows, clipping, and text rendering.
- */
-
-import("../../dist/arena-2d.js").then(async (CanvasUI) => {
-  // Load panel HTML
-  const response = await fetch("panels/layer6.html");
-  document.getElementById("layer-6").innerHTML = await response.text();
-
-  const { ArenaContext } = CanvasUI;
+export default async function(CanvasUI) {
+const { ArenaContext } = CanvasUI;
 
   // ── Helper to wrap a canvas ──
   function wrapCanvas(id) {
@@ -311,4 +300,4 @@ import("../../dist/arena-2d.js").then(async (CanvasUI) => {
       fill: "#666",
     },
   );
-});
+}

@@ -1,12 +1,6 @@
-/**
- * Layer 2 — Event Emitter — Demo Panel
- */
-import { EventEmitter } from "/dist/arena-2d.js";
-
-(async () => {
-  // ── Fetch and inject panel HTML ──
-  const response = await fetch("panels/layer2.html");
-  document.getElementById("layer-2").innerHTML = await response.text();
+export default async function(CanvasUI) {
+// ── Fetch and inject panel HTML ──
+  
 
   // ── Setup ──
   const logs = document.getElementById("event-logs");
@@ -61,4 +55,4 @@ import { EventEmitter } from "/dist/arena-2d.js";
   });
 
   log("EventEmitter ready. Waiting for events...");
-})();
+}
