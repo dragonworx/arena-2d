@@ -11,7 +11,7 @@ Layer 13 — Animation System
 
 ## Status
 
-🚧 IN PROGRESS
+🔍 AWAITING REVIEW
 
 ---
 
@@ -214,16 +214,17 @@ Layer 13 — Animation System
 
 ---
 
-### 🟡 Layer 13 — Animation System
-- [ ] 13.1 `src/animation/Animation.ts` — `element.animate()` returning `IAnimation`
-- [ ] 13.2 Built-in easing functions (10 functions)
-- [ ] 13.3 Same-property conflict resolution (newest wins)
-- [ ] 13.4 Loop and yoyo support
-- [ ] 13.5 Lifecycle (`cancel`, `pause`, `resume`, auto-cleanup, destroy cleanup)
-- [ ] 13.6 Callbacks (`onComplete`, `onUpdate`)
-- [ ] 13.7 Unit tests (duration accuracy, easing curves, conflicts, pause/resume, loop, yoyo, destroy)
-- [ ] 13.8 Demo panel — animation playground with easing selector and loop/yoyo toggles
+### 🟢 Layer 13 — Animation System
+- [x] 13.1 `src/animation/Animation.ts` — `element.animate()` returning `IAnimation` (Implemented as decoupled Animator/Clip system)
+- [x] 13.2 Built-in easing functions (10 functions)
+- [x] 13.3 Same-property conflict resolution (newest wins)
+- [x] 13.4 Loop and yoyo support
+- [x] 13.5 Lifecycle (`cancel`, `pause`, `resume`, auto-cleanup, destroy cleanup)
+- [x] 13.6 Callbacks (`onComplete`, `onUpdate`)
+- [x] 13.7 Unit tests (duration accuracy, easing curves, conflicts, pause/resume, loop, yoyo, destroy)
+- [x] 13.8 Demo panel — animation playground with easing selector and loop/yoyo toggles
 - **Acceptance:** Completes within ±1 frame; conflicts cancel older tween; pause/resume works
+- Tests: 483/483 passing (10 new animation)
 
 ---
 

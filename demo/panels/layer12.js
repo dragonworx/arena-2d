@@ -18,10 +18,16 @@ export default async function (Arena2D) {
     ctx.strokeStyle = "rgba(255,255,255,0.15)";
     ctx.lineWidth = 1;
     for (let x = 0; x < w; x += 20) {
-      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, h);
+      ctx.stroke();
     }
     for (let y = 0; y < h; y += 20) {
-      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(w, y);
+      ctx.stroke();
     }
 
     ctx.fillStyle = "#fff";
@@ -43,10 +49,22 @@ export default async function (Arena2D) {
     const ctx = canvas.getContext("2d");
 
     const colors = [
-      "#e74c3c", "#e67e22", "#f1c40f", "#2ecc71",
-      "#1abc9c", "#3498db", "#9b59b6", "#e91e63",
-      "#ff5722", "#795548", "#607d8b", "#00bcd4",
-      "#8bc34a", "#cddc39", "#ffc107", "#9e9e9e",
+      "#e74c3c",
+      "#e67e22",
+      "#f1c40f",
+      "#2ecc71",
+      "#1abc9c",
+      "#3498db",
+      "#9b59b6",
+      "#e91e63",
+      "#ff5722",
+      "#795548",
+      "#607d8b",
+      "#00bcd4",
+      "#8bc34a",
+      "#cddc39",
+      "#ffc107",
+      "#9e9e9e",
     ];
 
     for (let r = 0; r < rows; r++) {
@@ -212,11 +230,23 @@ export default async function (Arena2D) {
     raw.strokeStyle = "rgba(255,100,100,0.5)";
     raw.lineWidth = 1;
     // Horizontal
-    raw.beginPath(); raw.moveTo(0, t); raw.lineTo(w, t); raw.stroke();
-    raw.beginPath(); raw.moveTo(0, h - b); raw.lineTo(w, h - b); raw.stroke();
+    raw.beginPath();
+    raw.moveTo(0, t);
+    raw.lineTo(w, t);
+    raw.stroke();
+    raw.beginPath();
+    raw.moveTo(0, h - b);
+    raw.lineTo(w, h - b);
+    raw.stroke();
     // Vertical
-    raw.beginPath(); raw.moveTo(l, 0); raw.lineTo(l, h); raw.stroke();
-    raw.beginPath(); raw.moveTo(w - r, 0); raw.lineTo(w - r, h); raw.stroke();
+    raw.beginPath();
+    raw.moveTo(l, 0);
+    raw.lineTo(l, h);
+    raw.stroke();
+    raw.beginPath();
+    raw.moveTo(w - r, 0);
+    raw.lineTo(w - r, h);
+    raw.stroke();
     raw.setLineDash([]);
   };
   scene.root.addChild(nsGuides);
@@ -231,7 +261,11 @@ export default async function (Arena2D) {
     ctx.raw.font = "bold 14px sans-serif";
     ctx.raw.textAlign = "center";
     ctx.raw.textBaseline = "middle";
-    ctx.raw.fillText(`${Math.round(nsEl.width)}×${Math.round(nsEl.height)}`, nsEl.width / 2, nsEl.height / 2);
+    ctx.raw.fillText(
+      `${Math.round(nsEl.width)}×${Math.round(nsEl.height)}`,
+      nsEl.width / 2,
+      nsEl.height / 2,
+    );
   };
   scene.root.addChild(nsLabel);
 
@@ -259,9 +293,9 @@ export default async function (Arena2D) {
 
     if (tintEnable.checked) {
       const hex = tintColor.value;
-      const r = parseInt(hex.slice(1, 3), 16);
-      const g = parseInt(hex.slice(3, 5), 16);
-      const b = parseInt(hex.slice(5, 7), 16);
+      const r = Number.parseInt(hex.slice(1, 3), 16);
+      const g = Number.parseInt(hex.slice(3, 5), 16);
+      const b = Number.parseInt(hex.slice(5, 7), 16);
       imgEl.tint = `rgba(${r}, ${g}, ${b}, 0.5)`;
     } else {
       imgEl.tint = undefined;
@@ -284,7 +318,12 @@ export default async function (Arena2D) {
     const row = Number(rowSlider.value);
     colVal.textContent = col;
     rowVal.textContent = row;
-    spriteEl.sourceRect = { x: col * cellW, y: row * cellH, width: cellW, height: cellH };
+    spriteEl.sourceRect = {
+      x: col * cellW,
+      y: row * cellH,
+      width: cellW,
+      height: cellH,
+    };
     highlight.invalidate(2); // Visual
   }
 
@@ -325,12 +364,18 @@ export default async function (Arena2D) {
     nsLabel.invalidate(2);
   }
 
-  [nsTopSlider, nsRightSlider, nsBottomSlider, nsLeftSlider, nsWidthSlider, nsHeightSlider].forEach(s => {
+  for (const s of [
+    nsTopSlider,
+    nsRightSlider,
+    nsBottomSlider,
+    nsLeftSlider,
+    nsWidthSlider,
+    nsHeightSlider,
+  ]) {
     s.addEventListener("input", updateNineSlice);
-  });
+  }
 
   // Stats
   const stats = document.getElementById("l12-stats");
   stats.textContent = `Scene: 600×580 | DPR: ${scene.dpr}\nSource Img: ${testImg.width}×${testImg.height}\nSprite Sheet: ${spriteSheet.width}×${spriteSheet.height}`;
 }
-

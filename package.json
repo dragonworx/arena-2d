@@ -23,7 +23,5 @@
     "happy-dom": "^20.6.1",
     "typescript": "^5.9.3"
   },
-  "trustedDependencies": [
-    "@biomejs/biome"
-  ]
+  "trustedDependencies": ["@biomejs/biome"]
 }

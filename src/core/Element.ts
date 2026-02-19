@@ -22,6 +22,15 @@ import {
   transformPoint,
   translate,
 } from "../math/matrix";
+import {
+  type AnimateOptions,
+  Animator,
+  type IAnimation,
+} from "../animation/Animator";
+import { NumberChannel, StringChannel } from "../animation/Channel";
+import { Clip } from "../animation/Clip";
+import { ColorChannel } from "../animation/ColorChannel";
+import { ElementAdapter } from "../animation/adapter/ElementAdapter";
 import { DirtyFlags } from "./DirtyFlags";
 
 // ── Helpers ──
@@ -112,6 +121,16 @@ export interface IElement {
 
   // Disposal
   destroy(): void;
+
+  // Animation
+  animate(
+    properties: Record<string, number | string>,
+    options: AnimateOptions,
+  ): IAnimation;
+  animateFrom(
+    properties: Record<string, number | string>,
+    options: AnimateOptions,
+  ): IAnimation;
 }
 
 // ── Element Class ──
@@ -162,6 +181,9 @@ export class Element extends EventEmitter implements IElement {
   customHitTest?: (x: number, y: number) => boolean;
   dragHitTestMode: "aabb" | "quad" = "aabb";
   cursor = "default";
+
+  // ── Animation ──
+  private _activeAnimators = new Set<Animator>();
 
   // ── Dirty system ──
   protected _dirtyFlags: DirtyFlags = DirtyFlags.All;
@@ -547,10 +569,148 @@ export class Element extends EventEmitter implements IElement {
    * Clears dirty flags, removes all event listeners, and detaches from parent.
    */
   destroy(): void {
+    // Cancel all active animations
+    for (const animator of this._activeAnimators) {
+      animator.cancel();
+    }
+    this._activeAnimators.clear();
+
     this._dirtyFlags = DirtyFlags.None;
     this.removeAllListeners();
     this.parent = null;
     this.scene = null;
     this.layer = null;
+  }
+
+  // ── Animation ──
+
+  animate(
+    properties: Record<string, number | string>,
+    options: AnimateOptions,
+  ): IAnimation {
+    // Check for scene via loose typing for now (resolves circling dependency later)
+    const scene = this.scene as {
+      animationRegistry?: any;
+      timeline?: any;
+    } | null;
+
+    if (!scene) {
+      throw new Error(
+        "Cannot animate an element that is not attached to a scene",
+      );
+    }
+
+    const clip = new Clip("animate");
+    for (const [prop, targetValue] of Object.entries(properties)) {
+      const currentValue = (this as any)[prop];
+      
+      let channel: any;
+      // Heuristic for channel type
+      if (typeof targetValue === "number") {
+         channel = new NumberChannel();
+      } else if (typeof targetValue === "string") {
+        // Simple heuristic: if it starts with # or rgb, it's a color
+        // Otherwise it's a string enum/step
+        if (targetValue.startsWith("#") || targetValue.startsWith("rgb")) {
+          channel = new ColorChannel();
+        } else {
+          channel = new StringChannel();
+        }
+      }
+
+      if (channel) {
+        channel.addKeyframe(0, currentValue);
+        channel.addKeyframe(options.duration, targetValue, options.easing);
+        clip.addChannel(prop, channel);
+      }
+    }
+
+    const adapter = new ElementAdapter(this);
+    const animator = new Animator(clip, adapter, {
+      delay: options.delay,
+      loop: options.loop,
+      yoyo: options.yoyo,
+      onComplete: () => {
+        this._activeAnimators.delete(animator);
+        options.onComplete?.();
+      },
+      onUpdate: options.onUpdate,
+      registry: scene.animationRegistry,
+      blendMode: options.blendMode,
+    });
+
+    this._activeAnimators.add(animator);
+    if (scene.timeline) {
+      animator.attachTo(scene.timeline);
+    }
+    animator.play();
+
+    return animator;
+  }
+
+  animateFrom(
+    properties: Record<string, number | string>,
+    options: AnimateOptions,
+  ): IAnimation {
+    // Check for scene via loose typing
+    const scene = this.scene as {
+        animationRegistry?: any;
+        timeline?: any;
+      } | null;
+
+    if (!scene) {
+      throw new Error(
+        "Cannot animate an element that is not attached to a scene",
+      );
+    }
+
+    const clip = new Clip("animateFrom");
+    for (const [prop, fromValue] of Object.entries(properties)) {
+      const currentValue = (this as any)[prop];
+      
+      // Apply the 'from' value immediately
+      (this as any)[prop] = fromValue;
+
+      let channel: any;
+      if (typeof fromValue === "number") {
+         channel = new NumberChannel();
+      } else if (typeof fromValue === "string") {
+        if (fromValue.startsWith("#") || fromValue.startsWith("rgb")) {
+          channel = new ColorChannel();
+        } else {
+          channel = new StringChannel();
+        }
+      }
+
+      if (channel) {
+        // Animate from 'fromValue' (at 0) to 'currentValue' (at duration)
+        // Since we just set prop = fromValue, that is the current state.
+        // We want to arrive at the ORIGINAL currentValue.
+        channel.addKeyframe(0, fromValue);
+        channel.addKeyframe(options.duration, currentValue, options.easing);
+        clip.addChannel(prop, channel);
+      }
+    }
+
+    const adapter = new ElementAdapter(this);
+    const animator = new Animator(clip, adapter, {
+        delay: options.delay,
+        loop: options.loop,
+        yoyo: options.yoyo,
+        onComplete: () => {
+          this._activeAnimators.delete(animator);
+          options.onComplete?.();
+        },
+        onUpdate: options.onUpdate,
+        registry: scene.animationRegistry,
+      });
+  
+    this._activeAnimators.add(animator);
+    if (scene.timeline) {
+        animator.attachTo(scene.timeline);
+    }
+    animator.play();
+  
+    return animator;
   }
 }

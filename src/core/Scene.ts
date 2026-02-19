@@ -8,6 +8,8 @@
  * SPEC: §3 (Scene & Layering System)
  */
 
+import { AnimationRegistry } from "../animation/AnimationRegistry";
+import { Timeline } from "../animation/Timeline";
 import {
   type IInteractionManager,
   InteractionManager,
@@ -30,6 +32,8 @@ export interface IScene {
   readonly root: IContainer;
   readonly hitBuffer: OffscreenCanvas;
   readonly ticker: ITicker;
+  readonly timeline: Timeline;
+  readonly animationRegistry: AnimationRegistry;
   readonly interaction: IInteractionManager;
 
   // Layer management
@@ -56,6 +60,8 @@ export class Scene implements IScene {
   readonly root: IContainer;
   readonly hitBuffer: OffscreenCanvas;
   readonly ticker: ITicker;
+  readonly timeline: Timeline;
+  readonly animationRegistry: AnimationRegistry;
   readonly interaction: IInteractionManager;
 
   private _width: number;
@@ -99,7 +105,23 @@ export class Scene implements IScene {
 
     // Create ticker and wire frame pipeline
     this.ticker = new Ticker();
+
+    // Create animation registry
+    this.animationRegistry = new AnimationRegistry();
+
+    // 1. Restore base values before animation updates
+    this.ticker.add({ update: () => this.animationRegistry.restore() });
+
+    // 2. Update timeline (Animators calculate and accumulate values)
+    this.timeline = new Timeline();
+    this.ticker.add(this.timeline);
+
+    // 3. Flush final blended values to elements
+    this.ticker.add({ update: () => this.animationRegistry.flush() });
+
+    // 4. Update scene graph (Layout, Physics, etc.) using new values
     this.ticker.add(this.root as IElement);
+
     this.ticker.setRenderCallback(() => this.render());
 
     // Create interaction manager
@@ -249,6 +271,8 @@ export class Scene implements IScene {
     this.interaction.destroy();
 
     // Stop ticker
+    this.animationRegistry.clear();
+    this.timeline.clear();
     this.ticker.stop();
     this.ticker.remove(this.root as IElement);
 

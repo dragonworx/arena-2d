@@ -22,12 +22,14 @@ console.log("World Matrix:", el.worldMatrix);
 // 45 deg rotation: cos=0.707, sin=0.707
 // Matrix: [0.707, 0.707, -0.707, 0.707, 100, 100]
 const m = el.worldMatrix;
-console.log(`Matrix check: a=${m[0].toFixed(3)}, b=${m[1].toFixed(3)}, c=${m[2].toFixed(3)}, d=${m[3].toFixed(3)}, tx=${m[4]}, ty=${m[5]}`);
+console.log(
+  `Matrix check: a=${m[0].toFixed(3)}, b=${m[1].toFixed(3)}, c=${m[2].toFixed(3)}, d=${m[3].toFixed(3)}, tx=${m[4]}, ty=${m[5]}`,
+);
 
 // Compute AABB
 const aabb = computeAABB(
-    { x: 0, y: 0, width: el.width, height: el.height },
-    el.worldMatrix
+  { x: 0, y: 0, width: el.width, height: el.height },
+  el.worldMatrix,
 );
 
 console.log("AABB:", aabb);

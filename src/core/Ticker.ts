@@ -7,7 +7,11 @@
  * SPEC: §7 (Hierarchical Ticker System)
  */
 
-import type { IElement } from "./Element";
+// ── ITickable Interface ──
+
+export interface ITickable {
+  update(dt: number): void;
+}
 
 // ── ITicker Interface ──
 
@@ -23,8 +27,8 @@ export interface ITicker {
   /** Whether the ticker is currently running. */
   readonly running: boolean;
 
-  add(element: IElement): void;
-  remove(element: IElement): void;
+  add(item: ITickable): void;
+  remove(item: ITickable): void;
   start(): void;
   stop(): void;
 
@@ -48,7 +52,7 @@ export class Ticker implements ITicker {
   private _initialized = false;
   private _rafId: number | null = null;
   private _running = false;
-  private _elements: Set<IElement> = new Set();
+  private _items: Set<ITickable> = new Set();
   private _renderCallback: (() => void) | null = null;
 
   /**
@@ -71,14 +75,14 @@ export class Ticker implements ITicker {
     return this._running;
   }
 
-  // ── Element registration ──
+  // ── Item registration ──
 
-  add(element: IElement): void {
-    this._elements.add(element);
+  add(item: ITickable): void {
+    this._items.add(item);
   }
 
-  remove(element: IElement): void {
-    this._elements.delete(element);
+  remove(item: ITickable): void {
+    this._items.delete(item);
   }
 
   setRenderCallback(callback: (() => void) | null): void {
@@ -170,9 +174,9 @@ export class Ticker implements ITicker {
     this._deltaTime = dt;
     this._elapsedTime += dt;
 
-    // Pipeline step: Update registered elements
-    for (const element of this._elements) {
-      element.update(dt);
+    // Pipeline step: Update registered items
+    for (const item of this._items) {
+      item.update(dt);
     }
 
     // Pipeline step: Render (if callback registered)

@@ -99,3 +99,21 @@ export { TextInput } from "./elements/TextInput";
 
 // --- Layer 12: Image & Nine-Slice ---
 export { Image } from "./elements/Image";
+
+// --- Layer 13: Animation System ---
+export { Timeline } from "./animation/Timeline";
+export { Clip } from "./animation/Clip";
+export {
+  Channel,
+  NumberChannel,
+  BooleanChannel,
+  StringChannel,
+} from "./animation/Channel";
+export { Keyframe } from "./animation/Keyframe";
+export { Easing } from "./animation/Easing";
+export { Animator } from "./animation/Animator";
+export type { IAnimation, AnimateOptions } from "./animation/Animator";
+export { ElementAdapter } from "./animation/adapter/ElementAdapter";
+export type { IAdapter } from "./animation/adapter/IAdapter";
+export { ColorChannel } from "./animation/ColorChannel";
+export { AnimationBlendMode } from "./animation/AnimationBlendMode";

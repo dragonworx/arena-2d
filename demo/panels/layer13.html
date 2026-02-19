@@ -1,0 +1,43 @@
+<div class="main-header">
+  <h2>Layer 13 — Animation System</h2>
+  <p>A decoupled, hierarchical animation system with Timelines, Clips, and Channels.</p>
+</div>
+
+<!-- Main Canvas Container: Taller to fit all sections -->
+<div id="l13-demo-container" class="demo-container" style="height: 1000px; position: relative; background: #1e1e1e; border-radius: 8px; overflow: hidden; margin-top: 20px;">
+  <!-- Canvas injected here -->
+  
+  <!-- Overlay Labels for Sections -->
+  <div style="position: absolute; top: 10px; left: 10px; color: #888; font-size: 12px; pointer-events: none;">
+    <strong>1. Easing Gallery</strong>
+  </div>
+  <div style="position: absolute; top: 10px; right: 10px; color: #888; font-size: 12px; pointer-events: none; text-align: right;">
+    <strong>2. Staggered Delay</strong>
+  </div>
+  <div style="position: absolute; top: 320px; left: 10px; color: #888; font-size: 12px; pointer-events: none;">
+    <strong>3. Solar System (Nested Hierarchy)</strong>
+  </div>
+  <div style="position: absolute; top: 550px; left: 10px; color: #888; font-size: 12px; pointer-events: none;">
+    <strong>4. Playback Controls & Nested Timelines</strong>
+  </div>
+  <div style="position: absolute; top: 750px; left: 10px; color: #888; font-size: 12px; pointer-events: none;">
+    <strong>5. Conflict Resolution & Multi-Channel</strong>
+  </div>
+
+  <!-- Global Controls Bar (Sticky Bottom) -->
+  <div id="l13-controls" style="position: absolute; bottom: 0; left: 0; width: 100%; height: 50px; background: rgba(0,0,0,0.8); display: flex; align-items: center; padding: 0 20px; box-sizing: border-box; border-top: 1px solid #333;">
+    <!-- Controls injected by JS -->
+  </div>
+</div>
+
+<div class="card" style="margin-top: 20px;">
+  <h3>Key Features</h3>
+  <ul class="checklist">
+    <li><span class="check done"></span> <strong>Timeline Hierarchy:</strong> Nested timelines with independent time scales.</li>
+    <li><span class="check done"></span> <strong>Reusable Clips:</strong> Define animations once (e.g., "Orbit", "Pulse") and apply to any object.</li>
+    <li><span class="check done"></span> <strong>Typed Channels:</strong> Animate numbers, booleans, strings, and <strong>colors</strong>.</li>
+    <li><span class="check done"></span> <strong>Convenience API:</strong> <code>element.animate()</code> with Promises.</li>
+    <li><span class="check done"></span> <strong>Conflict Resolution:</strong> Auto-cancels overlapping animations.</li>
+    <li><span class="check done"></span> <strong>Playback Control:</strong> Pause, resume, loop, yoyo, and speed control.</li>
+  </ul>
+</div>
