@@ -203,7 +203,7 @@
         }
 
         // Load and init panel JS
-        const jsFilename = `./panels/${panelId.replace(/^layer-/, 'layer')}.js`;
+        const jsFilename = `./panels/${panelId.replace(/^layer-/, 'layer')}.js?v=${Date.now()}`;
         const module = await import(jsFilename);
         if (module.default) {
           await module.default(Arena2D);

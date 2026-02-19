@@ -1,4 +1,5 @@
 export default async function (CanvasUI) {
+  const { EventEmitter } = CanvasUI;
   // ── Fetch and inject panel HTML ──
 
   // ── Setup ──

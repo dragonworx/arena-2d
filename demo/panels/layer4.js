@@ -1,4 +1,5 @@
 export default async function (CanvasUI) {
+  const { Container, Element, DirtyFlags, resolvePointerPosition } = CanvasUI;
   // ── Inject HTML panel ──
 
   // ── Palette ──

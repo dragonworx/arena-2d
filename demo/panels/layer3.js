@@ -1,4 +1,5 @@
 export default async function (CanvasUI) {
+  const { Element, DirtyFlags } = CanvasUI;
   // ── DOM refs ──
   const canvas = document.getElementById("l3-canvas");
   const ctx = canvas.getContext("2d");
@@ -164,24 +165,24 @@ export default async function (CanvasUI) {
     // Property table
     const props = destroyed
       ? [
-          ["id", `${el.id} 💀`],
-          ["flags", "—"],
-          ["visible", "—"],
-          ["parent", "null"],
-        ]
+        ["id", `${el.id} 💀`],
+        ["flags", "—"],
+        ["visible", "—"],
+        ["parent", "null"],
+      ]
       : [
-          ["id", el.id],
-          ["x / y", `${el.x.toFixed(1)} / ${el.y.toFixed(1)}`],
-          ["rotation", el.rotation.toFixed(3)],
-          ["scaleX / Y", `${el.scaleX.toFixed(2)} / ${el.scaleY.toFixed(2)}`],
-          ["alpha", el.alpha.toFixed(2)],
-          ["effectiveAlpha", el.effectiveAlpha.toFixed(2)],
-          ["visible", String(el.visible)],
-          [
-            "worldPos",
-            `(${el.worldMatrix[4].toFixed(1)}, ${el.worldMatrix[5].toFixed(1)})`,
-          ],
-        ];
+        ["id", el.id],
+        ["x / y", `${el.x.toFixed(1)} / ${el.y.toFixed(1)}`],
+        ["rotation", el.rotation.toFixed(3)],
+        ["scaleX / Y", `${el.scaleX.toFixed(2)} / ${el.scaleY.toFixed(2)}`],
+        ["alpha", el.alpha.toFixed(2)],
+        ["effectiveAlpha", el.effectiveAlpha.toFixed(2)],
+        ["visible", String(el.visible)],
+        [
+          "worldPos",
+          `(${el.worldMatrix[4].toFixed(1)}, ${el.worldMatrix[5].toFixed(1)})`,
+        ],
+      ];
 
     flagTbody.innerHTML = props
       .map(

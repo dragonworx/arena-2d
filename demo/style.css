@@ -484,6 +484,11 @@ select:focus {
   opacity: 1;
 }
 
+/* ---Prism Overwrites */
+pre[class*=language-].line-numbers {
+  padding-left: 4.8em !important;
+}
+
 /* ── Demo Layouts ──────────────────────── */
 .demo-layout {
   display: flex;
