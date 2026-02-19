@@ -1,10 +1,11 @@
 export default async function (Arena2D) {
   const { EventEmitter } = Arena2D;
-  // ── Fetch and inject panel HTML ──
 
   // ── Setup ──
   const logs = document.getElementById("event-logs");
   const emitter = new EventEmitter();
+  let handlerCounter = 0;
+  const handlerStack = [];
 
   function log(msg, type = "") {
     if (!logs) return;
@@ -16,38 +17,52 @@ export default async function (Arena2D) {
     logs.scrollTop = logs.scrollHeight;
   }
 
-  // ── Subscribers ──
-  emitter.on("foo", (e) => {
-    log(`[foo] received payload: ${JSON.stringify(e)}`, "foo");
-  });
-
-  emitter.once("bar", (e) => {
-    log(
-      `[bar] received payload: ${JSON.stringify(e)} (I am a 'once' listener)`,
-      "bar",
-    );
-  });
-
-  // Re-add 'bar' once listener after it fires so demo is repeatable?
-  // Actually, let's keep it strictly 'once' to demonstrate the behavior.
-  // But users might think it's broken if they click twice.
-  // Let's add a persistent listener too.
-  emitter.on("bar", (e) => {
-    log(`[bar] persistent listener: ${JSON.stringify(e)}`, "bar");
-  });
-
   // ── UI Controls ──
-  document.getElementById("btn-emit-foo")?.addEventListener("click", () => {
-    emitter.emit("foo", { count: Math.ceil(Math.random() * 100) });
+
+  // .on - adds a handler to the stack and the emitter
+  document.getElementById("btn-on")?.addEventListener("click", () => {
+    const id = ++handlerCounter;
+    const handler = (e) => {
+      log(`[Handler #${id}] received event: ${JSON.stringify(e)}`, "foo");
+    };
+
+    emitter.on("test-event", handler);
+    handlerStack.push(handler);
+    log(`Added persistent handler #${id}. Total active: ${handlerStack.length}`);
   });
 
-  document.getElementById("btn-emit-bar")?.addEventListener("click", () => {
-    emitter.emit("bar", { msg: "Hello" });
-    // Re-attach the 'once' listener if it's gone, so the button keeps doing something "once-like"
-    // interactive feel:
-    emitter.once("bar", (e) => {
-      log(`[bar] 'once' listener re-armed`, "bar");
+  // .once - adds a single handler
+  document.getElementById("btn-once")?.addEventListener("click", () => {
+    const id = ++handlerCounter;
+    emitter.once("test-event", (e) => {
+      log(`[Once Handler #${id}] fired and removed! Payload: ${JSON.stringify(e)}`, "bar");
     });
+    log(`Added one-time handler #${id}.`);
+  });
+
+  // .off - removes the last handler from the stack
+  document.getElementById("btn-off")?.addEventListener("click", () => {
+    const handler = handlerStack.pop();
+    if (handler) {
+      emitter.off("test-event", handler);
+      log(`Removed last persistent handler. Remaining active: ${handlerStack.length}`);
+    } else {
+      log("No persistent handlers to remove.", "bar");
+    }
+  });
+
+  // .emit - fires the event
+  document.getElementById("btn-emit")?.addEventListener("click", () => {
+    const payload = { timestamp: Date.now() };
+    log(`Emitting 'test-event'...`);
+    emitter.emit("test-event", payload);
+  });
+
+  // .removeAllListeners - clears everything
+  document.getElementById("btn-remove-all")?.addEventListener("click", () => {
+    emitter.removeAllListeners();
+    handlerStack.length = 0;
+    log("Removed all listeners.", "bar");
   });
 
   document.getElementById("btn-clear-logs")?.addEventListener("click", () => {
