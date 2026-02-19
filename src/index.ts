@@ -75,3 +75,21 @@ export type {
 export { InteractionManager } from "./interaction/InteractionManager";
 export type { ISpatialEntry } from "./interaction/SpatialHashGrid";
 export { SpatialHashGrid } from "./interaction/SpatialHashGrid";
+
+// --- Layer 10: Text & Text Layout ---
+export type { ITextStyle as IElementTextStyle } from "./elements/Text";
+export { Text, createDefaultTextStyle } from "./elements/Text";
+export type {
+  ITextLine,
+  ITextLayout,
+  ILayoutTextStyle,
+  ITextMeasureContext,
+} from "./text/TextLayout";
+export {
+  computeTextLayout,
+  computeMinContentWidth,
+  computeMaxContentWidth,
+  clearLayoutCache,
+  setMeasureContext,
+} from "./text/TextLayout";
+export { isFontReady, waitForFont } from "./text/fontReady";

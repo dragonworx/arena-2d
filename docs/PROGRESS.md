@@ -5,13 +5,26 @@
 
 ---
 
+### Layer 10 — Text & Text Layout ✅
+- [x] 10.1 `src/elements/Text.ts` — `IText` with `fillText()` rendering
+- [x] 10.2 `src/text/TextLayout.ts` — greedy word-wrap, per-character advancements
+- [x] 10.3 Intrinsic sizing (widest line × lineHeight × line count)
+- [x] 10.4 `ITextStyle` implementation
+- [x] 10.5 `fontReady` utility
+- [x] 10.6 Unit tests (wrap boundary, hard breaks, empty string, single long word, alignment)
+- [x] 10.7 Demo panel — text block with font controls and width slider
+- **Acceptance:** Word-wrap is correct; font size change triggers re-measure; alignment works
+- Tests: 364/364 passing (40 new text tests + 324 prior)
+
+---
+
 ## Current Phase
 
-Layer 10 — Text & Text Layout
+Layer 11 — Text Input & IME
 
 ## Status
 
-⏳ NOT STARTED
+🔍 AWAITING REVIEW
 
 ---
 
@@ -226,14 +239,15 @@ Layer 10 — Text & Text Layout
 
 
 ### 🟡 Layer 10 — Text & Text Layout
-- [ ] 10.1 `src/elements/Text.ts` — `IText` with `fillText()` rendering
-- [ ] 10.2 `src/text/TextLayout.ts` — greedy word-wrap, per-character advancements
-- [ ] 10.3 Intrinsic sizing (widest line × lineHeight × line count)
-- [ ] 10.4 `ITextStyle` implementation
-- [ ] 10.5 `fontReady` utility
-- [ ] 10.6 Unit tests (wrap boundary, hard breaks, empty string, single long word, alignment)
-- [ ] 10.7 Demo panel — text block with font controls and width slider
+- [x] 10.1 `src/elements/Text.ts` — `IText` with `fillText()` rendering
+- [x] 10.2 `src/text/TextLayout.ts` — greedy word-wrap, per-character advancements
+- [x] 10.3 Intrinsic sizing (widest line × lineHeight × line count)
+- [x] 10.4 `ITextStyle` implementation
+- [x] 10.5 `fontReady` utility
+- [x] 10.6 Unit tests (wrap boundary, hard breaks, empty string, single long word, alignment)
+- [x] 10.7 Demo panel — text block with font controls and width slider
 - **Acceptance:** Word-wrap is correct; font size change triggers re-measure; alignment works
+- Tests: 364/364 passing (40 new text tests + 324 prior)
 
 ---
 

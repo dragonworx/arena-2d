@@ -1,0 +1,199 @@
+<style>
+  .l10-grid {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 16px;
+    align-items: start;
+  }
+  .l10-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .l10-control-group {
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #333;
+  }
+  .l10-control-group:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+  }
+  .l10-control-group h3 {
+    font-size: 12px;
+    text-transform: uppercase;
+    color: #666;
+    margin-bottom: 8px;
+    letter-spacing: 0.05em;
+  }
+  .l10-label {
+    font-size: 11px;
+    margin-bottom: 4px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .l10-canvas-wrap {
+    position: relative;
+    border: 1px solid #333;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #1a1a2e;
+  }
+  .l10-textarea {
+    width: 100%;
+    min-height: 80px;
+    background: #1e1e2e;
+    color: #e0e0e0;
+    border: 1px solid #333;
+    border-radius: 4px;
+    padding: 8px;
+    font-family: sans-serif;
+    font-size: 12px;
+    resize: vertical;
+  }
+  .l10-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    font-size: 11px;
+    color: #888;
+  }
+  .l10-stat-val {
+    color: #4fc3f7;
+    font-family: monospace;
+  }
+  .l10-perf-block {
+    background: #111;
+    border-radius: 4px;
+    padding: 8px;
+    font-size: 11px;
+    color: #888;
+    margin-top: 8px;
+  }
+  .l10-adv-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: #aaa;
+  }
+</style>
+
+<div class="main-header" style="margin-bottom: 16px;">
+  <h2>Layer 10 — Text & Text Layout</h2>
+  <p>Word-wrap, per-character advancements, alignment, and intrinsic sizing.</p>
+</div>
+
+<div class="l10-grid">
+  <!-- Controls -->
+  <div class="card l10-controls">
+    <div class="l10-control-group">
+      <h3>Text Content</h3>
+      <textarea id="l10-text" class="l10-textarea">The quick brown fox jumps over the lazy dog. This text demonstrates word-wrap, line breaks, and text alignment.
+
+Hard line breaks are supported too!</textarea>
+    </div>
+
+    <div class="l10-control-group">
+      <h3>Font</h3>
+      <div class="l10-label">
+        <span>Font Family</span>
+      </div>
+      <select id="l10-font-family" class="input" style="width:100%">
+        <option value="sans-serif">sans-serif</option>
+        <option value="serif">serif</option>
+        <option value="monospace">monospace</option>
+        <option value="Georgia">Georgia</option>
+        <option value="Courier New">Courier New</option>
+      </select>
+
+      <div class="l10-label" style="margin-top:8px">
+        <span>Font Size</span>
+        <span id="l10-font-size-val" class="l10-stat-val">16px</span>
+      </div>
+      <input id="l10-font-size" type="range" class="input" min="8" max="72" value="16" style="width:100%">
+
+      <div class="l10-label" style="margin-top:8px">
+        <span>Font Weight</span>
+      </div>
+      <select id="l10-font-weight" class="input" style="width:100%">
+        <option value="normal">Normal</option>
+        <option value="bold">Bold</option>
+      </select>
+
+      <div class="l10-label" style="margin-top:8px">
+        <span>Font Style</span>
+      </div>
+      <select id="l10-font-style" class="input" style="width:100%">
+        <option value="normal">Normal</option>
+        <option value="italic">Italic</option>
+      </select>
+    </div>
+
+    <div class="l10-control-group">
+      <h3>Layout</h3>
+      <div class="l10-label">
+        <span>Text Align</span>
+      </div>
+      <select id="l10-text-align" class="input" style="width:100%">
+        <option value="left">Left</option>
+        <option value="center">Center</option>
+        <option value="right">Right</option>
+      </select>
+
+      <div class="l10-label" style="margin-top:8px">
+        <span>Container Width</span>
+        <span id="l10-width-val" class="l10-stat-val">400px</span>
+      </div>
+      <input id="l10-width" type="range" class="input" min="50" max="800" value="400" style="width:100%">
+
+      <div class="l10-label" style="margin-top:8px">
+        <span>Line Height</span>
+        <span id="l10-line-height-val" class="l10-stat-val">auto</span>
+      </div>
+      <input id="l10-line-height" type="range" class="input" min="0" max="60" value="0" style="width:100%">
+
+      <div class="l10-label" style="margin-top:8px">
+        <span>Color</span>
+      </div>
+      <input id="l10-color" type="color" value="#e0e0e0" style="width:100%">
+    </div>
+
+    <div class="l10-control-group">
+      <h3>Visualization</h3>
+      <label class="l10-adv-toggle">
+        <input id="l10-show-adv" type="checkbox"> Show advancements (tick marks)
+      </label>
+      <label class="l10-adv-toggle" style="margin-top:4px">
+        <input id="l10-show-bounds" type="checkbox" checked> Show text bounds
+      </label>
+      <label class="l10-adv-toggle" style="margin-top:4px">
+        <input id="l10-show-lines" type="checkbox"> Show line boundaries
+      </label>
+    </div>
+
+    <div class="l10-control-group">
+      <h3>Stats</h3>
+      <div class="l10-stats">
+        <span>Lines:</span> <span id="l10-stat-lines" class="l10-stat-val">0</span>
+        <span>Widest line:</span> <span id="l10-stat-widest" class="l10-stat-val">0px</span>
+        <span>Total height:</span> <span id="l10-stat-height" class="l10-stat-val">0px</span>
+        <span>Min-content:</span> <span id="l10-stat-min" class="l10-stat-val">0px</span>
+        <span>Max-content:</span> <span id="l10-stat-max" class="l10-stat-val">0px</span>
+      </div>
+    </div>
+
+    <div class="l10-control-group">
+      <h3>Performance Test</h3>
+      <button id="l10-perf-btn" class="btn" style="width:100%">Run Performance Test</button>
+      <div id="l10-perf-result" class="l10-perf-block" style="display:none"></div>
+    </div>
+  </div>
+
+  <!-- Canvas -->
+  <div class="card">
+    <div id="l10-canvas-wrap" class="l10-canvas-wrap" style="min-height:400px;">
+    </div>
+  </div>
+</div>

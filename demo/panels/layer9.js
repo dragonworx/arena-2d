@@ -253,7 +253,11 @@ import("../../dist/arena-2d.js").then(async (CanvasUI) => {
   unreachableItem.dragConstraint = "x";
   unreachableItem.cursor = "ew-resize";
   scene.root.addChild(unreachableItem);
-  allElements.push({ el: unreachableItem, color: "#636e72", label: "unreachable" });
+  allElements.push({
+    el: unreachableItem,
+    color: "#636e72",
+    label: "unreachable",
+  });
 
   // Wire Drag Controls
   const radios = document.querySelectorAll('input[name="drag-constraint"]');
@@ -283,11 +287,17 @@ import("../../dist/arena-2d.js").then(async (CanvasUI) => {
   quadToggle?.addEventListener("change", (e) => {
     const useQuad = e.target.checked;
     // Update all draggables
-    [dragItem, constraintItem, unreachableItem, ...boxes.map(b => b.el).filter(b => b.draggable)].forEach(el => {
+    const draggablesToUpdate = [
+      dragItem,
+      constraintItem,
+      unreachableItem,
+      ...boxes.map((b) => b.el).filter((b) => b.draggable),
+    ];
+    for (const el of draggablesToUpdate) {
       if (el) {
         el.dragHitTestMode = useQuad ? "quad" : "aabb";
       }
-    });
+    }
     addLog(`Quad Hit Test: ${useQuad ? "ENABLED" : "DISABLED"}`, "#fab1a0");
   });
 
@@ -327,7 +337,7 @@ import("../../dist/arena-2d.js").then(async (CanvasUI) => {
       // Restore Z-Index for "drag-me"
       if (el.id === "drag-me" && el.originalZIndex !== undefined) {
         el.zIndex = el.originalZIndex;
-        delete el.originalZIndex;
+        el.originalZIndex = undefined;
       }
 
       // Restore cursor based on constraint
@@ -523,7 +533,7 @@ import("../../dist/arena-2d.js").then(async (CanvasUI) => {
     }
 
     // Update transform controls if dragging
-    if (selectedElement && selectedElement.isDragging) {
+    if (selectedElement?.isDragging) {
       updateControls();
     }
   });
@@ -549,15 +559,15 @@ import("../../dist/arena-2d.js").then(async (CanvasUI) => {
         selectedIdSpan.textContent = "(none)";
         selectedIdSpan.style.color = "#888";
       }
-      [ctrlX, ctrlY, ctrlW, ctrlH, ctrlR].forEach((c) => {
+      for (const c of [ctrlX, ctrlY, ctrlW, ctrlH, ctrlR]) {
         if (c) {
           c.disabled = true;
           c.value = 0;
         }
-      });
-      [valX, valY, valW, valH].forEach((v) => {
+      }
+      for (const v of [valX, valY, valW, valH]) {
         if (v) v.textContent = "0";
-      });
+      }
       if (valR) valR.textContent = "0°";
       return;
     }

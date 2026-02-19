@@ -59,7 +59,7 @@ export function doPolygonsIntersect(polyA: IPoint[], polyB: IPoint[]): boolean {
       // Project both polygons onto this normal axis
       const minA = getMinMaxProjection(polyA, normal);
       const minB = getMinMaxProjection(polyB, normal);
-      
+
       const maxA = minA.max;
       const maxB = minB.max;
 

@@ -8,7 +8,7 @@ import {
   test,
 } from "bun:test";
 import { Window } from "happy-dom";
-// import type { Container } from "../src/core/Container";
+import type { IContainer } from "../src/core/Container";
 import { Element } from "../src/core/Element";
 import { Scene } from "../src/core/Scene";
 import type { IDragEvent } from "../src/interaction/DragManager";
@@ -123,13 +123,18 @@ beforeAll(() => {
     clientY: number;
     button: number;
 
-    constructor(type: string, params: any = {}) {
-      super(type, params);
+    constructor(
+      type: string,
+      params: { clientX?: number; clientY?: number; button?: number } = {},
+    ) {
+      // biome-ignore lint/suspicious/noExplicitAny: polyfill
+      super(type, params as any);
       this.clientX = params.clientX || 0;
       this.clientY = params.clientY || 0;
       this.button = params.button || 0;
     }
   }
+  // biome-ignore lint/suspicious/noExplicitAny: polyfill
   global.PointerEvent = PointerEvent as any;
 
   // Mock RequestAnimationFrame
@@ -145,7 +150,7 @@ afterAll(() => {
 
 describe("Drag Rotation Issue", () => {
   let scene: Scene;
-  let root: any; // Container
+  let root: IContainer;
 
   beforeEach(() => {
     document.body.innerHTML = '<div id="app"></div>';
@@ -177,10 +182,10 @@ describe("Drag Rotation Issue", () => {
 
     const draggable = new Element();
     draggable.width = 100;
-    draggable.height = 20; 
+    draggable.height = 20;
     draggable.x = 0;
     draggable.y = 0;
-    draggable.rotation = Math.PI / 4; 
+    draggable.rotation = Math.PI / 4;
     draggable.draggable = true;
     draggable.interactive = true;
     root.addChild(draggable);
@@ -188,9 +193,9 @@ describe("Drag Rotation Issue", () => {
     scene.root.update(0.016);
     // Explicitly update matrices for initial state
     draggable.updateLocalMatrix();
-    
+
     // cast to any to get access to updateSpatialHash if needed or just let render loop handle it
-    (scene.interaction as any).updateSpatialHash();
+    scene.interaction.updateSpatialHash();
 
     const onEnter = mock((_e: IDragEvent) => {});
     dropZone.on("dragenter", onEnter);
@@ -200,7 +205,7 @@ describe("Drag Rotation Issue", () => {
 
     // Move it to overlap
     dispatchPointer("pointermove", 180, 180);
-    
+
     // Check if entered
     expect(onEnter).toHaveBeenCalled();
   });

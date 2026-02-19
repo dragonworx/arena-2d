@@ -6,10 +6,10 @@
 
 import type { IElement } from "../core/Element";
 import { computeAABB } from "../math/aabb";
+import { doPolygonsIntersect, getGlobalQuad } from "../math/collision";
+import { multiply } from "../math/matrix";
 import type { InteractionManager } from "./InteractionManager"; // Circular dep potentially, use loose type or interface?
 import type { IPointerEvent } from "./InteractionManager";
-import { multiply } from "../math/matrix";
-import { doPolygonsIntersect, getGlobalQuad } from "../math/collision";
 
 export interface IDragEvent {
   type:
@@ -137,7 +137,7 @@ export class DragManager {
     if (!this._dragTarget) return;
 
     // Constraint check handled above
-    
+
     // Force update of the dragged element's matrices so AABB is accurate for this frame
     this._dragTarget.updateLocalMatrix();
 
@@ -152,13 +152,20 @@ export class DragManager {
         this._dragTarget.localMatrix,
       );
     } else {
-      this._dragTarget.worldMatrix = new Float32Array(this._dragTarget.localMatrix);
+      this._dragTarget.worldMatrix = new Float32Array(
+        this._dragTarget.localMatrix,
+      );
     }
 
     // Use AABB intersection for drag target detection
     // Calculate current world AABB of the dragged element
     const aabb = computeAABB(
-      { x: 0, y: 0, width: this._dragTarget.width, height: this._dragTarget.height },
+      {
+        x: 0,
+        y: 0,
+        width: this._dragTarget.width,
+        height: this._dragTarget.height,
+      },
       this._dragTarget.worldMatrix,
     );
 
@@ -189,7 +196,7 @@ export class DragManager {
             },
             this._dragTarget.worldMatrix,
           );
-          
+
           const targetQuad = getGlobalQuad(
             { x: 0, y: 0, width: el.width, height: el.height },
             el.worldMatrix,

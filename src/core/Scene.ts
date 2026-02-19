@@ -362,9 +362,11 @@ export class Scene implements IScene {
     layer.ctx.globalCompositeOperation = element.blendMode;
 
     // Call element's paint method
-    if ((element as any).paint) {
-      // console.log("Painting:", element.id, "at", element.worldMatrix);
-      (element as any).paint(ctx);
+    if (
+      "paint" in element &&
+      typeof (element as { paint: unknown }).paint === "function"
+    ) {
+      (element as { paint: (ctx: ArenaContext) => void }).paint(ctx);
     }
 
     // Restore canvas state
