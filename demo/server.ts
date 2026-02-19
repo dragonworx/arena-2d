@@ -34,7 +34,8 @@ async function buildBundle() {
       naming: "arena-2d.js",
       format: "esm",
       target: "browser",
-      minify: false,
+      minify: true,
+      sourcemap: "external",
     });
     if (result.success) {
       return true;

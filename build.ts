@@ -6,7 +6,7 @@ const result = await Bun.build({
   naming: "arena-2d.js",
   format: "esm",
   target: "browser",
-  minify: false,
+  minify: true,
 });
 
 if (!result.success) {
