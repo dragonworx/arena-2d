@@ -11,7 +11,7 @@ Layer 11 — Text Input & IME
 
 ## Status
 
-🔍 AWAITING REVIEW
+⏳ NOT STARTED
 
 ---
 
@@ -124,7 +124,7 @@ Layer 11 — Text Input & IME
 
 ---
 
-### Layer 7 — Scene & Layering System
+### Layer 7 — Scene & Layering System ✅
 - [x] 7.1 `src/core/Scene.ts` — host `<div>`, root container, resize, DPI handling
 - [x] 7.2 `src/core/Layer.ts` — create/remove/get layers, CSS z-index ordering
 - [x] 7.3 Layer assignment (inherit from parent unless overridden)
@@ -185,70 +185,8 @@ Layer 11 — Text Input & IME
 
 ## Layer Checklist
 
-### 🔴 Layer 0 — Project Scaffold & Demo Site
-- [ ] 0.1 Directory structure (`src/`, `src/internal/`, `tests/`, `demo/`, `dist/`)
-- [ ] 0.2 `package.json` with scripts: `dev`, `build`, `test`
-- [ ] 0.3 `tsconfig.json` (strict, ESNext)
-- [ ] 0.4 Bun dev server (`demo/server.ts`) with WebSocket live-reload
-- [ ] 0.5 Demo shell page (`demo/index.html`) — dark theme, sidebar nav, main content area
-- [ ] 0.6 `bun build` entry producing `dist/canvasui.js`
-- [ ] 0.7 Smoke test (`tests/scaffold.test.ts`)
-- **Acceptance:** `bun run dev` serves on localhost, `bun run build` produces bundle, `bun test` passes, live-reload works
-
 ---
 
-### 🟡 Layer 1 — Core Math & Transformation Engine
-- [ ] 1.1 `src/math/matrix.ts` — `MatrixArray`, identity, multiply, translate, rotate, scale, invert, transformPoint
-- [ ] 1.2 `src/math/aabb.ts` — `computeAABB(localBounds, worldMatrix)`
-- [ ] 1.3 `ITransform` mixin with property setters and `updateLocalMatrix()`
-- [ ] 1.4 Unit tests (identity, composition, inversion, pivoted rotation, AABB, edge cases)
-- [ ] 1.5 Demo panel — rectangle with transform sliders and AABB overlay
-- **Acceptance:** All matrix operations match hand-calculated values within `1e-6`
-
----
-
-
-
----
-
-### Layer 4 — Container & Child Management ✅
-- [x] 4.1 `src/core/Container.ts` — `addChild`, `addChildAt`, `removeChild`, `removeAllChildren`, `sortChildren`, `getChildByID`, `clipContent`
-- [x] 4.2 Scene propagation — `onAdded`/`onRemoved`/`onSceneChanged` cascade
-- [x] 4.3 Transform cascade — `invalidate(Transform)` propagates to descendants
-- [x] 4.4 Cache-as-bitmap — invalidation bubbling to nearest cached ancestor
-- [x] 4.5 Unit tests (z-order, re-parenting, cascade depth, cache invalidation)
-- [x] 4.6 Demo panel — nested container tree with add/remove/reorder controls
-- Tests: 138/138 passing (36 new container tests + 102 prior)
-
----
-
-### Layer 5 — Ticker (Frame Loop) ✅
-- [x] 5.1 `src/core/Ticker.ts` — `start()`, `stop()`, `add()`, `remove()`
-- [x] 5.2 FPS throttling (`globalFPS < refresh → skip frames; 0 = pause`)
-- [x] 5.3 Frame pipeline ordering (stubs for layout/paint/hit)
-- [x] 5.4 `elapsedTime` accumulation
-- [x] 5.5 Unit tests (clamping, throttling, start/stop/restart, elapsed)
-- [x] 5.6 Demo panel — FPS counter, deltaTime readout, bouncing ball, nested ticker
-- **Acceptance:** `deltaTime` never exceeds `maxDeltaTime`; FPS throttle works; no spike on restart
-
----
-
-
-
----
-
-
-
-### 🟡 Layer 10 — Text & Text Layout
-- [x] 10.1 `src/elements/Text.ts` — `IText` with `fillText()` rendering
-- [x] 10.2 `src/text/TextLayout.ts` — greedy word-wrap, per-character advancements
-- [x] 10.3 Intrinsic sizing (widest line × lineHeight × line count)
-- [x] 10.4 `ITextStyle` implementation
-- [x] 10.5 `fontReady` utility
-- [x] 10.6 Unit tests (wrap boundary, hard breaks, empty string, single long word, alignment)
-- [x] 10.7 Demo panel — text block with font controls and width slider
-- **Acceptance:** Word-wrap is correct; font size change triggers re-measure; alignment works
-- Tests: 364/364 passing (40 new text tests + 324 prior)
 
 ---
 
