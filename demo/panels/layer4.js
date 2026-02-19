@@ -1,5 +1,5 @@
-export default async function (CanvasUI) {
-  const { Container, Element, DirtyFlags, resolvePointerPosition } = CanvasUI;
+export default async function (Arena2D) {
+  const { Container, Element, DirtyFlags, resolvePointerPosition } = Arena2D;
   // ── Inject HTML panel ──
 
   // ── Palette ──

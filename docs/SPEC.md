@@ -15,7 +15,7 @@ Arena-2D is a retained-mode, hardware-accelerated UI library for TypeScript and 
 5. [Interaction & Focus System](#5-interaction--focus-system)
 6. [Rich Text & Input Subsystem](#6-rich-text--input-subsystem)
 7. [Hierarchical Ticker System](#7-hierarchical-ticker-system)
-8. [Rendering Wrapper (CanvasUIContext)](#8-rendering-wrapper-canvasuicontext)
+8. [Rendering Wrapper (Arena2DContext)](#8-rendering-wrapper-arena-2dcontext)
 9. [Image & Texture Elements](#9-image--texture-elements)
 10. [Animation System](#10-animation-system)
 11. [Scroll Containers](#11-scroll-containers)
@@ -27,7 +27,7 @@ Arena-2D is a retained-mode, hardware-accelerated UI library for TypeScript and 
 
 ### 1.1 Philosophy
 
-To achieve GPU-level performance, CanvasUI uses 2D Affine Transformation Matrices. This allows complex hierarchies (nesting, rotation, scaling) to be resolved through simple matrix multiplication rather than manual coordinate math.
+To achieve GPU-level performance, Arena2D uses 2D Affine Transformation Matrices. This allows complex hierarchies (nesting, rotation, scaling) to be resolved through simple matrix multiplication rather than manual coordinate math.
 
 ### 1.2 Mechanics
 
@@ -161,7 +161,7 @@ export interface IElement extends ITransform {
 
   // Frame loop
   update(dt: number): void;       // Called once per tick. Resolve dirty flags.
-  paint(ctx: ICanvasUIContext): void; // Called once per render. Draw self.
+  paint(ctx: IArena2DContext): void; // Called once per render. Draw self.
 
   // Disposal
   destroy(): void;                // Release all resources (OffscreenCanvas, listeners, etc.)
@@ -576,7 +576,7 @@ export interface ITicker {
 
 ---
 
-## 8. Rendering Wrapper (CanvasUIContext)
+## 8. Rendering Wrapper (Arena2DContext)
 
 ### 8.1 Philosophy
 
@@ -593,7 +593,7 @@ A safe wrapper around `CanvasRenderingContext2D` that prevents state leakage and
 ```typescript
 export type FillStyle = string | CanvasGradient | CanvasPattern;
 
-export interface ICanvasUIContext {
+export interface IArena2DContext {
   readonly raw: CanvasRenderingContext2D;
 
   // Shape primitives
@@ -752,7 +752,7 @@ The library uses the following conventions:
 | Invalid layout unit string (e.g., `'abc'`) | Treat as `0` and log a warning. |
 | Setting `alpha` outside `[0, 1]` | Clamp to `[0, 1]`. |
 
-**Debug mode** is enabled by setting `CanvasUI.debug = true`. In debug mode, warnings are printed to `console.warn` for invalid states and performance hints (e.g., "Container with 500+ children and no cacheAsBitmap").
+**Debug mode** is enabled by setting `Arena2D.debug = true`. In debug mode, warnings are printed to `console.warn` for invalid states and performance hints (e.g., "Container with 500+ children and no cacheAsBitmap").
 
 ### 12.2 Memory Management
 

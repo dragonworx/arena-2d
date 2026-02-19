@@ -25,6 +25,30 @@ const MIME_TYPES: Record<string, string> = {
 // biome-ignore lint/suspicious/noExplicitAny: Bun ServerWebSocket generic type
 const wsClients = new Set<any>();
 
+// --- Builder ---
+async function buildBundle() {
+  try {
+    const result = await Bun.build({
+      entrypoints: [join(SRC_DIR, "index.ts")],
+      outdir: join(PROJECT_ROOT, "dist"),
+      naming: "arena-2d.js",
+      format: "esm",
+      target: "browser",
+      minify: false,
+    });
+    if (result.success) {
+      return true;
+    }
+    console.error("  ✖ Build failed:");
+    for (const log of result.logs) {
+      console.error(log);
+    }
+  } catch (err) {
+    console.error("  ✖ Build error:", err);
+  }
+  return false;
+}
+
 // --- File watcher ---
 function startWatcher(dir: string, label: string) {
   try {
@@ -38,20 +62,8 @@ function startWatcher(dir: string, label: string) {
       console.log(`[${label}] changed: ${filename}`);
 
       // Rebuild bundle
-      try {
-        const result = await Bun.build({
-          entrypoints: [join(SRC_DIR, "index.ts")],
-          outdir: join(PROJECT_ROOT, "dist"),
-          naming: "arena-2d.js",
-          format: "esm",
-          target: "browser",
-          minify: false,
-        });
-        if (result.success) {
-          console.log("  ✓ Rebuilt dist/arena-2d.js");
-        }
-      } catch {
-        // Build errors are non-fatal for the dev server
+      if (await buildBundle()) {
+        console.log("  ✓ Rebuilt dist/arena-2d.js");
       }
 
       // Notify all connected clients to reload
@@ -131,6 +143,15 @@ const server = Bun.serve({
 
 console.log("\n  Arena-2D Dev Server");
 console.log("  ───────────────────");
+
+// Initial build
+process.stdout.write("  Building library... ");
+if (await buildBundle()) {
+  console.log("✓ dist/arena-2d.js");
+} else {
+  console.log("✖ Build failed. Check errors above.");
+}
+
 console.log(`  → http://localhost:${PORT}`);
 console.log("");
 

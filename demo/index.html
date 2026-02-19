@@ -275,8 +275,8 @@
         let code = await response.text();
         
         // Strip export default boilerplate
-        code = code.replace(/export default async function\(CanvasUI\) \{/, '');
-        code = code.replace(/export default function\(CanvasUI\) \{/, '');
+        code = code.replace(/export default async function\(Arena2D\) \{/, '');
+        code = code.replace(/export default function\(Arena2D\) \{/, '');
         // Strip closing brace at the end
         code = code.trim();
         if (code.endsWith('}')) {

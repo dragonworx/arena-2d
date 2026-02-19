@@ -1,5 +1,5 @@
 /**
- * CanvasUI — High-Performance TypeScript Canvas UI Library
+ * Arena2D — High-Performance TypeScript Canvas UX Library
  */
 export const VERSION = "0.0.1";
 
@@ -39,7 +39,7 @@ export { Container } from "./core/Container";
 export type { ITicker } from "./core/Ticker";
 export { Ticker } from "./core/Ticker";
 
-// --- Layer 6: Rendering Wrapper (CanvasUIContext) ---
+// --- Layer 6: Rendering Wrapper (Arena2DContext) ---
 export type {
   FillStyle,
   ITextStyle,

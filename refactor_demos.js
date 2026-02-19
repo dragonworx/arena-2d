@@ -8,8 +8,8 @@ files.forEach(file => {
   const filePath = path.join(panelsDir, file);
   let content = fs.readFileSync(filePath, 'utf8');
 
-  // Pattern 1: import("../../dist/arena-2d.js").then(async (CanvasUI) => { ... });
-  const pattern1 = /import\("\.\.\/\.\.\/dist\/arena-2d\.js"\)\.then\(async\s*\(CanvasUI\)\s*=>\s*\{([\s\S]*)\}\);/m;
+  // Pattern 1: import("../../dist/arena-2d.js").then(async (Arena2D) => { ... });
+  const pattern1 = /import\("\.\.\/\.\.\/dist\/arena-2d\.js"\)\.then\(async\s*\(Arena2D\)\s*=>\s*\{([\s\S]*)\}\);/m;
 
   // Pattern 2: (async () => { ... })();
   const pattern2 = /\(async\s*\(\)\s*=>\s*\{([\s\S]*)\}\)\(\);/m;
@@ -28,7 +28,7 @@ files.forEach(file => {
   innerContent = innerContent.replace(/\/\/ Load panel HTML[\s\S]*?document\.getElementById\(.*?\)\.innerHTML = await response\.text\(\);/g, '');
   innerContent = innerContent.replace(/const response = await fetch\(.*?\);[\s\S]*?document\.getElementById\(.*?\)\.innerHTML = await response\.text\(\);/g, '');
 
-  const newContent = `export default async function(CanvasUI) {
+  const newContent = `export default async function(Arena2D) {
 ${innerContent.trim()}
 }`;
 

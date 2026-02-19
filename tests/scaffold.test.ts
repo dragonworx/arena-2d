@@ -27,7 +27,7 @@ describe("Layer 0 — Project Scaffold", () => {
     }
   });
 
-  test("bun build produces dist/canvasui.js", () => {
+  test("bun build produces dist/arena-2d.js", () => {
     expect(existsSync(BUNDLE_PATH)).toBe(true);
   });
 

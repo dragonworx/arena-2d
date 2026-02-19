@@ -1,5 +1,5 @@
 /**
- * Element — Base class for all CanvasUI elements.
+ * Element — Base class for all Arena2D elements.
  *
  * Extends EventEmitter and implements ITransform properties with dirty flag
  * management. Property setters call invalidate() to mark the element for
@@ -107,7 +107,7 @@ export interface IElement {
 
   // Frame loop
   update(dt: number): void;
-  // biome-ignore lint/suspicious/noExplicitAny: CanvasUIContext type defined in Layer 6
+  // biome-ignore lint/suspicious/noExplicitAny: Arena2DContext type defined in Layer 6
   paint(ctx: any): void;
 
   // Disposal

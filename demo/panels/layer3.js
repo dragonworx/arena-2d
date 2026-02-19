@@ -1,5 +1,5 @@
-export default async function (CanvasUI) {
-  const { Element, DirtyFlags } = CanvasUI;
+export default async function (Arena2D) {
+  const { Element, DirtyFlags } = Arena2D;
   // ── DOM refs ──
   const canvas = document.getElementById("l3-canvas");
   const ctx = canvas.getContext("2d");

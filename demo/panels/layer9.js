@@ -1,5 +1,5 @@
-export default async function (CanvasUI) {
-  const { Scene, Container, Element } = CanvasUI;
+export default async function (Arena2D) {
+  const { Scene, Container, Element } = Arena2D;
 
   // ── Setup Scene ──
   const sceneContainer = document.getElementById("l9-scene-container");

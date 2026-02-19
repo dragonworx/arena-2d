@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "canvasui",
+      "name": "arena-2d",
       "devDependencies": {
         "@biomejs/biome": "^1.9.0",
         "bun-types": "^1.3.9",

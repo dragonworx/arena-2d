@@ -1,4 +1,4 @@
-export default async function (CanvasUI) {
+export default async function (Arena2D) {
   const {
     computeAABB,
     multiply,
@@ -7,7 +7,7 @@ export default async function (CanvasUI) {
     skew,
     transformPoint,
     translate,
-  } = CanvasUI;
+  } = Arena2D;
 
   // Composition: T(x,y) × R × Skew × S × T(-px,-py)
   function computeLocalMatrix(x, y, rot, sx, sy, skx, sky, px, py) {

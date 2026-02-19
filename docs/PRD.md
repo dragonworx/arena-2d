@@ -1,6 +1,6 @@
 # Arena-2D — Product Requirements Document
 
-> A layered implementation plan for building CanvasUI from the ground up, where each stage can be tested and refined before the next begins.
+> A layered implementation plan for building Arena2D from the ground up, where each stage can be tested and refined before the next begins.
 
 ---
 
@@ -44,7 +44,7 @@ Layer 4  Container & Child Management
   │
 Layer 5  Ticker (Frame Loop)
   │
-Layer 6  Rendering Wrapper (CanvasUIContext)
+Layer 6  Rendering Wrapper (Arena2DContext)
   │
 Layer 7  Scene & Layering System
   │
@@ -96,7 +96,7 @@ Establish the project skeleton, build pipeline, and a live-reloading demo site t
 - Editing any file under `src/` or `demo/` triggers a browser reload.
 
 ### Demo Panel
-Static "Hello, CanvasUI" card confirming the pipeline works.
+Static "Hello, Arena2D" card confirming the pipeline works.
 
 ---
 
@@ -230,7 +230,7 @@ An FPS counter and `deltaTime` readout. Slider to set `globalFPS`. A ball bounci
 
 ---
 
-## Layer 6 — Rendering Wrapper (CanvasUIContext)
+## Layer 6 — Rendering Wrapper (Arena2DContext)
 
 > **Spec Reference:** §8
 
@@ -241,7 +241,7 @@ Build the safe `CanvasRenderingContext2D` wrapper with high-level drawing primit
 
 | # | Item | Details |
 |---|---|---|
-| 6.1 | **`src/rendering/CanvasUIContext.ts`** | Wraps `CanvasRenderingContext2D`. Implements all shape primitives: `drawRect`, `drawRoundedRect`, `drawCircle`, `drawEllipse`, `drawLine`, `drawPolygon`, `drawPath` |
+| 6.1 | **`src/rendering/Arena2DContext.ts`** | Wraps `CanvasRenderingContext2D`. Implements all shape primitives: `drawRect`, `drawRoundedRect`, `drawCircle`, `drawEllipse`, `drawLine`, `drawPolygon`, `drawPath` |
 | 6.2 | **Image drawing** | `drawImage`, `drawImageRegion` |
 | 6.3 | **Text drawing** | `drawText`, `measureText` |
 | 6.4 | **Effects** | `setShadow`, `clearShadow` |
@@ -277,7 +277,7 @@ Implement the `Scene` which manages DOM `<canvas>` elements, DPI scaling, layers
 | 7.4 | **Hit buffer** | Single `OffscreenCanvas`. Paint interactive elements with unique per-element color for O(1) lookup. |
 | 7.5 | **Coordinate transforms** | `screenToScene`, `sceneToScreen` accounting for DPR and container offset. |
 | 7.6 | **`getElementById`** | ID→element index maintained during add/remove. |
-| 7.7 | **Full frame pipeline** | Wire the Ticker (Layer 5) → Elements (Layer 3/4) → CanvasUIContext (Layer 6) → Layers into a working render loop. |
+| 7.7 | **Full frame pipeline** | Wire the Ticker (Layer 5) → Elements (Layer 3/4) → Arena2DContext (Layer 6) → Layers into a working render loop. |
 | 7.8 | **Unit tests** | Layer ordering, DPR scaling math, resize propagation, hit buffer color uniqueness |
 
 ### Acceptance Criteria
@@ -478,7 +478,7 @@ Implement `IImage` element for displaying bitmaps with optional nine-slice scali
 
 | # | Item | Details |
 |---|---|---|
-| 12.1 | **`src/elements/Image.ts`** | Implements `IImage`. Draws `source` via `CanvasUIContext.drawImage`. |
+| 12.1 | **`src/elements/Image.ts`** | Implements `IImage`. Draws `source` via `Arena2DContext.drawImage`. |
 | 12.2 | **Source rect** | `sourceRect` for sprite sheet sub-regions. |
 | 12.3 | **Nine-slice** | `nineSlice: [top, right, bottom, left]` divides image into 9 regions. Corners at natural size, edges stretched on one axis, center fills. |
 | 12.4 | **Tint** | Color tint via compositing. |
@@ -569,7 +569,7 @@ Implement defensive error handling, debug mode diagnostics, and robust memory cl
 | # | Item | Details |
 |---|---|---|
 | 15.1 | **Error conventions** | Re-parenting auto-removes. Remove non-child is no-op. Scale 0 → `Number.EPSILON`. Invalid layout units → `0`. Alpha clamped to `[0, 1]`. |
-| 15.2 | **Debug mode** | `CanvasUI.debug = true` enables `console.warn` for: invalid states, performance hints (500+ children without cache-as-bitmap). |
+| 15.2 | **Debug mode** | `Arena2D.debug = true` enables `console.warn` for: invalid states, performance hints (500+ children without cache-as-bitmap). |
 | 15.3 | **`destroy()` audit** | Verify every element type releases: `OffscreenCanvas`, event listeners, spatial hash entries, animations, hidden `<textarea>`. |
 | 15.4 | **`FinalizationRegistry`** | In debug mode, warn when a Scene is GC'd without `destroy()`. |
 | 15.5 | **Unit tests** | Each error convention, debug mode warnings, destroy resource release |
@@ -600,7 +600,7 @@ Finalize the public API surface, produce the production bundle, and ensure the d
 | 16.5 | **Final test sweep** | All `bun test` suites green. Manual walkthrough of every demo panel. |
 
 ### Acceptance Criteria
-- `import { Scene, Container, Text } from 'canvasui'` works from a consumer project.
+- `import { Scene, Container, Text } from 'arena-2d'` works from a consumer project.
 - Type declarations are correct and complete.
 - Demo site demonstrates every feature from SPEC.md.
 - All tests pass.

@@ -1,5 +1,5 @@
 ---
-description: Implement the next layer of CanvasUI following the phase-gate process
+description: Implement the next layer of Arena2D following the phase-gate process
 ---
 
 # Implement Current Layer

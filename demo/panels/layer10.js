@@ -1,5 +1,5 @@
-export default async function (CanvasUI) {
-  const { Scene, Text } = CanvasUI;
+export default async function (Arena2D) {
+  const { Scene, Text } = Arena2D;
 
   // ── Control elements ──
   const textArea = document.getElementById("l10-text");
@@ -199,12 +199,12 @@ export default async function (CanvasUI) {
     const iterations = 100;
 
     // Clear cache for fair test
-    CanvasUI.clearLayoutCache();
+    Arena2D.clearLayoutCache();
 
     const start = performance.now();
     for (let i = 0; i < iterations; i++) {
-      CanvasUI.clearLayoutCache();
-      CanvasUI.computeTextLayout(
+      Arena2D.clearLayoutCache();
+      Arena2D.computeTextLayout(
         longText,
         {
           fontSize: 14,
@@ -217,10 +217,10 @@ export default async function (CanvasUI) {
     const elapsed = performance.now() - start;
 
     // Test with cache
-    CanvasUI.clearLayoutCache();
+    Arena2D.clearLayoutCache();
     const cacheStart = performance.now();
     for (let i = 0; i < iterations; i++) {
-      CanvasUI.computeTextLayout(
+      Arena2D.computeTextLayout(
         longText,
         {
           fontSize: 14,

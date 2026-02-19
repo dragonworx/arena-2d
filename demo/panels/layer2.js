@@ -1,5 +1,5 @@
-export default async function (CanvasUI) {
-  const { EventEmitter } = CanvasUI;
+export default async function (Arena2D) {
+  const { EventEmitter } = Arena2D;
   // ── Fetch and inject panel HTML ──
 
   // ── Setup ──

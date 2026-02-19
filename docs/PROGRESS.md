@@ -109,8 +109,8 @@ Layer 12 — Image & Nine-Slice
 
 ---
 
-### Layer 6 — Rendering Wrapper (CanvasUIContext) ✅
-- [x] 6.1 `src/rendering/CanvasUIContext.ts` — all shape primitives
+### Layer 6 — Rendering Wrapper (Arena2DContext) ✅
+- [x] 6.1 `src/rendering/Arena2DContext.ts` — all shape primitives
 - [x] 6.2 Image drawing (`drawImage`, `drawImageRegion`)
 - [x] 6.3 Text drawing (`drawText`, `measureText`)
 - [x] 6.4 Effects (`setShadow`, `clearShadow`)
@@ -244,7 +244,7 @@ Layer 12 — Image & Nine-Slice
 
 ### 🟡 Layer 15 — Error Handling, Debug Mode & Memory Management
 - [ ] 15.1 Error conventions (re-parent auto-remove, scale 0 → epsilon, alpha clamp, etc.)
-- [ ] 15.2 Debug mode (`CanvasUI.debug = true` → `console.warn`)
+- [ ] 15.2 Debug mode (`Arena2D.debug = true` → `console.warn`)
 - [ ] 15.3 `destroy()` audit across all element types
 - [ ] 15.4 `FinalizationRegistry` warning for un-destroyed Scenes
 - [ ] 15.5 Unit tests (each error convention, debug warnings, destroy release)
@@ -259,7 +259,7 @@ Layer 12 — Image & Nine-Slice
 - [ ] 16.3 Demo site polish (all panels reviewed, responsive, nav complete)
 - [ ] 16.4 `README.md` (quick-start, link to demo + SPEC)
 - [ ] 16.5 Final test sweep (all suites green, manual walkthrough)
-- **Acceptance:** `import { Scene, Container, Text } from 'canvasui'` works; types correct; all tests pass; demo complete
+- **Acceptance:** `import { Scene, Container, Text } from 'arena-2d'` works; types correct; all tests pass; demo complete
 
 ---
 
