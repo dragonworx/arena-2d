@@ -35,8 +35,8 @@ export default async function (Arena2D) {
   // ── Physics state ──
 
   let speed = 400;
-  let direction = 270;
-  let gravity = 600;
+  let direction = 230;
+  let gravity = 200;
   let frameCount = 0;
 
   const ball = {
@@ -267,6 +267,9 @@ export default async function (Arena2D) {
   ctrlFps.addEventListener("input", () => {
     const v = Number(ctrlFps.value);
     parentTicker.globalFPS = v;
+    if (v > 0) {
+      parentTicker.maxDeltaTime = Math.max(0.1, 1.2 / v);
+    }
     ctrlFpsVal.textContent = v === 0 ? "⏸" : v;
   });
 
@@ -292,6 +295,9 @@ export default async function (Arena2D) {
   ctrlChildFps.addEventListener("input", () => {
     const v = Number(ctrlChildFps.value);
     childTicker.globalFPS = v;
+    if (v > 0) {
+      childTicker.maxDeltaTime = Math.max(0.1, 1.2 / v);
+    }
     ctrlChildFpsVal.textContent = v;
   });
 
@@ -320,6 +326,38 @@ export default async function (Arena2D) {
   document.getElementById("btn-reset").addEventListener("click", () => {
     parentTicker.stop();
     childTicker.stop();
+
+    // Reset controls
+    ctrlFps.value = "60";
+    ctrlFpsVal.textContent = "60";
+    parentTicker.globalFPS = 60;
+    parentTicker.maxDeltaTime = 0.1;
+
+    ctrlChildFps.value = "60";
+    ctrlChildFpsVal.textContent = "60";
+    childTicker.globalFPS = 60;
+    childTicker.maxDeltaTime = 0.1;
+
+    ctrlSpeed.value = "400";
+    ctrlSpeedVal.textContent = "400";
+    speed = 400;
+
+    ctrlDirection.value = "230";
+    ctrlDirectionVal.textContent = "230°";
+    direction = 230;
+
+    ctrlGravity.value = "200";
+    ctrlGravityVal.textContent = "200";
+    gravity = 200;
+
+    ctrlOrbitSpeed.value = "3";
+    ctrlOrbitSpeedVal.textContent = "3×";
+    orbitSpeed = 3;
+
+    ctrlOrbitRadius.value = "30";
+    ctrlOrbitRadiusVal.textContent = "30";
+    orbitRadius = 30;
+
     ball.x = W / 2;
     ball.y = H / 3;
     updateBallVelocity();

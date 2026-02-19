@@ -44,6 +44,7 @@ export class Ticker implements ITicker {
   private _deltaTime = 0;
   private _elapsedTime = 0;
   private _lastTime = -1;
+  private _lastTickTime = -1;
   private _initialized = false;
   private _rafId: number | null = null;
   private _running = false;
@@ -118,6 +119,7 @@ export class Ticker implements ITicker {
     if (!this._initialized) {
       this._initialized = true;
       this._lastTime = timestamp;
+      this._lastTickTime = timestamp;
       if (this._running) this._requestFrame();
       return;
     }
@@ -145,6 +147,7 @@ export class Ticker implements ITicker {
     } else if (this.globalFPS === 0) {
       // Paused: update lastTime but don't tick
       this._lastTime = timestamp;
+      this._lastTickTime = timestamp;
       if (this._running) this._requestFrame();
       return;
     }
@@ -153,7 +156,10 @@ export class Ticker implements ITicker {
     this._lastTime = timestamp;
 
     // Compute deltaTime in seconds, clamp to maxDeltaTime
-    let dt = rawDeltaMs / 1000;
+    const dtMs = timestamp - this._lastTickTime;
+    this._lastTickTime = timestamp;
+
+    let dt = dtMs / 1000;
     if (dt > this.maxDeltaTime) {
       dt = this.maxDeltaTime;
     }

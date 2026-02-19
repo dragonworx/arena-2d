@@ -180,6 +180,38 @@ describe("Ticker — FPS throttling", () => {
     simulateFrames(t, 11, 16.667, 0);
     expect(tickCount).toBe(10);
   });
+
+  test("dt matches target interval when throttled (low FPS)", () => {
+    const t = new Ticker();
+    // 10 FPS = 100ms interval
+    t.globalFPS = 10;
+    t.maxDeltaTime = 1.0; 
+
+    const dts: number[] = [];
+    const el = new Element("tracker");
+    el.update = (dt) => dts.push(dt);
+    t.add(el);
+
+    let time = 0;
+    t._tick(time); // Init
+
+    // Simulate 60Hz rAF (approx 16.667ms)
+    // We need ~6 frames to reach 100ms
+    // Frame 0: 0ms (init)
+    // Frame 6: 100.0ms -> acc=100.0 -> FIRE
+    
+    // Step forward in 16.667ms increments
+    for(let i=0; i<6; i++) {
+        time += 16.667;
+        t._tick(time);
+    }
+
+    // Expecting 1 tick
+    expect(dts.length).toBe(1);
+    // The dt should be close to 0.1 (100ms), NOT 0.016 (16ms)
+    // If it fails (current bug), it will be close to 0.016
+    expect(dts[0]).toBeCloseTo(0.1, 1);
+  });
 });
 
 // ── Start / Stop ──
