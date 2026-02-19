@@ -28,14 +28,19 @@ export default async function (Arena2D) {
 
     emitter.on("test-event", handler);
     handlerStack.push(handler);
-    log(`Added persistent handler #${id}. Total active: ${handlerStack.length}`);
+    log(
+      `Added persistent handler #${id}. Total active: ${handlerStack.length}`,
+    );
   });
 
   // .once - adds a single handler
   document.getElementById("btn-once")?.addEventListener("click", () => {
     const id = ++handlerCounter;
     emitter.once("test-event", (e) => {
-      log(`[Once Handler #${id}] fired and removed! Payload: ${JSON.stringify(e)}`, "bar");
+      log(
+        `[Once Handler #${id}] fired and removed! Payload: ${JSON.stringify(e)}`,
+        "bar",
+      );
     });
     log(`Added one-time handler #${id}.`);
   });
@@ -45,7 +50,9 @@ export default async function (Arena2D) {
     const handler = handlerStack.pop();
     if (handler) {
       emitter.off("test-event", handler);
-      log(`Removed last persistent handler. Remaining active: ${handlerStack.length}`);
+      log(
+        `Removed last persistent handler. Remaining active: ${handlerStack.length}`,
+      );
     } else {
       log("No persistent handlers to remove.", "bar");
     }

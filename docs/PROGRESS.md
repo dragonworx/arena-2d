@@ -11,7 +11,7 @@ Layer 12 — Image & Nine-Slice
 
 ## Status
 
-⏳ NOT STARTED
+🔍 AWAITING REVIEW
 
 ---
 
@@ -202,14 +202,15 @@ Layer 12 — Image & Nine-Slice
 ---
 
 ### 🟢 Layer 12 — Image & Nine-Slice
-- [ ] 12.1 `src/elements/Image.ts` — `IImage` rendering
-- [ ] 12.2 Source rect for sprite sheets
-- [ ] 12.3 Nine-slice rendering
-- [ ] 12.4 Tint via compositing
-- [ ] 12.5 Intrinsic sizing from natural dimensions
-- [ ] 12.6 Unit tests (nine-slice math, source rect, null source)
-- [ ] 12.7 Demo panel — image gallery with sprite sheet, nine-slice, drag-resize
+- [x] 12.1 `src/elements/Image.ts` — `IImage` rendering
+- [x] 12.2 Source rect for sprite sheets
+- [x] 12.3 Nine-slice rendering
+- [x] 12.4 Tint via compositing
+- [x] 12.5 Intrinsic sizing from natural dimensions
+- [x] 12.6 Unit tests (nine-slice math, source rect, null source)
+- [x] 12.7 Demo panel — image gallery with sprite sheet, nine-slice, drag-resize
 - **Acceptance:** Nine-slice preserves corners; sprite region clips correctly; null source clears
+- Tests: 473/473 passing (33 new Image tests + 440 prior)
 
 ---
 

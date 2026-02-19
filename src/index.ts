@@ -96,3 +96,6 @@ export { isFontReady, waitForFont } from "./text/fontReady";
 
 // --- Layer 11: Text Input & IME ---
 export { TextInput } from "./elements/TextInput";
+
+// --- Layer 12: Image & Nine-Slice ---
+export { Image } from "./elements/Image";
