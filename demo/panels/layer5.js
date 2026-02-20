@@ -12,6 +12,7 @@ export default async function (Arena2D) {
 
   const statFps = document.getElementById("stat-fps");
   const statChildFps = document.getElementById("stat-child-fps");
+  const statGrandchildFps = document.getElementById("stat-grandchild-fps");
   const statElapsed = document.getElementById("stat-elapsed");
   const statFrames = document.getElementById("stat-frames");
 
@@ -31,6 +32,13 @@ export default async function (Arena2D) {
   const ctrlOrbitSpeedVal = document.getElementById("ctrl-orbit-speed-val");
   const ctrlOrbitRadius = document.getElementById("ctrl-orbit-radius");
   const ctrlOrbitRadiusVal = document.getElementById("ctrl-orbit-radius-val");
+
+  const ctrlGrandchildFps = document.getElementById("ctrl-grandchild-fps");
+  const ctrlGrandchildFpsVal = document.getElementById("ctrl-grandchild-fps-val");
+  const ctrlGrandchildSpeed = document.getElementById("ctrl-grandchild-speed");
+  const ctrlGrandchildSpeedVal = document.getElementById("ctrl-grandchild-speed-val");
+  const ctrlGrandchildRadius = document.getElementById("ctrl-grandchild-radius");
+  const ctrlGrandchildRadiusVal = document.getElementById("ctrl-grandchild-radius-val");
 
   // ── Physics state ──
 
@@ -57,9 +65,14 @@ export default async function (Arena2D) {
   // ── Child (moon) state ──
 
   let orbitAngle = 0; // radians, updated by child ticker
-  let orbitSpeed = 3; // radians per second
+  let orbitSpeed = 1; // fixed bug where fast speed looked like jerking side-to-side at 1 FPS
   let orbitRadius = 30;
   const moonRadius = 5;
+
+  let grandchildAngle = 0;
+  let grandchildSpeed = 1;
+  let grandchildRadius = 12;
+  const satelliteRadius = 2.5;
 
   // FPS counters (smoothed)
   let parentFpsAccum = 0;
@@ -69,6 +82,10 @@ export default async function (Arena2D) {
   let childFpsAccum = 0;
   let childFpsSamples = 0;
   let childFpsDisplay = 0;
+
+  let grandchildFpsAccum = 0;
+  let grandchildFpsSamples = 0;
+  let grandchildFpsDisplay = 0;
 
   // ── Trail effect ──
   const trail = [];
@@ -130,6 +147,7 @@ export default async function (Arena2D) {
     // Update stats
     statFps.textContent = parentFpsDisplay;
     statChildFps.textContent = childFpsDisplay;
+    statGrandchildFps.textContent = grandchildFpsDisplay;
     statElapsed.textContent = `${parentTicker.elapsedTime.toFixed(1)}s`;
     statFrames.textContent = frameCount;
 
@@ -167,6 +185,27 @@ export default async function (Arena2D) {
   };
 
   childTicker.add(moonElement);
+
+  // ═══════════════════════════════════════════
+  //  GRANDCHILD TICKER — drives the satellite
+  // ═══════════════════════════════════════════
+
+  const grandchildTicker = new Ticker();
+
+  const satelliteElement = new Element("satellite");
+  satelliteElement.update = (dt) => {
+    grandchildAngle += grandchildSpeed * dt;
+
+    grandchildFpsAccum += dt;
+    grandchildFpsSamples++;
+    if (grandchildFpsAccum >= 0.5) {
+      grandchildFpsDisplay = Math.round(grandchildFpsSamples / grandchildFpsAccum);
+      grandchildFpsAccum = 0;
+      grandchildFpsSamples = 0;
+    }
+  };
+
+  grandchildTicker.add(satelliteElement);
 
   // ── Rendering ──
 
@@ -243,6 +282,34 @@ export default async function (Arena2D) {
     ctx.moveTo(ball.x, ball.y);
     ctx.lineTo(moonX, moonY);
     ctx.stroke();
+
+    // ── Draw grandchild orbit ring (faint) ──
+    ctx.strokeStyle = "rgba(124, 235, 142, 0.15)";
+    ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    ctx.arc(moonX, moonY, grandchildRadius, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // ── Draw grandchild (satellite) ──
+    const gcX = moonX + Math.cos(grandchildAngle) * grandchildRadius;
+    const gcY = moonY + Math.sin(grandchildAngle) * grandchildRadius;
+
+    ctx.shadowColor = "#7ceb8e";
+    ctx.shadowBlur = 8;
+    ctx.beginPath();
+    ctx.arc(gcX, gcY, satelliteRadius, 0, Math.PI * 2);
+    ctx.fillStyle = "#7ceb8e";
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Draw connecting line moon → satellite
+    ctx.strokeStyle = "rgba(124, 235, 142, 0.3)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(moonX, moonY);
+    ctx.lineTo(gcX, gcY);
+    ctx.stroke();
+
     ctx.setLineDash([]);
 
     // Draw velocity vector
@@ -311,21 +378,45 @@ export default async function (Arena2D) {
     ctrlOrbitRadiusVal.textContent = orbitRadius;
   });
 
+  // ── Grandchild control handlers ──
+
+  ctrlGrandchildFps.addEventListener("input", () => {
+    const v = Number(ctrlGrandchildFps.value);
+    grandchildTicker.globalFPS = v;
+    if (v > 0) {
+      grandchildTicker.maxDeltaTime = Math.max(0.1, 1.2 / v);
+    }
+    ctrlGrandchildFpsVal.textContent = v;
+  });
+
+  ctrlGrandchildSpeed.addEventListener("input", () => {
+    grandchildSpeed = Number(ctrlGrandchildSpeed.value);
+    ctrlGrandchildSpeedVal.textContent = `${grandchildSpeed}×`;
+  });
+
+  ctrlGrandchildRadius.addEventListener("input", () => {
+    grandchildRadius = Number(ctrlGrandchildRadius.value);
+    ctrlGrandchildRadiusVal.textContent = grandchildRadius;
+  });
+
   // ── Button handlers ──
 
   document.getElementById("btn-start").addEventListener("click", () => {
     parentTicker.start();
     childTicker.start();
+    grandchildTicker.start();
   });
 
   document.getElementById("btn-stop").addEventListener("click", () => {
     parentTicker.stop();
     childTicker.stop();
+    grandchildTicker.stop();
   });
 
   document.getElementById("btn-reset").addEventListener("click", () => {
     parentTicker.stop();
     childTicker.stop();
+    grandchildTicker.stop();
 
     // Reset controls
     ctrlFps.value = "60";
@@ -337,6 +428,11 @@ export default async function (Arena2D) {
     ctrlChildFpsVal.textContent = "60";
     childTicker.globalFPS = 60;
     childTicker.maxDeltaTime = 0.1;
+
+    ctrlGrandchildFps.value = "60";
+    ctrlGrandchildFpsVal.textContent = "60";
+    grandchildTicker.globalFPS = 60;
+    grandchildTicker.maxDeltaTime = 0.1;
 
     ctrlSpeed.value = "400";
     ctrlSpeedVal.textContent = "400";
@@ -350,18 +446,27 @@ export default async function (Arena2D) {
     ctrlGravityVal.textContent = "200";
     gravity = 200;
 
-    ctrlOrbitSpeed.value = "3";
-    ctrlOrbitSpeedVal.textContent = "3×";
-    orbitSpeed = 3;
+    ctrlOrbitSpeed.value = "1";
+    ctrlOrbitSpeedVal.textContent = "1×";
+    orbitSpeed = 1;
+
+    ctrlGrandchildSpeed.value = "1";
+    ctrlGrandchildSpeedVal.textContent = "1×";
+    grandchildSpeed = 1;
 
     ctrlOrbitRadius.value = "30";
     ctrlOrbitRadiusVal.textContent = "30";
     orbitRadius = 30;
 
+    ctrlGrandchildRadius.value = "12";
+    ctrlGrandchildRadiusVal.textContent = "12";
+    grandchildRadius = 12;
+
     ball.x = W / 2;
     ball.y = H / 3;
     updateBallVelocity();
     orbitAngle = 0;
+    grandchildAngle = 0;
     frameCount = 0;
     parentFpsAccum = 0;
     parentFpsSamples = 0;
@@ -369,6 +474,9 @@ export default async function (Arena2D) {
     childFpsAccum = 0;
     childFpsSamples = 0;
     childFpsDisplay = 0;
+    grandchildFpsAccum = 0;
+    grandchildFpsSamples = 0;
+    grandchildFpsDisplay = 0;
     trail.length = 0;
 
     ctx.fillStyle = "#12121e";
@@ -376,14 +484,17 @@ export default async function (Arena2D) {
 
     statFps.textContent = "0";
     statChildFps.textContent = "0";
+    statGrandchildFps.textContent = "0";
     statElapsed.textContent = "0.0s";
     statFrames.textContent = "0";
 
     parentTicker.start();
     childTicker.start();
+    grandchildTicker.start();
   });
 
   // ── Auto-start both tickers ──
   parentTicker.start();
   childTicker.start();
+  grandchildTicker.start();
 }
