@@ -1,5 +1,5 @@
 * Create new Layer 9.1 Demo - "Interaction Scale"
-  - Use a slider to define number of random elements
+  - Use a dropdown with [1, 10, 100, 1000, 10000, 50000, 100000, 500000, 1000000, 10000000] to define number of random elements
   - Create random elements with random positions, sizes, and colors
   - Attach hover and press events to change color by tinting
   - Add a button to reset the demo
