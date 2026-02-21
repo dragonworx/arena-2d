@@ -7,10 +7,9 @@ export default async function (Arena2D) {
   const countSelect = document.getElementById("l9_1-count");
   const resetBtn = document.getElementById("l9_1-reset");
   const statusEl = document.getElementById("l9_1-status");
-  const isolateBtn = document.getElementById("l9_1-isolate-btn");
 
-  let isolateMode = false;
   let isolatedElement = null;
+  let pointerPos = { x: 0, y: 0 };
 
   const width = container.clientWidth || 800;
   const height = container.clientHeight || 600;
@@ -18,38 +17,23 @@ export default async function (Arena2D) {
   const scene = new Scene(container, width, height);
   scene.ticker.start();
 
-  if (isolateBtn) {
-    isolateBtn.addEventListener("click", () => {
-      isolateMode = !isolateMode;
-      isolateBtn.textContent = isolateMode ? "Disable" : "Enable";
-      isolateBtn.style.background = isolateMode ? "#e67e22" : "#3498db";
-      isolateBtn.style.borderColor = isolateMode ? "#d35400" : "#2980b9";
-    });
-  }
+  container.addEventListener("pointermove", (e) => {
+    const rect = container.getBoundingClientRect();
+    pointerPos.x = e.clientX - rect.left;
+    pointerPos.y = e.clientY - rect.top;
+  });
 
   const updater = new Element("updater");
   updater.update = (dt) => {
     if (isolatedElement) {
-      const speed = 100; // px per second
-      isolatedElement.x += isolatedElement.vx * speed * dt;
-      isolatedElement.y += isolatedElement.vy * speed * dt;
+      // Calculate distance from center of element to pointer
+      const dx = pointerPos.x - (isolatedElement.x + isolatedElement.width / 2);
+      const dy = pointerPos.y - (isolatedElement.y + isolatedElement.height / 2);
 
-      if (isolatedElement.x < 0) {
-        isolatedElement.x = 0;
-        isolatedElement.vx *= -1;
-      }
-      if (isolatedElement.x + isolatedElement.width > width) {
-        isolatedElement.x = width - isolatedElement.width;
-        isolatedElement.vx *= -1;
-      }
-      if (isolatedElement.y < 0) {
-        isolatedElement.y = 0;
-        isolatedElement.vy *= -1;
-      }
-      if (isolatedElement.y + isolatedElement.height > height) {
-        isolatedElement.y = height - isolatedElement.height;
-        isolatedElement.vy *= -1;
-      }
+      // Move towards pointer; speed is proportional to distance
+      const stiffness = 4.0;
+      isolatedElement.x += dx * stiffness * dt;
+      isolatedElement.y += dy * stiffness * dt;
     }
   };
   scene.ticker.add(updater);
@@ -101,12 +85,8 @@ export default async function (Arena2D) {
   function handlePointerDown(e) {
     e.target.isPressed = true;
 
-    if (isolateMode && !isolatedElement) {
+    if (!isolatedElement) {
       isolatedElement = e.target;
-
-      // Give it bounce directions
-      isolatedElement.vx = (Math.random() < 0.5 ? 1 : -1);
-      isolatedElement.vy = (Math.random() < 0.5 ? 1 : -1);
 
       // Make all other elements grey and non-interactive
       scene.root.children.forEach(el => {

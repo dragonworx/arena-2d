@@ -290,8 +290,9 @@ export class Scene implements IScene {
     }
     this._layers.clear();
 
-    // Clear element index
+    // Clear element indices
     this._elementIndex.clear();
+    this._uidIndex.clear();
 
     // Remove DPR listener
     if (this._dprMediaQuery) {
@@ -356,6 +357,10 @@ export class Scene implements IScene {
 
     // Update hit buffer
     this._updateHitBuffer();
+
+    // Re-evaluate hover at the last known pointer position so elements that
+    // moved under a stationary cursor correctly trigger pointerenter/pointerleave.
+    (this.interaction as InteractionManager).refreshHover();
   }
 
   /**

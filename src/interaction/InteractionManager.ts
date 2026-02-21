@@ -69,6 +69,7 @@ export interface IInteractionManager {
   updateSpatialHash(): void;
   markSpatialDirty(element: IElement): void;
   markSpatialFullRebuild(): void;
+  refreshHover(): void;
   destroy(): void;
 
   // Drag & Drop support
@@ -191,6 +192,11 @@ export class InteractionManager implements IInteractionManager {
   private _spatialEntries = new Map<IElement, ISpatialEntry>();
   private _spatialDirtyElements = new Set<IElement>();
   private _spatialFullRebuild = true;
+
+  // Last known pointer position in scene space (used for per-frame hover refresh)
+  private _lastPointerSceneX = 0;
+  private _lastPointerSceneY = 0;
+  private _hasPointerPosition = false;
 
   // Bound DOM handlers for cleanup
   private _onPointerDown: (e: PointerEvent) => void;
@@ -337,6 +343,53 @@ export class InteractionManager implements IInteractionManager {
     this._spatialDirtyElements.clear();
   }
 
+  /**
+   * Re-evaluate hover state at the last known pointer position.
+   * Called once per frame after the spatial hash and hit buffer are updated,
+   * so elements that moved under a stationary cursor are detected correctly.
+   */
+  refreshHover(): void {
+    if (!this._hasPointerPosition) return;
+
+    const sceneX = this._lastPointerSceneX;
+    const sceneY = this._lastPointerSceneY;
+    const target = this.hitTest(sceneX, sceneY);
+    const previousHover = this._hoveredElement;
+
+    if (target === previousHover) return;
+
+    if (previousHover) {
+      const prevLocal = this._getLocalCoords(previousHover, sceneX, sceneY);
+      const leaveEvent = new CanvasPointerEvent(
+        "pointerleave",
+        previousHover,
+        sceneX,
+        sceneY,
+        prevLocal.x,
+        prevLocal.y,
+        0,
+      );
+      this._dispatchPointerEvent(leaveEvent);
+    }
+
+    if (target) {
+      const targetLocal = this._getLocalCoords(target, sceneX, sceneY);
+      const enterEvent = new CanvasPointerEvent(
+        "pointerenter",
+        target,
+        sceneX,
+        sceneY,
+        targetLocal.x,
+        targetLocal.y,
+        0,
+      );
+      this._dispatchPointerEvent(enterEvent);
+    }
+
+    this._hoveredElement = target;
+    this._updateCursor(target);
+  }
+
   private _updateSpatialEntry(element: IElement): void {
     if (element.interactive && element.visible) {
       const aabb = computeAABB(
@@ -397,6 +450,14 @@ export class InteractionManager implements IInteractionManager {
     if (this._hoveredElement === element) {
       this._hoveredElement = null;
     }
+
+    // If this was the pointer-down element, clear to prevent dangling click dispatch
+    if (this._pointerDownElement === element) {
+      this._pointerDownElement = null;
+    }
+
+    // Remove from dirty set to avoid processing a destroyed element next frame
+    this._spatialDirtyElements.delete(element);
   }
 
   // ── Hit-Testing ──
@@ -713,6 +774,12 @@ export class InteractionManager implements IInteractionManager {
 
   private _handlePointerMove(domEvent: PointerEvent): void {
     const scene = this._getSceneCoords(domEvent);
+
+    // Store position so refreshHover() can re-evaluate each frame
+    this._lastPointerSceneX = scene.x;
+    this._lastPointerSceneY = scene.y;
+    this._hasPointerPosition = true;
+
     const target = this.hitTest(scene.x, scene.y);
 
     const previousHover = this._hoveredElement;
@@ -919,6 +986,7 @@ export class InteractionManager implements IInteractionManager {
 
     this._spatialHash.clear();
     this._spatialEntries.clear();
+    this._spatialDirtyElements.clear();
     this._focusedElement = null;
     this._hoveredElement = null;
     this._pointerDownElement = null;
