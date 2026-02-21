@@ -1,4 +1,4 @@
-# Arena-2D — Product Requirements Document
+# Arena-2D — Product Requirements & Technical Specification
 
 > A layered implementation plan for building Arena2D from the ground up, where each stage can be tested and refined before the next begins.
 
@@ -24,7 +24,7 @@
 1. **Layer Cake Architecture** — Each stage builds only on the stages below it. No forward references.
 2. **Demo-First** — The functional demo site is set up in Layer 0, before any library code, so that every subsequent layer can be immediately inspected in the browser.
 3. **Test-as-you-go** — Each layer ships with unit tests. The demo page gains a new visual panel for every layer, serving as a functional integration test.
-4. **Narrow API Surface** — Export only what SPEC.md defines. Keep internals unexported behind `src/internal/`.
+4. **Narrow API Surface** — Export only what is defined in this Product Requirements Document. Keep internals unexported behind `src/internal/`.
 5. **Zero Dependencies** — The library has no runtime npm dependencies.
 
 ---
@@ -100,10 +100,48 @@ Static "Hello, Arena2D" card confirming the pipeline works.
 
 ## Layer 1 — Core Math & Transformation Engine
 
-> **Spec Reference:** §1
+### Philosophy
+To achieve GPU-level performance, Arena2D uses 2D Affine Transformation Matrices. This allows complex hierarchies (nesting, rotation, scaling) to be resolved through simple matrix multiplication rather than manual coordinate math.
 
-### Goal
-Implement the affine transformation math utilities that everything else builds on.
+### Mechanics
+- **Matrix Storage**: Stored as `Float32Array(6)` representing the values `[a, b, c, d, tx, ty]`. This follows the **column-major** convention matching the HTML Canvas `setTransform(a, b, c, d, e, f)` parameter order.
+- **Identity**: `[1, 0, 0, 1, 0, 0]`.
+- **World Matrix**: Calculated as `Parent.WorldMatrix × Local.Matrix` (left-multiply; parent is the left operand).
+- **AABB Calculation**: The World Axis-Aligned Bounding Box is derived by transforming the four corners of an element's local bounds through `worldMatrix` and finding the min/max X and Y.
+- **Skew**: Supported via `skewX` and `skewY` (in radians). Skew is applied as a shear transformation.
+
+### Behavioral Rules
+1. When any of `x`, `y`, `rotation`, `scaleX`, `scaleY`, `skewX`, `skewY`, `pivotX`, or `pivotY` change, the element must call `invalidate(DirtyFlags.Transform)`.
+2. When an element's transform is invalidated, **all descendants** must also be marked `DirtyFlags.Transform` (cascading downward through the tree). The cascade happens lazily during the next `update()` pass, not eagerly on set.
+3. `worldMatrix` is recomputed during `update()` only if `DirtyFlags.Transform` is set. After recomputation the flag is cleared.
+4. The local matrix is composed as: `Translate(x, y) × Rotate(rotation) × Skew(skewX, skewY) × Scale(scaleX, scaleY) × Translate(-pivotX, -pivotY)`. The pivot point `(pivotX, pivotY)` in local space always maps to `(x, y)` in parent space — changing the pivot repositions the element around a fixed anchor.
+
+### API Contract
+```typescript
+export type MatrixArray = Float32Array; // [a, b, c, d, tx, ty]
+
+export interface ITransform {
+  localMatrix: MatrixArray;
+  worldMatrix: MatrixArray;
+  x: number;
+  y: number;
+  rotation: number;       // Radians, clockwise.
+  skewX: number;          // Radians. Default: 0.
+  skewY: number;          // Radians. Default: 0.
+  scaleX: number;          // Default: 1. Must not be 0.
+  scaleY: number;          // Default: 1. Must not be 0.
+  pivotX: number;          // Local-space pivot X. Default: 0.
+  pivotY: number;          // Local-space pivot Y. Default: 0.
+  updateLocalMatrix(): void;
+}
+
+export interface IRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+```
 
 ### Deliverables
 
@@ -111,7 +149,7 @@ Implement the affine transformation math utilities that everything else builds o
 |---|---|---|
 | 1.1 | **`src/math/matrix.ts`** | `MatrixArray` type, `identity()`, `multiply(a, b)`, `translate()`, `rotate()`, `scale()`, `invert()`, `transformPoint()` |
 | 1.2 | **`src/math/aabb.ts`** | `computeAABB(localBounds, worldMatrix)` returning `IRect` |
-| 1.3 | **`ITransform` mixin / base** | Properties (`x`, `y`, `rotation`, `scaleX`, `scaleY`, `pivotX`, `pivotY`) with `updateLocalMatrix()` composing as specified: `T(x+px, y+py) × R(θ) × S(sx, sy) × T(-px, -py)` |
+| 1.3 | **`ITransform` mixin / base** | Properties (`x`, `y`, `rotation`, `scaleX`, `scaleY`, `pivotX`, `pivotY`) with `updateLocalMatrix()` composing as specified. |
 | 1.4 | **Unit tests** | Exercise identity, composition, inversion, pivoted rotation, AABB from rotated rect, edge cases (`scaleX = -1`, very small angles) |
 
 ### Acceptance Criteria
@@ -125,10 +163,18 @@ A live canvas showing a rectangle with draggable sliders for `x`, `y`, `rotation
 
 ## Layer 2 — Event Emitter
 
-> **Spec Reference:** §5.3 (Event Listener API)
+### Philosophy
+A minimal, typed event emitter that `IElement` will later extend. This allows for unified event handling and decoupling of components.
 
-### Goal
-A minimal, typed event emitter that `IElement` will later extend.
+### API Contract
+```typescript
+export interface IEventEmitter {
+  on(event: string, handler: (e: any) => void): void;
+  off(event: string, handler: (e: any) => void): void;
+  once(event: string, handler: (e: any) => void): void;
+  emit(event: string, e: any): void;
+}
+```
 
 ### Deliverables
 
@@ -148,10 +194,62 @@ No new visual demo for this layer (utility only). Existing demos continue to wor
 
 ## Layer 3 — Element Base & Dirty Flagging (VDOM Core)
 
-> **Spec Reference:** §2.1–2.4 (partial: `IElement` without container logic)
+### Philosophy
+A retained-mode system where the library tracks object states. Updates are "pushed" via property setters, and rendering is batched into a single tick per frame.
 
-### Goal
-Implement the base `Element` class with dirty flag management, lifecycle hooks, alpha compositing, and the `ITransform` interface from Layer 1.
+### Mechanics
+- **Dirty Flagging**: Elements track changes using a bitmask. Property setters call `invalidate()` with the relevant flag. Multiple invalidations within a frame are coalesced.
+
+### Behavioral Rules
+1. **Dirty Flags**:
+    - `Transform`: Recompute `worldMatrix` and AABB. Cascades to all descendants.
+    - `Visual`: Repaint element. Does **not** cascade unless `cacheAsBitmap` ancestor exists.
+    - `Layout`: Re-run layout resolver for this element's subtree.
+    - `Spatial`: Re-insert into `SpatialHashGrid`.
+2. **Alpha Compositing**: `alpha` is **multiplicative** through the hierarchy. An element's effective alpha is `parent.effectiveAlpha * element.alpha`. When `effectiveAlpha` reaches `0`, the element and all descendants are skipped during `paint()`.
+3. **Element ID**: `id` is user-provided and optional. Defaults to an auto-generated UUID.
+
+### API Contract
+```typescript
+export enum DirtyFlags {
+  None      = 0,
+  Transform = 1 << 0,
+  Visual    = 1 << 1,
+  Layout    = 1 << 2,
+  Spatial   = 1 << 3,
+  All       = 0b1111,
+}
+
+export interface IElement extends ITransform {
+  readonly id: string;
+  parent: IContainer | null;
+  scene: IScene | null;
+  layer: ILayer | null;
+
+  // Visual state
+  visible: boolean;               // Default: true. When false, skip paint() and hit-testing.
+  alpha: number;                  // Range [0, 1]. Default: 1. Multiplied with parent alpha.
+  zIndex: number;                 // Default: 0. Integer.
+  blendMode: GlobalCompositeOperation; // Default: 'source-over'.
+  cacheAsBitmap: boolean;         // Default: false.
+
+  // Dirty system
+  readonly dirtyFlags: DirtyFlags;
+  invalidate(flag: DirtyFlags): void;
+
+  // Lifecycle (called by the framework, not the user)
+  onAdded(parent: IContainer): void;
+  onRemoved(parent: IContainer): void;
+  onSceneChanged(scene: IScene | null): void;
+
+  // Frame loop
+  update(dt: number): void;       // Called once per tick. Resolve dirty flags.
+  paint(ctx: IArena2DContext): void; // Called once per render. Draw self.
+
+  // Disposal
+  destroy(): void;                // Release all resources
+}
+```
 
 ### Deliverables
 
@@ -176,10 +274,28 @@ A grid of colored squares. Clicking a square toggles its `visible`. Sliders cont
 
 ## Layer 4 — Container & Child Management
 
-> **Spec Reference:** §2.4 (`IContainer`), §2.3 (rendering order, cache-as-bitmap)
+### Mechanics
+- **Cache-As-Bitmap**: Containers can render their entire sub-tree to an `OffscreenCanvas`. This image is used in subsequent frames until a child is invalidated, saving thousands of draw calls for static UI.
 
-### Goal
-Implement the `Container` class that manages child lists, z-ordering, scene propagation, and cache-as-bitmap.
+### Behavioral Rules
+1. **Lifecycle Hooks**: `onAdded`, `onSceneChanged`, `onRemoved` (propagates to descendants).
+2. **Rendering Order**: `zIndex` order (ascending). Ties broken by insertion order. `sortChildren()` performs stable sort.
+3. **Cache-As-Bitmap Invalidation**: bubbles upward to the nearest `cacheAsBitmap` ancestor. The `OffscreenCanvas` is sized to the container's AABB.
+
+### API Contract
+```typescript
+export interface IContainer extends IElement {
+  readonly children: ReadonlyArray<IElement>;
+  clipContent: boolean;           // Default: false. If true, clip painting to this container's bounds.
+
+  addChild(child: IElement): void;
+  addChildAt(child: IElement, index: number): void;
+  removeChild(child: IElement): void;
+  removeAllChildren(): void;
+  sortChildren(): void;           // Stable sort by zIndex.
+  getChildByID(id: string): IElement | null;
+}
+```
 
 ### Deliverables
 
@@ -203,10 +319,36 @@ A nested container tree visualized as colored boxes-within-boxes. Buttons to add
 
 ## Layer 5 — Ticker (Frame Loop)
 
-> **Spec Reference:** §7
+### Philosophy
+A single `requestAnimationFrame` loop drives the entire system. The Ticker provides a stable `deltaTime` and orchestrates the update → layout → paint pipeline in order.
 
-### Goal
-Implement the single `requestAnimationFrame` loop that drives the update → layout → paint pipeline.
+### Mechanics
+Each frame proceeds in this exact order:
+1. **Tick**: Compute `deltaTime` (time since last frame, in **seconds**, capped at `maxDeltaTime`).
+2. **Update**: Walk the scene graph and call `update(dt)` on every element that has `DirtyFlags != None`.
+3. **Layout**: Run the layout resolver on subtrees that have `DirtyFlags.Layout`.
+4. **Paint**: For each layer, call `render()` which walks the layer's elements and calls `paint(ctx)`.
+
+### Behavioral Rules
+1. `deltaTime` is in **seconds** (e.g., `0.016` at 60fps).
+2. `maxDeltaTime` defaults to `0.1` (100ms).
+3. `globalFPS` is the target frame rate. `globalFPS = 0` pauses.
+4. `add(element)` registers an element for per-frame `update()`. Adding the scene's `root` is sufficient.
+
+### API Contract
+```typescript
+export interface ITicker {
+  globalFPS: number;               // Default: 60. Target frames per second. 0 = paused.
+  maxDeltaTime: number;            // Default: 0.1. Clamp for deltaTime in seconds.
+  readonly deltaTime: number;      // Seconds since last frame (after clamping).
+  readonly elapsedTime: number;    // Total seconds since start().
+
+  add(element: IElement): void;
+  remove(element: IElement): void;
+  start(): void;
+  stop(): void;
+}
+```
 
 ### Deliverables
 
@@ -230,10 +372,55 @@ An FPS counter and `deltaTime` readout. Slider to set `globalFPS`. A ball bounci
 
 ## Layer 6 — Rendering Wrapper (Arena2DContext)
 
-> **Spec Reference:** §8
+### Philosophy
+A safe wrapper around `CanvasRenderingContext2D` that prevents state leakage and provides high-level drawing primitives. Every `paint()` call is sandwiched between automatic `save()` and `restore()`.
 
-### Goal
-Build the safe `CanvasRenderingContext2D` wrapper with high-level drawing primitives and automatic save/restore.
+### Behavioral Rules
+1. Before calling `element.paint(ctx)`, the framework calls `ctx.raw.save()`, applies the element's `worldMatrix`, sets `globalAlpha`, and sets `globalCompositeOperation`.
+2. After `paint()` returns, the framework calls `ctx.raw.restore()`.
+3. Elements should use the wrapper methods when possible. Direct access to `ctx.raw` is available but the element **must not** call `save()`/`restore()` or `setTransform()`.
+
+### API Contract
+```typescript
+export type FillStyle = string | CanvasGradient | CanvasPattern;
+
+export interface IArena2DContext {
+  readonly raw: CanvasRenderingContext2D;
+
+  // Shape primitives
+  drawRect(x: number, y: number, w: number, h: number, fill?: FillStyle, stroke?: FillStyle): void;
+  drawRoundedRect(x: number, y: number, w: number, h: number, radius: number | [number, number, number, number], fill?: FillStyle, stroke?: FillStyle): void;
+  drawCircle(cx: number, cy: number, r: number, fill?: FillStyle, stroke?: FillStyle): void;
+  drawEllipse(cx: number, cy: number, rx: number, ry: number, fill?: FillStyle, stroke?: FillStyle): void;
+  drawLine(x1: number, y1: number, x2: number, y2: number, stroke: FillStyle, lineWidth?: number): void;
+  drawPolygon(points: Array<{ x: number; y: number }>, fill?: FillStyle, stroke?: FillStyle): void;
+  drawPath(path: Path2D, fill?: FillStyle, stroke?: FillStyle): void;
+
+  // Image
+  drawImage(image: CanvasImageSource, x: number, y: number, w?: number, h?: number): void;
+  drawImageRegion(image: CanvasImageSource, sx: number, sy: number, sw: number, sh: number, dx: number, dy: number, dw: number, dh: number): void;
+
+  // Text
+  drawText(text: string, x: number, y: number, style: ITextStyle): void;
+  measureText(text: string, style: ITextStyle): { width: number; height: number };
+
+  // Effects
+  setShadow(color: string, blur: number, offsetX: number, offsetY: number): void;
+  clearShadow(): void;
+
+  // Clipping
+  clipRect(x: number, y: number, w: number, h: number): void;
+  clipRoundedRect(x: number, y: number, w: number, h: number, radius: number): void;
+
+  // Gradient/Pattern helpers
+  createLinearGradient(x0: number, y0: number, x1: number, y1: number, stops: Array<{ offset: number; color: string }>): CanvasGradient;
+  createRadialGradient(cx: number, cy: number, r: number, stops: Array<{ offset: number; color: string }>): CanvasGradient;
+
+  // Line style
+  setLineWidth(width: number): void;
+  setLineDash(segments: number[]): void;
+}
+```
 
 ### Deliverables
 
@@ -250,20 +437,61 @@ Build the safe `CanvasRenderingContext2D` wrapper with high-level drawing primit
 | 6.9 | **Unit tests** | Verify save/restore balance, gradient stop ordering, measure text returns non-zero for non-empty strings |
 
 ### Acceptance Criteria
-- Drawing primitives produce the correct shapes on a test canvas (visual snapshot or bounds check).
+- Drawing primitives produce the correct shapes on a test canvas.
 - State stack never leaks between paint calls.
 
 ### Demo Panel
-A "shape gallery" drawing every primitive: rects, rounded rects, circles, ellipses, lines, polygons, gradients, shadows. A second area shows clipping in action.
+A "shape gallery" drawing every primitive. A second area shows clipping in action.
 
 ---
 
 ## Layer 7 — Scene & Layering System
 
-> **Spec Reference:** §3
+### Philosophy
+The Scene manages physical DOM resources. Using multiple `<canvas>` elements allows for **Layered Caching** — the GPU compositor blends static and dynamic content, reducing redundant redraws.
 
-### Goal
-Implement the `Scene` which manages DOM `<canvas>` elements, DPI scaling, layers, and the hit buffer.
+### Mechanics
+- **Interactive Passthrough**: Uses a hidden `HitBuffer`. If alpha at a pixel is below `alphaThreshold`, `pointer-events: none` is applied to allow clicks to pass through to underlying HTML.
+- **DPI Handling**: Reads `window.devicePixelRatio`. Canvases resized by `dpr`.
+
+### Behavioral Rules
+1. **Layer assignment**: Inherited from parent if not explicitly set. `root` is assigned to default layer.
+2. **Layer lifecycle**: `createLayer`, `removeLayer`, `getLayer`.
+3. **Layer ordering**: CSS `z-index` based on `layer.zIndex`.
+4. **Hit Buffer**: Unique per-element color for O(1) lookup.
+
+### API Contract
+```typescript
+export interface IScene {
+  readonly container: HTMLElement;
+  width: number;
+  height: number;
+  readonly dpr: number;
+  alphaThreshold: number;
+  readonly root: IContainer;
+  readonly hitBuffer: OffscreenCanvas;
+
+  createLayer(id: string, zIndex: number): ILayer;
+  removeLayer(id: string): void;
+  getLayer(id: string): ILayer | null;
+
+  screenToScene(screenX: number, screenY: number): { x: number; y: number };
+  sceneToScreen(sceneX: number, sceneY: number): { x: number; y: number };
+
+  resize(width: number, height: number): void;
+  destroy(): void;
+  getElementById(id: string): IElement | null;
+}
+
+export interface ILayer {
+  readonly id: string;
+  readonly canvas: HTMLCanvasElement;
+  readonly ctx: CanvasRenderingContext2D;
+  zIndex: number;
+  opacity: number;
+  render(): void;
+}
+```
 
 ### Deliverables
 
@@ -285,16 +513,57 @@ Implement the `Scene` which manages DOM `<canvas>` elements, DPI scaling, layers
 - `getElementById` returns correct element.
 
 ### Demo Panel
-A full Scene with two layers: a "background" layer with static shapes and a "foreground" layer with a draggable element (pointer tracking only — full interaction in Layer 9). Layer opacity sliders.
+A full Scene with two layers: a "background" layer with static shapes and a "foreground" layer with a draggable element. Layer opacity sliders.
 
 ---
 
 ## Layer 8 — Layout Engine (Flex & Anchor)
 
-> **Spec Reference:** §4
+### Philosophy
+A hybrid layout system providing CSS-like responsiveness. Flex handles flow-based layout; Anchors handle absolute positioning and stretching relative to the parent.
 
-### Goal
-Implement the two-pass layout resolver: Measure (bottom-up) then Arrange (top-down), supporting `manual`, `flex`, and `anchor` display modes. This layer drives the positioning of all elements.
+### Mechanics
+**Two-Pass Resolver:**
+1. **Measure (Bottom-Up)**: Walk leaves first. Each element reports its desired size. For `'auto'` width/height, the desired size is the element's intrinsic content size.
+2. **Arrange (Top-Down)**: Walk from root. Distribute available space among children, resolve percentage units, apply alignment, and set final bounds.
+
+### Behavioral Rules
+1. **Display Modes**:
+    - `'manual'`: No automatic layout. Skip participation in parent flex.
+    - `'flex'`: Row or column layout with wrapping, gap, and alignment.
+    - `'anchor'`: Position relative to parent bounds. Opposing anchors stretch.
+2. **Unit Resolution**: `number` (px), `'${number}%'` (parent content area), `'auto'` (intrinsic/fill).
+3. **Margin/Padding**: Margins between siblings (flex) or inset from anchor. Padding inside content box.
+4. **Invalidation**: `DirtyFlags.Layout` set on child add/remove, style change, or intrinsic size change.
+
+### API Contract
+```typescript
+export type LayoutUnit = number | `${number}%` | 'auto';
+
+export interface IStyle {
+  display: 'manual' | 'flex' | 'anchor';
+  flexDirection: 'row' | 'column';
+  justifyContent: 'start' | 'center' | 'end' | 'space-between' | 'space-around';
+  alignItems: 'start' | 'center' | 'end' | 'stretch';
+  flexWrap: 'nowrap' | 'wrap';
+  gap: number;
+  flexGrow: number;
+  flexShrink: number;
+  flexBasis: LayoutUnit;
+  top?: LayoutUnit;
+  left?: LayoutUnit;
+  right?: LayoutUnit;
+  bottom?: LayoutUnit;
+  width: LayoutUnit;
+  height: LayoutUnit;
+  padding: [number, number, number, number];
+  margin: [number, number, number, number];
+  minWidth?: number;
+  maxWidth?: number;
+  minHeight?: number;
+  maxHeight?: number;
+}
+```
 
 ### Deliverables
 
@@ -309,197 +578,276 @@ Implement the two-pass layout resolver: Measure (bottom-up) then Arrange (top-do
 | 8.7 | **Padding** | Spacing inside element's border. |
 | 8.8 | **Min/Max constraints** | `minWidth`, `maxWidth`, `minHeight`, `maxHeight` enforced after grow/shrink. |
 | 8.9 | **Integration** | Layout runs during `update()` phase when `DirtyFlags.Layout` is set. Runs once per frame. |
-| 8.10 | **Performance Strategy** | **Layout Boundaries**: Elements with fixed dimensions stop dirtiness bubbling. **Measurement Caching**: Cache `measure()` results based on input constraints. **Integer Snapping**: Snap final values to avoid sub-pixel blurring. |
+| 8.10 | **Performance Strategy** | **Layout Boundaries**: Elements with fixed dimensions stop dirtiness bubbling. **Measurement Caching**: Cache `measure()` results based on input constraints. **Integer Snapping**: Snap final values. |
 | 8.11 | **Unit tests** | Flex row/column distribution, wrap behavior, percentage units, anchor stretching, min/max clamping, nested flex, auto sizing, boundary optimization |
 
 ### Acceptance Criteria
-- **Flex Layout Verification**:
-    - A `row` container with `justify-content: space-between` correctly positions first/last children against edges.
-    - `flex-wrap: wrap` moves overflowing items to a new line, respecting `align-content` (if implemented) or simple line stacking.
-    - `flex-grow` distributes free space proportionally (e.g., item A with grow 2 gets twice the extra space of item B with grow 1).
-    - `flex-shrink` correctly reduces sizes of items when container overflows, weighted by `flex-basis`.
-    - `align-items: center` correctly centers children of varying heights on the cross-axis.
-- **Constraints & Sizing**:
-    - `min-width` prevents an element from shrinking below a threshold even with `flex-shrink: 1`.
-    - `max-width` clamps an element even if `flex-grow` would expand it further.
-    - Percentage `width: 50%` resolves accurately against parent content box (parent width minus padding).
-    - `padding` on a container reduces the available space for children.
-    - `margin` creates correct spacing between siblings and successfully collapses (if implementing margin collapsing, otherwise specify no-collapse behavior).
-- **Advanced / Edge Cases**:
-    - **Nesting**: A flex column inside a flex row correctly calculates its own size before the parent finishes.
-    - **Anchoring**: An element with `position: absolute` (implemented via `display: manual` + anchors in this engine) inside a relative parent is removed from flex flow but positioned correctly.
-    - **Zero-size handling**: Elements with `0` width/height do not cause division-by-zero errors in alignment logic.
-- **Performance**:
-    - Modifying a child element's internal text (which changes its size) triggers layout *only* up to the nearest `Layout Boundary` (if the boundary has fixed size).
-    - Layout time scales linearly `O(n)` with number of elements for simple flex trees.
+- **Flex Layout Verification**: `justify-content`, `flex-wrap`, `flex-grow/shrink`, `align-items` work as expected.
+- **Constraints & Sizing**: `min/max-width`, `padding`, `percentage units` resolve accurately.
+- **Performance**: Layout time scales linearly `O(n)` with number of elements.
 
 ### Demo Panel
-**Interactive Layout Playground:**
-A split-screen interface:
-1.  **Sidebar (Controls):**
-    - **Container Settings:**
-        - `flex-direction` (Row/Column)
-        - `justify-content` (Start/Center/End/Space-Between/Space-Around)
-        - `align-items` (Start/Center/End/Stretch)
-        - `flex-wrap` (NoWrap/Wrap)
-        - `gap` (Slider: 0-50px)
-        - `padding` (Slider: 0-50px)
-    - **Select Child:** Dropdown or click-to-select specific child box.
-        - `flex-grow` (Input/Slider)
-        - `flex-shrink` (Input/Slider)
-        - `flex-basis` (Input: px/%)
-        - `align-self` (Override parent align)
-        - `width` / `height` (Slider, toggle 'auto')
-    - **Actions:**
-        - [Add Child] (Adds random colored box)
-        - [Remove Selected]
-        - [Randomize Layout]
-2.  **Main View (Preview):**
-    - The flex container rendered with a dashed border to show bounds.
-    - Children rendered as colored boxes with their index number.
-    - **Visual Debug Overlays** (Toggleable):
-        - Show Padding (Green overlay)
-        - Show Margins (Orange overlay)
-        - Show Gaps (Hatched overlay)
-    - **Performance HUD:**
-        - "Layout Time: 0.12ms"
-        - "Nodes Visited: 15"
-        - "Reflows/sec"
+**Interactive Layout Playground:** A split-screen interface with controls for container/child settings and a preview area with visual debug overlays showing padding, margins, and performance metrics.
 
 
 ---
 
 ## Layer 9 — Interaction & Focus System
 
-> **Spec Reference:** §5
+### Philosophy
+Normalizes Mouse and Touch into a unified Pointer pipeline with standard DOM-like event bubbling. Keyboard events are routed to the focused element.
 
-### Goal
-Implement unified pointer/keyboard event handling, hit-testing via SpatialHashGrid, event bubbling, and tab-focus management.
+### Mechanics
+- **Hit-Testing**: Uses a `SpatialHashGrid` for broad-phase candidate lookup, then tests candidates back-to-front. Local coordinates tested via inverse world matrix.
+- **SpatialHashGrid**: 2D grid of cells (default `128`). Elements registered in cells overlapping world AABB.
+
+### Behavioral Rules
+1. **Event Types**: `pointerdown/up/move/enter/leave`, `click`, `wheel`. `keydown/keyup` (to focused).
+2. **Bubbling**: Starts at target, bubbles upward to root (except `pointerenter/leave`). `stopPropagation()` supported.
+3. **Interactive property**: when `false`, element is excluded from hit-testing.
+4. **Focus**: Only one element focused. Tab order determined by depth-first traversal of the scene graph.
+
+### API Contract
+```typescript
+export interface IPointerEvent {
+  readonly type: string;
+  readonly target: IElement;
+  readonly currentTarget: IElement;
+  readonly sceneX: number;
+  readonly sceneY: number;
+  readonly localX: number;
+  readonly localY: number;
+  readonly button: number;
+  readonly deltaX: number;
+  readonly deltaY: number;
+  stopPropagation(): void;
+  preventDefault(): void;
+}
+
+export interface IKeyboardEvent {
+  readonly type: string;
+  readonly target: IElement;
+  readonly currentTarget: IElement;
+  readonly key: string;
+  readonly code: string;
+  readonly shiftKey: boolean;
+  readonly ctrlKey: boolean;
+  readonly altKey: boolean;
+  readonly metaKey: boolean;
+  stopPropagation(): void;
+  preventDefault(): void;
+}
+
+export interface IInteractionManager {
+  readonly focusedElement: IElement | null;
+  readonly hoveredElement: IElement | null;
+  setFocus(el: IElement | null): void;
+  tabNext(): void;
+  tabPrev(): void;
+}
+```
 
 ### Deliverables
 
 | # | Item | Details |
 |---|---|---|
-| 9.1 | **Drag & Drop System** | `src/interaction/DragManager.ts`. `draggable` property on elements. Events: `dragstart`, `dragmove`, `dragend`, `dragenter`, `dragleave`, `drop`. Supports drag targets, axis constraints (lock X/Y), and cancellation via `Escape` or invalid drop. Integrates with `InteractionManager`. |
-| 9.2 | **`src/interaction/SpatialHashGrid.ts`** | 2D grid (default cell size `128`). Insert/remove/query by world AABB. Updated on `DirtyFlags.Spatial`. |
-| 9.3 | **`src/interaction/InteractionManager.ts`** | Listens on scene's topmost canvas for pointer/keyboard DOM events. Translates to `IPointerEvent` / `IKeyboardEvent`. Hooks for drag initiation. |
-| 9.4 | **Hit-testing** | Broad phase: query `SpatialHashGrid`. Narrow phase: inverse world matrix point-in-bounds test, back-to-front ordering. |
-| 9.5 | **Event dispatch** | `pointerdown`, `pointerup`, `pointermove`, `pointerenter/leave`, `click`, `wheel`. Bubbling (no capture phase). `stopPropagation()`. `pointerenter`/`leave` do not bubble. |
+| 9.1 | **Drag & Drop System** | `src/interaction/DragManager.ts`. `draggable` property. Events: `dragstart/move/end/enter/leave`, `drop`. |
+| 9.2 | **`src/interaction/SpatialHashGrid.ts`** | 2D grid. Insert/remove/query by world AABB. Updated on `DirtyFlags.Spatial`. |
+| 9.3 | **`src/interaction/InteractionManager.ts`** | Translates DOM events to `IPointerEvent` / `IKeyboardEvent`. |
+| 9.4 | **Hit-testing** | Broad phase: `SpatialHashGrid`. Narrow phase: inverse world matrix point-in-bounds test. |
+| 9.5 | **Event dispatch** | Bubbling, `stopPropagation()`. `pointerenter`/`leave` do not bubble. |
 | 9.6 | **Keyboard dispatch** | `keydown`, `keyup` to focused element. |
-| 9.7 | **Focus management** | `setFocus()`, `tabNext()`, `tabPrev()`. Depth-first traversal for tab order. `focus`/`blur` events. |
-| 9.8 | **Interactive passthrough** | Hit buffer alpha sampling for HTML pass-through (CSS `pointer-events: none`). |
-| 9.9 | **Cursor** | Set `container.style.cursor` based on hovered element's `cursor` property. |
-| 9.10 | **Unit tests** | Hit-test ordering, bubbling chain, stopPropagation, enter/leave non-bubbling, tab order, focus/blur, spatial hash grid insert/query, drag constraints, drop events. |
+| 9.7 | **Focus management** | `setFocus()`, `tabNext()`, `tabPrev()`. Depth-first tab traversal. |
+| 9.8 | **Interactive passthrough** | Hit buffer alpha sampling for HTML pass-through. |
+| 9.9 | **Cursor** | Set `container.style.cursor` based on hovered element. |
+| 9.10 | **Unit tests** | Hit-test ordering, bubbling, stopPropagation, tab order, focus, spatial hash, drag/drop. |
 
 ### Acceptance Criteria
-- Clicking overlapping elements hits the topmost by z-index.
-- Event bubbles from target to root unless stopped.
-- `pointerenter`/`pointerleave` fire only on the target, not ancestors.
-- Tab cycles through focusable elements in depth-first order.
+- Clicking overlapping elements hits the topmost.
+- Event bubbles unless stopped.
+- Tab cycles focusable elements in depth-first order.
 - Dragging an element moves it visually and fires drag events.
-- Releasing a drag over a drop target fires `drop`. Esc cancels.
 
 ### Demo Panel
-Interactive scene with overlapping, nested elements. Click displays event propagation path. Focus ring drawn around focused element. Tab key cycles focus. Hover shows cursor change. Draggable box with "Drop Zone" targets.
+Interactive scene with overlapping, nested elements. Event propagation visualization. Focus ring and tab cycling. Draggable boxes with drop targets.
 
 ---
 
 ## Layer 10 — Text & Text Layout
 
-> **Spec Reference:** §6.1–6.3 (IText, ITextLayout, word-wrap)
+### Philosophy
+Text is a first-class entity with greedy word-wrap and character-level interaction for selection and cursor placement.
 
-### Goal
-Implement the **Inline Layout** system. This is a specialized sub-engine that handles glyph positioning, efficient wrapping, and text metrics. It is opaque to the main Layout Engine (Layer 8) — providing only intrinsic size measurements.
+### Mechanics
+- **Text Rendering**: Drawn using `ctx.fillText()` with pre-measured advancements. `ITextLine` stores per-character x-offsets.
+- **Word Wrap**: Greedy algorithm. words added until line exceeds width.
+
+### Behavioral Rules
+1. **Intrinsic content size**: Width is widest line, height is `lines.length * lineHeight`.
+2. **Font Handling**: Assume loaded via CSS or `FontFace` API.
+
+### API Contract
+```typescript
+export interface ITextStyle {
+  fontFamily: string;
+  fontSize: number;
+  fontWeight: 'normal' | 'bold';
+  fontStyle: 'normal' | 'italic';
+  color: string;
+  lineHeight: number;
+  textAlign: 'left' | 'center' | 'right';
+  selectionColor?: string;
+}
+
+export interface ITextLine {
+  text: string;
+  width: number;
+  advancements: number[];
+}
+
+export interface ITextLayout {
+  lines: ITextLine[];
+  totalHeight: number;
+}
+```
 
 ### Deliverables
 
 | # | Item | Details |
 |---|---|---|
-| 10.1 | **`src/elements/Text.ts`** | Implements `IText`. Renders via `ctx.fillText()` using pre-measured advancements. |
-| 10.2 | **`src/text/TextLayout.ts`** | specialized resolver for **Inline Layout**. Handles word-wrapping, kerning (via canvas), and line breaking. |
-| 10.3 | **Measure Contract** | `measure(availableWidth, availableHeight)` returns intrinsic size. Caches results to avoid potentially expensive `ctx.measureText` calls. |
-| 10.4 | **Intrinsic Sizing** | Reports proper `min-content` (widest word) and `max-content` (full single line) widths to Layer 8. |
+| 10.1 | **`src/elements/Text.ts`** | Implements `IText`. Renders via `ctx.fillText()` using pre-measured character advancements. |
+| 10.2 | **`src/text/TextLayout.ts`** | specialized resolver for **Inline Layout**. Handles word-wrapping and line breaking. |
+| 10.3 | **Measure Contract** | `measure(availableWidth, availableHeight)` returns intrinsic size. Caches results. |
+| 10.4 | **Intrinsic Sizing** | Reports `min-content` (widest word) and `max-content` widths to Layer 8. |
 | 10.5 | **`ITextStyle`** | `fontFamily`, `fontSize`, `fontWeight`, `fontStyle`, `color`, `lineHeight`, `textAlign` |
 | 10.6 | **`fontReady` utility** | Check font availability via `document.fonts.check()`. |
-| 10.7 | **Unit tests** | Word wrap at exact boundary, hard line breaks, empty string, single word wider than container, alignment offsets |
+| 10.7 | **Unit tests** | Word wrap, hard line breaks, empty string, alignment offsets |
 
 ### Acceptance Criteria
 - Text wraps correctly at container width boundaries.
-- Changing `fontSize` triggers layout re-measure in Layer 8.
-- `textAlign: 'center'` centers each line within the element's width.
-- Thousands of characters can be rendered without creating thousands of `IElement` nodes.
+- Changing `fontSize` triggers layout re-measure.
+- `textAlign: 'center'` centers each line.
 
 ### Demo Panel
-A text block with editable content (via browser textarea), font controls, and width slider showing live word-wrap behavior. Advancements visualized as vertical tick marks. Performance test with large text blocks.
+A text block with editable content, font controls, and width slider showing live word-wrap behavior. Performance test with large text blocks.
 
 ---
 
 ## Layer 11 — Text Input & IME
 
-> **Spec Reference:** §6 (ITextInput, IME bridge)
+### Mechanics
+- **IME Bridge**: Hidden 1×1 `<textarea>` moved to cursor position to capture native input/clipboard.
 
-### Goal
-Extend `IText` into an editable `ITextInput` with cursor, selection, clipboard, and IME support.
+### Behavioral Rules
+1. **Selection rendering**: Filled rectangles behind selected text range (one per line).
+2. **Keyboard Navigation**: Option+Arrow (words), Cmd+Arrow (line/block), Shift (expand selection). Interecept browser default behaviors for Cmd+Arrow.
+
+### API Contract
+```typescript
+export interface ITextInput extends IText {
+  selectionStart: number;
+  selectionEnd: number;
+  isPassword: boolean;
+  placeholder: string;
+  readOnly: boolean;
+  maxLength: number;
+  multiline: boolean;
+}
+```
 
 ### Deliverables
 
 | # | Item | Details |
 |---|---|---|
-| 11.1 | **`src/elements/TextInput.ts`** | Extends `Text`. `selectionStart`, `selectionEnd`, cursor rendering (blinking caret). |
-| 11.2 | **Selection rendering** | Multi-rect rendering behind selected text (one rect per line). Selection color configurable via `ITextStyle`. |
-| 11.3 | **IME bridge** | Hidden 1×1 `<textarea>` positioned at cursor world position. Forwards input events to `ITextInput`. |
-| 11.4 | **Clipboard** | Copy, **Cut**, and Paste via hidden textarea delegation. `onCopy`, `onCut`, `onPaste` callbacks. |
-| 11.5 | **Input properties** | `isPassword` (bullet masking), `placeholder`, `readOnly`, `maxLength`, `multiline`. |
-| 11.6 | **Events** | Emits `change`, `submit` (Enter on single-line), `focus`, `blur`. |
-| 11.7 | **Keyboard Navigation** | **Intercepted Browser behavior**: Option + Left/Right (jump words), Cmd + Left/Right (move to start/end of line). **Selection**: Holding the **Shift key** in combination with any navigation shortcut starts or expands a selection range. |
-| 11.8 | **Unit tests** | Cursor movement (arrow keys, word jumps), selection bounds, password masking, maxLength enforcement, multiline Enter vs single-line submit |
+| 11.1 | **`src/elements/TextInput.ts`** | Extends `Text`. `selectionStart`, `selectionEnd`, cursor rendering. |
+| 11.2 | **Selection rendering** | Multi-rect rendering behind selected text. |
+| 11.3 | **IME bridge** | Hidden 1×1 `<textarea>` forwards events to `ITextInput`. |
+| 11.4 | **Clipboard** | Copy/Cut/Paste via hidden textarea delegation. |
+| 11.5 | **Input properties** | `isPassword` (masking), `placeholder`, `readOnly`, `maxLength`, `multiline`. |
+| 11.6 | **Events** | `change`, `submit`, `focus`, `blur`. |
+| 11.7 | **Keyboard Navigation** | Option+Arrow, Cmd+Arrow. Shift for selection. |
+| 11.8 | **Unit tests** | Cursor movement, selection, password masking, maxLength enforcement. |
 
 ### Acceptance Criteria
-- Clicking in text positions cursor at the correct character.
-- Shift+Arrow expands selection. Copy/paste works via keyboard shortcuts.
-- IME composition (tested manually with CJK input) inserts correctly.
+- Clicking positions cursor at correct character.
+- Shift+Arrow expands selection. Copy/paste works via keyboard.
+- IME composition inserts correctly.
 - `isPassword` displays bullets.
 
 ### Demo Panel
-A form with single-line input, password input, and multiline textarea. Shows cursor/selection behavior, placeholder text, and a "submitted values" readout.
+A form with single-line, password, and multiline inputs. Shows cursor/selection behavior and placeholder text.
 
 ---
 
 ## Layer 12 — Image & Nine-Slice
 
-> **Spec Reference:** §9
+### Philosophy
+`IImage` provides a element for displaying bitmaps, with support for nine-slice scaling for UI panels.
 
-### Goal
-Implement `IImage` element for displaying bitmaps with optional nine-slice scaling and sprite sheet regions.
+### Behavioral Rules
+1. **Source loading**: `HTMLImageElement`, `ImageBitmap`, or `OffscreenCanvas`.
+2. **Nine-slice**: divided into 9 regions. Corners at natural size, edges stretched one axis, center fills.
+
+### API Contract
+```typescript
+export interface IImage extends IElement {
+  source: CanvasImageSource | null;
+  sourceRect?: IRect;
+  nineSlice?: [number, number, number, number];
+  tint?: string;
+}
+```
 
 ### Deliverables
 
 | # | Item | Details |
 |---|---|---|
-| 12.1 | **`src/elements/Image.ts`** | Implements `IImage`. Draws `source` via `Arena2DContext.drawImage`. |
+| 12.1 | **`src/elements/Image.ts`** | Implements `IImage`. Draws `source`. |
 | 12.2 | **Source rect** | `sourceRect` for sprite sheet sub-regions. |
-| 12.3 | **Nine-slice** | `nineSlice: [top, right, bottom, left]` divides image into 9 regions. Corners at natural size, edges stretched on one axis, center fills. |
+| 12.3 | **Nine-slice** | `nineSlice: [top, right, bottom, left]` insets. |
 | 12.4 | **Tint** | Color tint via compositing. |
-| 12.5 | **Intrinsic size** | Natural image dimensions when style is `'auto'`. |
-| 12.6 | **Unit tests** | Nine-slice region math, source rect clipping, null source handling |
+| 12.5 | **Intrinsic size** | Natural dimensions when style is `'auto'`. |
+| 12.6 | **Unit tests** | Nine-slice regions, source rect clipping, null source handling |
 
 ### Acceptance Criteria
 - Image renders at correct position and size.
-- Nine-slice correctly preserves corner dimensions while stretching center.
+- Nine-slice preserves corner dimensions while stretching center.
 - Setting `source = null` clears the element.
 
 ### Demo Panel
-An image gallery: standard image, sprite sheet with selectable region, and a nine-slice panel resizable via drag handles.
+An image gallery: standard image, sprite sheet, and resizable nine-slice panel.
 
 ---
 
 
 ## Layer 13 — Scroll Containers
 
-> **Spec Reference:** §10
+### Philosophy
+A specialized container for navigating overflowing content via pointer drag or wheel events, with optional inertial scrolling and scroll bars.
 
-### Goal
-Implement scrollable containers with inertial scrolling and scroll bar indicators.
+### Behavioral Rules
+1. **Scroll offset**: applied as translation in `paint()`, not by modifying children's transforms.
+2. **Clamping**: to `[0, contentSize - viewportSize]`.
+3. **Inertia**: residual velocity decays by `decelerationRate` (default `0.95`).
+4. **Scroll bars**: Semi-transparent rounded-rect. Fade after `scrollBarFadeDelay`.
+
+### API Contract
+```typescript
+export interface IScrollContainer extends IContainer {
+  scrollX: number;
+  scrollY: number;
+  readonly contentWidth: number;
+  readonly contentHeight: number;
+  scrollEnabled: [boolean, boolean];
+  inertia: boolean;
+  decelerationRate: number;
+  showScrollBars: boolean;
+  scrollBarFadeDelay: number;
+
+  scrollTo(x: number, y: number, animated?: boolean): void;
+  scrollBy(dx: number, dy: number, animated?: boolean): void;
+}
+```
 
 ### Deliverables
 
@@ -529,10 +877,15 @@ A scrollable list of items (100+ rows) with both vertical and horizontal scrolli
 
 ## Layer 14 — Error Handling, Debug Mode & Memory Management
 
-> **Spec Reference:** §11
-
-### Goal
-Implement defensive error handling, debug mode diagnostics, and robust memory cleanup.
+### Behavioral Rules
+1. **Error conventions**:
+    - Re-parenting auto-removes.
+    - Remove non-child is no-op.
+    - Scale 0 → `Number.EPSILON`.
+    - Invalid layout units → `0`.
+    - Alpha clamped to `[0, 1]`.
+2. **Debug mode**: `Arena2D.debug = true`. Warnings for invalid states and performance hints (e.g., thousands of children without cache-as-bitmap).
+3. **Memory management**: `destroy()` must be called. In debug mode, `FinalizationRegistry` warns if scene is GC'd without `destroy()`.
 
 ### Deliverables
 
@@ -540,17 +893,17 @@ Implement defensive error handling, debug mode diagnostics, and robust memory cl
 |---|---|---|
 | 14.1 | **Error conventions** | Re-parenting auto-removes. Remove non-child is no-op. Scale 0 → `Number.EPSILON`. Invalid layout units → `0`. Alpha clamped to `[0, 1]`. |
 | 14.2 | **Debug mode** | `Arena2D.debug = true` enables `console.warn` for: invalid states, performance hints (500+ children without cache-as-bitmap). |
-| 14.3 | **`destroy()` audit** | Verify every element type releases: `OffscreenCanvas`, event listeners, spatial hash entries, animations, hidden `<textarea>`. |
+| 14.3 | **`destroy()` audit** | Verify every element type releases resources. |
 | 14.4 | **`FinalizationRegistry`** | In debug mode, warn when a Scene is GC'd without `destroy()`. |
 | 14.5 | **Unit tests** | Each error convention, debug mode warnings, destroy resource release |
 
 ### Acceptance Criteria
-- All error scenarios from SPEC §11 table are handled without throwing.
+- All error scenarios are handled without throwing.
 - Debug mode produces actionable warnings.
 - After `scene.destroy()`, no DOM elements or animation frames remain.
 
 ### Demo Panel
-A "Stress Test" panel: create/destroy hundreds of elements, monitor for memory leaks via performance counters. Debug mode toggle showing live warnings.
+A "Stress Test" panel: create/destroy hundreds of elements, monitor for memory leaks. Debug mode toggle showing live warnings.
 
 ---
 
@@ -566,13 +919,13 @@ Finalize the public API surface, produce the production bundle, and ensure the d
 | 15.1 | **`src/index.ts`** | Single barrel export. Export only public API types and classes. |
 | 15.2 | **Production bundle** | `bun build` → `dist/arena-2d.js` (minified ESM) + `dist/arena-2d.d.ts` (type declarations). |
 | 15.3 | **Demo site polish** | All layer demo panels reviewed, navigation polished, mobile responsive. |
-| 15.4 | **README.md** | Quick-start guide linking to demo site and SPEC.md. |
+| 15.4 | **`README.md`** | Quick-start guide linking to demo site and `PRD.md`. |
 | 15.5 | **Final test sweep** | All `bun test` suites green. Manual walkthrough of every demo panel. |
 
 ### Acceptance Criteria
 - `import { Scene, Container, Text } from 'arena-2d'` works from a consumer project.
 - Type declarations are correct and complete.
-- Demo site demonstrates every feature from SPEC.md.
+- Demo site demonstrates every feature from `PRD.md`.
 - All tests pass.
 
 ---

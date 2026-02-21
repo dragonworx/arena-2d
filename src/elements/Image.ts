@@ -8,7 +8,8 @@
 import { DirtyFlags } from "../core/DirtyFlags";
 import { Element } from "../core/Element";
 import type { IRect } from "../math/aabb";
-import type { IArenaContext } from "../rendering/ArenaContext";
+import type { IArena2DContext } from "../rendering/Arena2DContext";
+import { CanvasContext } from "../rendering/Arena2DContext";
 
 // ── Image Element ──
 
@@ -100,7 +101,7 @@ export class Image extends Element {
 
   // ── Rendering ──
 
-  override paint(ctx: IArenaContext): void {
+  override paint(ctx: IArena2DContext): void {
     if (!this._source) return;
 
     const w = this.width;
@@ -143,11 +144,7 @@ export class Image extends Element {
    * [top, right, bottom, left] insets. Corners render at natural size,
    * edges stretch on one axis, center fills the remaining space.
    */
-  private _paintNineSlice(
-    raw: CanvasRenderingContext2D,
-    dw: number,
-    dh: number,
-  ): void {
+  private _paintNineSlice(ctx: CanvasContext, w: number, h: number): void {
     const source = this._source as CanvasImageSource;
     const [top, right, bottom, left] = this._nineSlice as [
       number,
@@ -176,23 +173,23 @@ export class Image extends Element {
     const srcCenterH = sh - top - bottom;
 
     // Center region of destination
-    const dstCenterW = dw - left - right;
-    const dstCenterH = dh - top - bottom;
+    const dstCenterW = w - left - right;
+    const dstCenterH = h - top - bottom;
 
     // Skip degenerate cases
     if (dstCenterW < 0 || dstCenterH < 0) {
-      raw.drawImage(source, sx, sy, sw, sh, 0, 0, dw, dh);
+      ctx.drawImage(source, sx, sy, sw, sh, 0, 0, w, h);
       return;
     }
 
     // Draw 9 regions:
     // Top-left corner
     if (left > 0 && top > 0) {
-      raw.drawImage(source, sx, sy, left, top, 0, 0, left, top);
+      ctx.drawImage(source, sx, sy, left, top, 0, 0, left, top);
     }
     // Top edge
     if (srcCenterW > 0 && top > 0 && dstCenterW > 0) {
-      raw.drawImage(
+      ctx.drawImage(
         source,
         sx + left,
         sy,
@@ -206,13 +203,13 @@ export class Image extends Element {
     }
     // Top-right corner
     if (right > 0 && top > 0) {
-      raw.drawImage(
+      ctx.drawImage(
         source,
         sx + sw - right,
         sy,
         right,
         top,
-        dw - right,
+        w - right,
         0,
         right,
         top,
@@ -221,7 +218,7 @@ export class Image extends Element {
 
     // Left edge
     if (left > 0 && srcCenterH > 0 && dstCenterH > 0) {
-      raw.drawImage(
+      ctx.drawImage(
         source,
         sx,
         sy + top,
@@ -235,7 +232,7 @@ export class Image extends Element {
     }
     // Center
     if (srcCenterW > 0 && srcCenterH > 0 && dstCenterW > 0 && dstCenterH > 0) {
-      raw.drawImage(
+      ctx.drawImage(
         source,
         sx + left,
         sy + top,
@@ -249,13 +246,13 @@ export class Image extends Element {
     }
     // Right edge
     if (right > 0 && srcCenterH > 0 && dstCenterH > 0) {
-      raw.drawImage(
+      ctx.drawImage(
         source,
         sx + sw - right,
         sy + top,
         right,
         srcCenterH,
-        dw - right,
+        w - right,
         top,
         right,
         dstCenterH,
@@ -264,42 +261,42 @@ export class Image extends Element {
 
     // Bottom-left corner
     if (left > 0 && bottom > 0) {
-      raw.drawImage(
+      ctx.drawImage(
         source,
         sx,
         sy + sh - bottom,
         left,
         bottom,
         0,
-        dh - bottom,
+        h - bottom,
         left,
         bottom,
       );
     }
     // Bottom edge
     if (srcCenterW > 0 && bottom > 0 && dstCenterW > 0) {
-      raw.drawImage(
+      ctx.drawImage(
         source,
         sx + left,
         sy + sh - bottom,
         srcCenterW,
         bottom,
         left,
-        dh - bottom,
+        h - bottom,
         dstCenterW,
         bottom,
       );
     }
     // Bottom-right corner
     if (right > 0 && bottom > 0) {
-      raw.drawImage(
+      ctx.drawImage(
         source,
         sx + sw - right,
         sy + sh - bottom,
         right,
         bottom,
-        dw - right,
-        dh - bottom,
+        w - right,
+        h - bottom,
         right,
         bottom,
       );

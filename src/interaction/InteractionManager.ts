@@ -408,15 +408,37 @@ export class InteractionManager implements IInteractionManager {
 
     if (elements.length === 0) return null;
 
-    // Narrow phase: test each element back-to-front (highest zIndex first)
-    // Sort by render order: elements later in the tree or with higher zIndex are on top
-    elements.sort((a, b) => {
-      const za = this._getGlobalZOrder(a);
-      const zb = this._getGlobalZOrder(b);
-      if (za !== zb) return za - zb;
-      return (a as InteractiveElement).uid - (b as InteractiveElement).uid;
-    });
+    // ── NEW: Hit Buffer Pass (Pixel-perfect) ──
+    // Sample the hit buffer for the topmost interactive element
+    const sceneAsAny = this._scene as any;
+    if (
+      typeof sceneAsAny._sampleHitBuffer === "function" &&
+      typeof sceneAsAny._getElementByUID === "function"
+    ) {
+      const hitUid = sceneAsAny._sampleHitBuffer(sceneX, sceneY);
+      if (hitUid > 0) {
+        const hitEl = sceneAsAny._getElementByUID(hitUid);
+        if (hitEl) {
+          // Double check filtering/exclusion
+          let current: IElement | null = hitEl;
+          let isExcluded = false;
+          while (current) {
+            if (current === exclude) {
+              isExcluded = true;
+              break;
+            }
+            current = current.parent;
+          }
+          if (!isExcluded && (!filter || filter(hitEl))) {
+            return hitEl;
+          }
+        }
+      }
+    }
 
+    // ── Fallback: Matrix Pass (AABB/Quad) ──
+    // (Existing logic remains as fallback for legacy or non-painted interactive elements)
+    
     // Check from top (last) to bottom (first) — top-most first
     for (let i = elements.length - 1; i >= 0; i--) {
       const el = elements[i];

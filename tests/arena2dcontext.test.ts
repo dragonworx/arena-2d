@@ -1,10 +1,10 @@
 import { describe, expect, mock, test } from "bun:test";
 import { Element } from "../src/core/Element";
 import {
-  ArenaContext,
+  Arena2DContext,
   type ITextStyle,
   buildFontString,
-} from "../src/rendering/ArenaContext";
+} from "../src/rendering/Arena2DContext";
 
 // ── Mock CanvasRenderingContext2D ──
 
@@ -170,20 +170,20 @@ function createMockCtx() {
 
 // ── Construction ──
 
-describe("ArenaContext — construction", () => {
+describe("Arena2DContext — construction", () => {
   test("wraps a CanvasRenderingContext2D and exposes .raw", () => {
     const mockCtx = createMockCtx();
-    const uiCtx = new ArenaContext(mockCtx);
+    const uiCtx = new Arena2DContext(mockCtx);
     expect(uiCtx.raw).toBe(mockCtx);
   });
 });
 
 // ── Save/Restore Balance (6.8) ──
 
-describe("ArenaContext — beginElement / endElement", () => {
+describe("Arena2DContext — beginElement / endElement", () => {
   test("beginElement calls save, setTransform, sets alpha and blendMode", () => {
     const mockCtx = createMockCtx();
-    const uiCtx = new ArenaContext(mockCtx);
+    const uiCtx = new Arena2DContext(mockCtx);
 
     const el = new Element("test");
     el.alpha = 0.5;
@@ -209,7 +209,7 @@ describe("ArenaContext — beginElement / endElement", () => {
 
   test("endElement calls restore", () => {
     const mockCtx = createMockCtx();
-    const uiCtx = new ArenaContext(mockCtx);
+    const uiCtx = new Arena2DContext(mockCtx);
 
     uiCtx.endElement();
 
@@ -219,7 +219,7 @@ describe("ArenaContext — beginElement / endElement", () => {
 
   test("save/restore are balanced across multiple elements", () => {
     const mockCtx = createMockCtx();
-    const uiCtx = new ArenaContext(mockCtx);
+    const uiCtx = new Arena2DContext(mockCtx);
 
     const el1 = new Element("a");
     const el2 = new Element("b");
@@ -242,10 +242,10 @@ describe("ArenaContext — beginElement / endElement", () => {
 
 // ── Shape Primitives (6.1) ──
 
-describe("ArenaContext — shape primitives", () => {
+describe("Arena2DContext — shape primitives", () => {
   test("drawRect calls fillRect and strokeRect", () => {
     const mockCtx = createMockCtx();
-    const uiCtx = new ArenaContext(mockCtx);
+    const uiCtx = new Arena2DContext(mockCtx);
 
     uiCtx.drawRect(10, 20, 100, 50, "#f00", "#0f0");
 
@@ -262,7 +262,7 @@ describe("ArenaContext — shape primitives", () => {
 
   test("drawRect with only fill does not stroke", () => {
     const mockCtx = createMockCtx();
-    const uiCtx = new ArenaContext(mockCtx);
+    const uiCtx = new Arena2DContext(mockCtx);
 
     uiCtx.drawRect(0, 0, 50, 50, "#f00");
 
@@ -273,7 +273,7 @@ describe("ArenaContext — shape primitives", () => {
 
   test("drawRoundedRect calls roundRect with number radius", () => {
     const mockCtx = createMockCtx();
-    const uiCtx = new ArenaContext(mockCtx);
+    const uiCtx = new Arena2DContext(mockCtx);
 
     uiCtx.drawRoundedRect(0, 0, 100, 50, 10, "#f00");
 
@@ -284,7 +284,7 @@ describe("ArenaContext — shape primitives", () => {
 
   test("drawRoundedRect calls roundRect with array radius", () => {
     const mockCtx = createMockCtx();
-    const uiCtx = new ArenaContext(mockCtx);
+    const uiCtx = new Arena2DContext(mockCtx);
 
     uiCtx.drawRoundedRect(0, 0, 100, 50, [5, 10, 15, 20], "#f00");
 
@@ -294,7 +294,7 @@ describe("ArenaContext — shape primitives", () => {
 
   test("drawCircle calls arc with TAU", () => {
     const mockCtx = createMockCtx();
-    const uiCtx = new ArenaContext(mockCtx);
+    const uiCtx = new Arena2DContext(mockCtx);
 
     uiCtx.drawCircle(50, 50, 25, "#f00");
 
@@ -305,7 +305,7 @@ describe("ArenaContext — shape primitives", () => {
 
   test("drawEllipse calls ellipse", () => {
     const mockCtx = createMockCtx();
-    const uiCtx = new ArenaContext(mockCtx);
+    const uiCtx = new Arena2DContext(mockCtx);
 
     uiCtx.drawEllipse(50, 50, 30, 20, "#f00");
 
@@ -316,7 +316,7 @@ describe("ArenaContext — shape primitives", () => {
 
   test("drawLine calls moveTo, lineTo, stroke", () => {
     const mockCtx = createMockCtx();
-    const uiCtx = new ArenaContext(mockCtx);
+    const uiCtx = new Arena2DContext(mockCtx);
 
     uiCtx.drawLine(0, 0, 100, 100, "#fff", 2);
 
@@ -334,7 +334,7 @@ describe("ArenaContext — shape primitives", () => {
 
   test("drawPolygon calls moveTo, lineTo for each point, closePath", () => {
     const mockCtx = createMockCtx();
-    const uiCtx = new ArenaContext(mockCtx);
+    const uiCtx = new Arena2DContext(mockCtx);
 
     const points = [
       { x: 0, y: 0 },
@@ -358,7 +358,7 @@ describe("ArenaContext — shape primitives", () => {
 
   test("drawPolygon with empty points is a no-op", () => {
     const mockCtx = createMockCtx();
-    const uiCtx = new ArenaContext(mockCtx);
+    const uiCtx = new Arena2DContext(mockCtx);
 
     uiCtx.drawPolygon([], "#f00");
     expect(mockCtx._calls.length).toBe(0);
@@ -366,7 +366,7 @@ describe("ArenaContext — shape primitives", () => {
 
   test("drawPath calls fill/stroke with Path2D", () => {
     const mockCtx = createMockCtx();
-    const uiCtx = new ArenaContext(mockCtx);
+    const uiCtx = new Arena2DContext(mockCtx);
 
     const path = {} as Path2D;
     uiCtx.drawPath(path, "#f00", "#0f0");
@@ -383,10 +383,10 @@ describe("ArenaContext — shape primitives", () => {
 
 // ── Gradient Stops (6.6) ──
 
-describe("ArenaContext — gradients", () => {
+describe("Arena2DContext — gradients", () => {
   test("createLinearGradient adds stops in order", () => {
     const mockCtx = createMockCtx();
-    const uiCtx = new ArenaContext(mockCtx);
+    const uiCtx = new Arena2DContext(mockCtx);
 
     const stops = [
       { offset: 0, color: "red" },
@@ -410,7 +410,7 @@ describe("ArenaContext — gradients", () => {
 
   test("createRadialGradient uses concentric circles (inner radius 0)", () => {
     const mockCtx = createMockCtx();
-    const uiCtx = new ArenaContext(mockCtx);
+    const uiCtx = new Arena2DContext(mockCtx);
 
     const stops = [
       { offset: 0, color: "white" },
@@ -428,10 +428,10 @@ describe("ArenaContext — gradients", () => {
 
 // ── Text (6.3) ──
 
-describe("ArenaContext — text", () => {
+describe("Arena2DContext — text", () => {
   test("drawText applies font, fill, baseline, align and calls fillText", () => {
     const mockCtx = createMockCtx();
-    const uiCtx = new ArenaContext(mockCtx);
+    const uiCtx = new Arena2DContext(mockCtx);
 
     const style: ITextStyle = {
       fontSize: 16,
@@ -455,7 +455,7 @@ describe("ArenaContext — text", () => {
 
   test("drawText uses defaults for optional style fields", () => {
     const mockCtx = createMockCtx();
-    const uiCtx = new ArenaContext(mockCtx);
+    const uiCtx = new Arena2DContext(mockCtx);
 
     uiCtx.drawText("Test", 0, 0, { fontSize: 14, fontFamily: "sans-serif" });
 
@@ -467,7 +467,7 @@ describe("ArenaContext — text", () => {
 
   test("measureText returns non-zero dimensions for non-empty string", () => {
     const mockCtx = createMockCtx();
-    const uiCtx = new ArenaContext(mockCtx);
+    const uiCtx = new Arena2DContext(mockCtx);
 
     const result = uiCtx.measureText("Hello", {
       fontSize: 16,
@@ -488,7 +488,7 @@ describe("ArenaContext — text", () => {
       width: 40,
     })) as unknown as CanvasRenderingContext2D["measureText"];
 
-    const uiCtx = new ArenaContext(mockCtx);
+    const uiCtx = new Arena2DContext(mockCtx);
 
     const result = uiCtx.measureText("Test", {
       fontSize: 20,
@@ -524,10 +524,10 @@ describe("buildFontString", () => {
 
 // ── Effects (6.4) ──
 
-describe("ArenaContext — effects", () => {
+describe("Arena2DContext — effects", () => {
   test("setShadow sets all shadow properties", () => {
     const mockCtx = createMockCtx();
-    const uiCtx = new ArenaContext(mockCtx);
+    const uiCtx = new Arena2DContext(mockCtx);
 
     uiCtx.setShadow("rgba(0,0,0,0.5)", 10, 3, 4);
 
@@ -539,7 +539,7 @@ describe("ArenaContext — effects", () => {
 
   test("clearShadow resets all shadow properties to defaults", () => {
     const mockCtx = createMockCtx();
-    const uiCtx = new ArenaContext(mockCtx);
+    const uiCtx = new Arena2DContext(mockCtx);
 
     // Set shadow first
     uiCtx.setShadow("red", 20, 5, 5);
@@ -555,10 +555,10 @@ describe("ArenaContext — effects", () => {
 
 // ── Clipping (6.5) ──
 
-describe("ArenaContext — clipping", () => {
+describe("Arena2DContext — clipping", () => {
   test("clipRect calls beginPath, rect, clip", () => {
     const mockCtx = createMockCtx();
-    const uiCtx = new ArenaContext(mockCtx);
+    const uiCtx = new Arena2DContext(mockCtx);
 
     uiCtx.clipRect(10, 10, 200, 200);
 
@@ -573,7 +573,7 @@ describe("ArenaContext — clipping", () => {
 
   test("clipRoundedRect calls beginPath, roundRect, clip", () => {
     const mockCtx = createMockCtx();
-    const uiCtx = new ArenaContext(mockCtx);
+    const uiCtx = new Arena2DContext(mockCtx);
 
     uiCtx.clipRoundedRect(0, 0, 100, 100, 8);
 
@@ -589,10 +589,10 @@ describe("ArenaContext — clipping", () => {
 
 // ── Line Style (6.7) ──
 
-describe("ArenaContext — line style", () => {
+describe("Arena2DContext — line style", () => {
   test("setLineWidth delegates to ctx.lineWidth", () => {
     const mockCtx = createMockCtx();
-    const uiCtx = new ArenaContext(mockCtx);
+    const uiCtx = new Arena2DContext(mockCtx);
 
     uiCtx.setLineWidth(3);
     expect(mockCtx.lineWidth).toBe(3);
@@ -600,7 +600,7 @@ describe("ArenaContext — line style", () => {
 
   test("setLineDash delegates to ctx.setLineDash", () => {
     const mockCtx = createMockCtx();
-    const uiCtx = new ArenaContext(mockCtx);
+    const uiCtx = new Arena2DContext(mockCtx);
 
     uiCtx.setLineDash([5, 3]);
 
@@ -612,10 +612,10 @@ describe("ArenaContext — line style", () => {
 
 // ── Image Drawing (6.2) ──
 
-describe("ArenaContext — image drawing", () => {
+describe("Arena2DContext — image drawing", () => {
   test("drawImage with position only", () => {
     const mockCtx = createMockCtx();
-    const uiCtx = new ArenaContext(mockCtx);
+    const uiCtx = new Arena2DContext(mockCtx);
 
     const img = {} as CanvasImageSource;
     uiCtx.drawImage(img, 10, 20);
@@ -627,7 +627,7 @@ describe("ArenaContext — image drawing", () => {
 
   test("drawImage with position and size", () => {
     const mockCtx = createMockCtx();
-    const uiCtx = new ArenaContext(mockCtx);
+    const uiCtx = new Arena2DContext(mockCtx);
 
     const img = {} as CanvasImageSource;
     uiCtx.drawImage(img, 10, 20, 100, 50);
@@ -638,7 +638,7 @@ describe("ArenaContext — image drawing", () => {
 
   test("drawImageRegion calls 9-arg drawImage", () => {
     const mockCtx = createMockCtx();
-    const uiCtx = new ArenaContext(mockCtx);
+    const uiCtx = new Arena2DContext(mockCtx);
 
     const img = {} as CanvasImageSource;
     uiCtx.drawImageRegion(img, 0, 0, 32, 32, 10, 10, 64, 64);

@@ -3,6 +3,8 @@
  */
 export const VERSION = "0.0.1";
 
+export { Arena2D } from "./Arena2D";
+
 // --- Layer 1: Core Math & Transformation Engine ---
 export type { MatrixArray } from "./math/matrix";
 export {
@@ -43,9 +45,9 @@ export { Ticker } from "./core/Ticker";
 export type {
   FillStyle,
   ITextStyle,
-  IArenaContext,
-} from "./rendering/ArenaContext";
-export { ArenaContext, buildFontString } from "./rendering/ArenaContext";
+  IArena2DContext,
+} from "./rendering/Arena2DContext";
+export { Arena2DContext, buildFontString } from "./rendering/Arena2DContext";
 
 // --- Layer 7: Scene & Layering System ---
 export type { IScene } from "./core/Scene";

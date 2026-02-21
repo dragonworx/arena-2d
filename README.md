@@ -51,25 +51,21 @@ Create a `Scene`, add some elements, and start the `Ticker`.
 import { Scene, Container, Ticker, Rect } from 'arena-2d';
 
 // 1. Initialize the Scene
-const scene = new Scene({
-  container: document.getElementById('app'),
-  width: 800,
-  height: 600
-});
+const scene = new Scene(
+  document.getElementById('app'),
+  800,
+  600
+);
 
 // 2. Create a Root Container
-const root = new Container();
-scene.root.addChild(root);
+// scene.root is automatically created
 
-// 3. Add an Element
-const box = new Rect({
-  x: 100,
-  y: 100,
-  width: 50,
-  height: 50,
-  fill: '#ff0000'
-});
-root.addChild(box);
+// 3. Add a styled Container
+const box = new Container();
+box.width = 100;
+box.height = 100;
+box.style.backgroundColor = '#ff0000'; // Note: Container styling shown in Layer 8
+scene.root.addChild(box);
 
 // 4. Start the Loop
 const ticker = new Ticker();
@@ -194,9 +190,8 @@ bun run build
 ---
 
 ## 📜 Documentation
-For a deep dive into the architecture and API, please refer to the following:
-- [Product Requirements Document (PRD)](docs/PRD.md)
-- [Technical Specification (SPEC)](docs/SPEC.md)
+For a deep dive into the architecture and API, please refer to:
+- [Product Requirements & Technical Specification](docs/PRD.md)
 
 ---
 

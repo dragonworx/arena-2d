@@ -1,11 +1,11 @@
 /**
- * ArenaContext — Safe wrapper around CanvasRenderingContext2D.
+ * Arena2DContext — Safe wrapper around CanvasRenderingContext2D.
  *
  * Provides high-level drawing primitives and automatic save/restore
  * state management. Every element's paint() call is sandwiched between
  * save() and restore() — elements never manage canvas state manually.
  *
- * SPEC: §8 — Rendering Wrapper (ArenaContext)
+ * SPEC: §8 — Rendering Wrapper (Arena2DContext)
  */
 
 import type { IElement } from "../core/Element";
@@ -28,8 +28,10 @@ export interface ITextStyle {
   textAlign?: CanvasTextAlign;
 }
 
-export interface IArenaContext {
-  readonly raw: CanvasRenderingContext2D;
+export type CanvasContext = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
+
+export interface IArena2DContext {
+  readonly raw: CanvasContext;
 
   // Shape primitives (6.1)
   drawRect(
@@ -153,12 +155,12 @@ export function buildFontString(style: ITextStyle): string {
   return `${weight} ${fontStyle} ${style.fontSize}px ${style.fontFamily}`;
 }
 
-// ── ArenaContext Class ──
+// ── Arena2DContext Class ──
 
-export class ArenaContext implements IArenaContext {
-  readonly raw: CanvasRenderingContext2D;
+export class Arena2DContext implements IArena2DContext {
+  readonly raw: CanvasContext;
 
-  constructor(ctx: CanvasRenderingContext2D) {
+  constructor(ctx: CanvasContext) {
     this.raw = ctx;
   }
 
@@ -458,6 +460,21 @@ export class ArenaContext implements IArenaContext {
     ctx.setTransform(m[0], m[1], m[2], m[3], m[4], m[5]);
     ctx.globalAlpha = element.effectiveAlpha;
     ctx.globalCompositeOperation = element.blendMode;
+  }
+
+  /**
+   * Set the transform and setup for hit-buffer rendering.
+   * Disables alpha and effects for flat color rendering.
+   */
+  beginHitElement(element: IElement, hitColor: string): void {
+    const ctx = this.raw;
+    ctx.save();
+    const m = element.worldMatrix;
+    ctx.setTransform(m[0], m[1], m[2], m[3], m[4], m[5]);
+    ctx.globalAlpha = 1.0;
+    ctx.globalCompositeOperation = "source-over";
+    ctx.fillStyle = hitColor;
+    ctx.strokeStyle = hitColor;
   }
 
   endElement(): void {

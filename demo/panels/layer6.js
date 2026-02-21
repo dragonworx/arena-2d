@@ -1,11 +1,11 @@
 export default async function (Arena2D) {
-  const { ArenaContext } = Arena2D;
+  const { Arena2DContext } = Arena2D;
 
   // ── Helper to wrap a canvas ──
   function wrapCanvas(id) {
     const canvas = document.getElementById(id);
     const rawCtx = canvas.getContext("2d");
-    return { canvas, ctx: new ArenaContext(rawCtx) };
+    return { canvas, ctx: new Arena2DContext(rawCtx) };
   }
 
   // ═══════════════════════════════════════
@@ -286,8 +286,8 @@ export default async function (Arena2D) {
     fontFamily: "monospace",
     fill: "#22d3ee",
   };
-  const measured = tc.measureText("ArenaContext", demoStyle);
-  tc.drawText("ArenaContext", 15, 115, demoStyle);
+  const measured = tc.measureText("Arena2DContext", demoStyle);
+  tc.drawText("Arena2DContext", 15, 115, demoStyle);
   // Underline using measured width
   tc.drawLine(15, 120, 15 + measured.width, 120, "#22d3ee", 1);
   tc.drawText(

@@ -11,7 +11,7 @@
 import {
   type ITextStyle as IRenderTextStyle,
   buildFontString,
-} from "../rendering/ArenaContext";
+} from "../rendering/Arena2DContext";
 
 // ── Types ──
 

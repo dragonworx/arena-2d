@@ -141,7 +141,8 @@ describe("Display & Visibility", () => {
     // Verify visible element WOULD paint
     child.display = "visible";
     scene.render();
-    expect(child.paintCallCount).toBe(1);
+    // paint is called twice: once for hitBuffer, once for regular render
+    expect(child.paintCallCount).toBe(2);
   });
 
   it("visible: false triggers parent layout invalidation", () => {

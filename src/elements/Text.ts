@@ -13,9 +13,9 @@
 import { DirtyFlags } from "../core/DirtyFlags";
 import { Element } from "../core/Element";
 import type {
-  IArenaContext,
+  IArena2DContext,
   ITextStyle as IRenderTextStyle,
-} from "../rendering/ArenaContext";
+} from "../rendering/Arena2DContext";
 import {
   type ITextLayout,
   computeMaxContentWidth,
@@ -130,7 +130,7 @@ export class Text extends Element {
   }
 
   /**
-   * Convert our ITextStyle to the ArenaContext's ITextStyle for measurement and rendering.
+   * Convert our ITextStyle to the Arena2DContext's ITextStyle for measurement and rendering.
    */
   private _renderStyle(): IRenderTextStyle & { lineHeight: number } {
     return {
@@ -187,7 +187,7 @@ export class Text extends Element {
 
   // ── Rendering ──
 
-  override paint(ctx: IArenaContext): void {
+  override paint(ctx: IArena2DContext): void {
     const layout = this.textLayout;
     const style = this._textStyle;
     const lineHeight = style.lineHeight;

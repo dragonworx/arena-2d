@@ -15,7 +15,7 @@ function createMockImage(w: number, h: number): MockImageSource {
   return { width: w, height: h, naturalWidth: w, naturalHeight: h };
 }
 
-// ── Mock ArenaContext ──
+// ── Mock Arena2DContext ──
 
 function createMockCtx() {
   const calls: Array<{ method: string; args: unknown[] }> = [];

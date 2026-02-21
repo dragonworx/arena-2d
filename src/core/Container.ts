@@ -7,9 +7,11 @@
  * SPEC: §2.3–2.4 (IContainer), §12.1 (error handling)
  */
 
+import { Arena2D } from "../Arena2D";
 import { resolveLayout } from "../layout/LayoutResolver";
 import { DirtyFlags } from "./DirtyFlags";
 import { Element, type IElement } from "./Element";
+import type { IArena2DContext } from "../rendering/Arena2DContext";
 
 // ── IContainer Interface ──
 
@@ -30,6 +32,13 @@ export interface IContainer extends IElement {
 export class Container extends Element implements IContainer {
   private _children: Element[] = [];
   clipContent = false;
+
+  // Cache-as-bitmap state
+  private _cacheCanvas: OffscreenCanvas | null = null;
+  private _cacheCtx: OffscreenCanvasRenderingContext2D | null = null;
+  private _cacheValid = false;
+  private _cacheOffsetX = 0;
+  private _cacheOffsetY = 0;
 
   get children(): ReadonlyArray<IElement> {
     return this._children;
@@ -150,6 +159,17 @@ export class Container extends Element implements IContainer {
 
     // Mark layout as dirty
     this.invalidate(DirtyFlags.Layout);
+
+    // Performance warning for many children without caching
+    if (
+      Arena2D.debug &&
+      !this.cacheAsBitmap &&
+      this._children.length > Arena2D.config.perfWarningChildThreshold
+    ) {
+      console.warn(
+        `Arena2D Performance Hint: Container [${this.id}] has ${this._children.length} children but cacheAsBitmap is false. Consider enabling caching for complex static subtrees.`,
+      );
+    }
   }
 
   private _removeChildInternal(child: Element, index: number): void {
@@ -201,6 +221,7 @@ export class Container extends Element implements IContainer {
 
     // Bubble up to cacheAsBitmap ancestor
     if (flag & (DirtyFlags.Visual | DirtyFlags.Transform)) {
+      this._cacheValid = false; // Invalidate own cache if we have one
       this._bubbleCacheInvalidation();
     }
   }
@@ -262,6 +283,54 @@ export class Container extends Element implements IContainer {
         child.update(dt);
       }
     }
+  }
+
+  /**
+   * Render the container.
+   * If cacheAsBitmap is true, this handles drawing the cache canvas.
+   * Note: The actual rendering into the cache is orchestrated by the Scene.
+   */
+  override paint(ctx: IArena2DContext): void {
+    if (this.cacheAsBitmap && this._cacheValid && this._cacheCanvas) {
+      // Draw the cached bitmap
+      // The cache is relative to our world position, so we draw it at (0,0)
+      // because the Scene has already applied our world transform.
+      // However, the cache might have an offset if the children's bounds
+      // don't start at (0,0).
+      ctx.drawImage(this._cacheCanvas, this._cacheOffsetX, this._cacheOffsetY);
+    }
+  }
+
+  /**
+   * @internal
+   * Check if the cache is valid.
+   */
+  get isCacheValid(): boolean {
+    return this.cacheAsBitmap && this._cacheValid && this._cacheCanvas !== null;
+  }
+
+  /**
+   * @internal
+   * Provide access to the cache context for the Scene to draw into.
+   */
+  _getCacheContext(width: number, height: number): OffscreenCanvasRenderingContext2D {
+    if (!this._cacheCanvas || this._cacheCanvas.width !== width || this._cacheCanvas.height !== height) {
+      this._cacheCanvas = new OffscreenCanvas(width, height);
+      this._cacheCtx = this._cacheCanvas.getContext("2d");
+      if (!this._cacheCtx) throw new Error("Failed to get OffscreenCanvas context");
+    }
+    this._cacheValid = true;
+    return this._cacheCtx as OffscreenCanvasRenderingContext2D;
+  }
+
+  /**
+   * @internal
+   * Set the cache offset and mark as valid.
+   */
+  _setCacheResult(offsetX: number, offsetY: number): void {
+    this._cacheOffsetX = offsetX;
+    this._cacheOffsetY = offsetY;
+    this._cacheValid = true;
   }
 
   // ── Disposal override ──

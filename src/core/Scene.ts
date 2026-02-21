@@ -8,11 +8,12 @@
  * SPEC: §3 (Scene & Layering System)
  */
 
+import { Arena2D } from "../Arena2D";
 import {
   type IInteractionManager,
   InteractionManager,
 } from "../interaction/InteractionManager";
-import { ArenaContext } from "../rendering/ArenaContext";
+import { Arena2DContext } from "../rendering/Arena2DContext";
 import { Container, type IContainer } from "./Container";
 import { DirtyFlags } from "./DirtyFlags";
 import type { IElement } from "./Element";
@@ -65,7 +66,18 @@ export class Scene implements IScene {
   private _layers = new Map<string, Layer>();
   private _defaultLayer: Layer;
   private _elementIndex = new Map<string, IElement>();
+  private _uidIndex = new Map<number, IElement>();
+  private _dprIndex = 0; // Not used but reserved for future
   private _dprMediaQuery: MediaQueryList | null = null;
+  private _isDestroyed = false;
+
+  private static _registry = new FinalizationRegistry((id: string) => {
+    if (Arena2D.debug) {
+      console.warn(
+        `Arena2D Memory Warning: Scene [${id}] was garbage collected without being destroyed. Always call scene.destroy() to release DOM and ticker resources.`,
+      );
+    }
+  });
 
   constructor(container: HTMLElement, width: number, height: number) {
     this.container = container;
@@ -107,6 +119,9 @@ export class Scene implements IScene {
 
     // Listen for DPR changes
     this._setupDPRListener();
+
+    // Register for GC tracking
+    Scene._registry.register(this, this.root.id, this);
   }
 
   // ── Properties ──
@@ -244,7 +259,16 @@ export class Scene implements IScene {
     );
   }
 
+  /**
+   * Release all resources.
+   */
   destroy(): void {
+    if (this._isDestroyed) return;
+    this._isDestroyed = true;
+
+    // Unregister from GC tracking
+    Scene._registry.unregister(this);
+
     // Destroy interaction manager
     this.interaction.destroy();
 
@@ -282,6 +306,7 @@ export class Scene implements IScene {
    */
   registerElement(element: IElement): void {
     this._elementIndex.set(element.id, element);
+    this._uidIndex.set((element as any).uid, element);
   }
 
   /**
@@ -290,6 +315,7 @@ export class Scene implements IScene {
    */
   unregisterElement(element: IElement): void {
     this._elementIndex.delete(element.id);
+    this._uidIndex.delete((element as any).uid);
     (this.interaction as InteractionManager).unregisterElement(element);
   }
 
@@ -311,8 +337,88 @@ export class Scene implements IScene {
     }
 
     // Paint elements to their layers in scene-graph order
-    // console.log("Rendering scene...");
     this._paintRecursive(this.root as IElement);
+
+    // Update hit buffer
+    this._updateHitBuffer();
+  }
+
+  /**
+   * Paint all interactive elements to the offscreen hit buffer using unique colors.
+   */
+  private _updateHitBuffer(): void {
+    const ctx = this.hitBuffer.getContext("2d");
+    if (!ctx) return;
+
+    ctx.clearRect(0, 0, this.hitBuffer.width, this.hitBuffer.height);
+    const arenaCtx = new Arena2DContext(ctx);
+    this._paintHitRecursive(this.root as IElement, arenaCtx);
+  }
+
+  private _paintHitRecursive(element: IElement, ctx: Arena2DContext): void {
+    if (
+      !element.visible ||
+      element.alpha <= 0 ||
+      element.display === "hidden"
+    ) {
+      return;
+    }
+
+    if (element.interactive) {
+      const uid = (element as any).uid;
+      const r = (uid & 0xff0000) >> 16;
+      const g = (uid & 0x00ff00) >> 8;
+      const b = uid & 0x0000ff;
+      const color = `rgb(${r},${g},${b})`;
+
+      ctx.beginHitElement(element, color);
+      if ("paint" in element) {
+        (element as any).paint(ctx);
+      }
+      ctx.endElement();
+    }
+
+    if ("children" in element) {
+      const container = element as IContainer;
+      const sorted = Array.from(container.children).sort(
+        (a, b) => a.zIndex - b.zIndex,
+      );
+      for (const child of sorted) {
+        this._paintHitRecursive(child, ctx);
+      }
+    }
+  }
+
+  /**
+   * Sample the hit buffer at the given scene coordinates.
+   * Returns the element UID at that pixel, or 0 if none.
+   */
+  _sampleHitBuffer(sx: number, sy: number): number {
+    const ctx = this.hitBuffer.getContext("2d", { willReadFrequently: true });
+    if (!ctx) return 0;
+
+    const dpr = this._dpr;
+    const px = Math.floor(sx * dpr);
+    const py = Math.floor(sy * dpr);
+
+    if (
+      px < 0 ||
+      px >= this.hitBuffer.width ||
+      py < 0 ||
+      py >= this.hitBuffer.height
+    ) {
+      return 0;
+    }
+
+    const data = ctx.getImageData(px, py, 1, 1).data;
+    if (data[3] < this._alphaThreshold) return 0; // Alpha check for interactive passthrough
+
+    const uid = (data[0] << 16) | (data[1] << 8) | data[2];
+    return uid;
+  }
+
+  _getElementByUID(uid: number): IElement | null {
+    return this._uidIndex.get(uid) || null;
   }
 
   /**
@@ -321,7 +427,6 @@ export class Scene implements IScene {
   private _paintRecursive(element: IElement): void {
     // Skip invisible elements
     if (!element.visible || element.alpha <= 0) {
-      // console.log("Skipping invisible:", element.id, element.visible, element.alpha);
       return;
     }
 
@@ -332,20 +437,25 @@ export class Scene implements IScene {
 
     // Get element's layer
     const layer = element.layer as Layer | null;
-    if (!layer) {
-      // Element has no layer — should not happen in normal operation
-      // (all elements should inherit from root which has default layer)
-      return;
+    if (!layer) return;
+
+    const isContainer = "children" in element;
+    const container = isContainer ? (element as Container) : null;
+
+    // Handle cacheAsBitmap for Containers
+    if (container && container.cacheAsBitmap) {
+      if (!container.isCacheValid) {
+        this._updateCache(container);
+      }
     }
 
-    // Create ArenaContext wrapper
-    const ctx = new ArenaContext(layer.ctx);
+    // Create Arena2DContext wrapper
+    const ctx = new Arena2DContext(layer.ctx);
 
     // Save canvas state
     layer.ctx.save();
 
     // Apply element transform with DPR scaling
-    // Set the full transform (DPR * worldMatrix) to avoid accumulation issues
     const m = element.worldMatrix;
     const dpr = this._dpr;
     layer.ctx.setTransform(
@@ -366,21 +476,126 @@ export class Scene implements IScene {
       "paint" in element &&
       typeof (element as { paint: unknown }).paint === "function"
     ) {
-      (element as { paint: (ctx: ArenaContext) => void }).paint(ctx);
+      (element as { paint: (ctx: Arena2DContext) => void }).paint(ctx);
     }
 
     // Restore canvas state
     layer.ctx.restore();
 
+    // If we cached this container, skip children (they are in the cache)
+    if (container && container.cacheAsBitmap && container.isCacheValid) {
+      return;
+    }
+
     // Paint children (each child uses its own absolute worldMatrix)
-    if ("children" in element) {
-      const container = element as IContainer;
+    if (container) {
       // Sort by zIndex for correct layering
       const sortedChildren = Array.from(container.children).sort(
         (a, b) => a.zIndex - b.zIndex,
       );
       for (const child of sortedChildren) {
         this._paintRecursive(child);
+      }
+    }
+  }
+
+  /**
+   * Render a container's subtree into its private offscreen canvas.
+   */
+  private _updateCache(container: Container): void {
+    // 1. Determine local bounds of all descendants
+    let minX = 0;
+    let minY = 0;
+    let maxX = container.width;
+    let maxY = container.height;
+
+    const walk = (el: IElement) => {
+      if ("children" in el) {
+        for (const child of (el as IContainer).children) {
+          minX = Math.min(minX, child.x);
+          minY = Math.min(minY, child.y);
+          maxX = Math.max(maxX, child.x + child.width);
+          maxY = Math.max(maxY, child.y + child.height);
+          walk(child);
+        }
+      }
+    };
+    walk(container);
+
+    const width = Math.ceil(maxX - minX);
+    const height = Math.ceil(maxY - minY);
+
+    if (width <= 0 || height <= 0) return;
+
+    // 2. Get the offscreen context (scaled by DPR for sharpness)
+    const dpr = this._dpr;
+    const cacheCtx = container._getCacheContext(width * dpr, height * dpr);
+    cacheCtx.clearRect(0, 0, width * dpr, height * dpr);
+    
+    // 3. Render the subtree into the cache
+    // We need to offset the rendering so (minX, minY) maps to (0, 0)
+    const arenaCtx = new Arena2DContext(cacheCtx);
+    
+    // Temporarily disable the container's own cacheAsBitmap flag to avoid recursion
+    const originalCache = container.cacheAsBitmap;
+    (container as any)._cacheAsBitmap = false;
+
+    this._paintToOverride(container, arenaCtx, -minX, -minY, dpr);
+
+    (container as any)._cacheAsBitmap = originalCache;
+
+    // 4. Save the results
+    container._setCacheResult(minX, minY);
+  }
+
+  /**
+   * Helper to paint a subtree into an alternate context with a specific offset.
+   */
+  private _paintToOverride(
+    element: IElement,
+    ctx: Arena2DContext,
+    offsetX: number,
+    offsetY: number,
+    dpr: number
+  ): void {
+    // This is a simplified version of the main render loop
+    // It uses the element's local matrix relative to the CACHED parent.
+    // However, since we want to support nested caches, it gets complex.
+    // For M0, let's just render children relative to the container.
+
+    if ("children" in element) {
+      const container = element as IContainer;
+      const sorted = Array.from(container.children).sort((a, b) => a.zIndex - b.zIndex);
+      
+      for (const child of sorted) {
+        if (!child.visible || child.alpha <= 0) continue;
+
+        const raw = ctx.raw;
+        raw.save();
+
+        // Compute local transform relative to cache origin + offset
+        // For simplicity, we'll use the child's local properties.
+        // This only works if children are direct children of the cached container.
+        // Nested children would need their transform relative to the ancestor.
+        
+        // Actually, the easiest way is to temporarily set the child's worldMatrix
+        // to be relative to our cache, but that's invasive.
+        
+        // Better: apply the child's transform manually.
+        const m = child.localMatrix; // Local matrix relative to parent
+        raw.transform(dpr * m[0], dpr * m[1], dpr * m[2], dpr * m[3], dpr * (m[4] + offsetX), dpr * (m[5] + offsetY));
+
+        raw.globalAlpha = child.alpha; // Relative alpha
+        raw.globalCompositeOperation = child.blendMode;
+
+        if ("paint" in child) {
+          (child as any).paint(ctx);
+        }
+
+        // Recurse
+        this._paintToOverride(child, ctx, 0, 0, 1); // Sub-children are already relative to parent
+
+        raw.restore();
       }
     }
   }
@@ -395,8 +610,7 @@ export class Scene implements IScene {
       this._dprMediaQuery = window.matchMedia(mqString);
       this._dprMediaQuery.addEventListener("change", this._onDPRChange);
     } catch {
-      // Some browsers may not support this query
-      // Fall back to no DPR change detection
+      // ignore
     }
   }
 

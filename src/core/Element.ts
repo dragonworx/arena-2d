@@ -22,6 +22,7 @@ import {
   transformPoint,
   translate,
 } from "../math/matrix";
+import { Arena2D } from "../Arena2D";
 import { DirtyFlags } from "./DirtyFlags";
 
 // ── Helpers ──
@@ -219,6 +220,9 @@ export class Element extends EventEmitter implements IElement {
     return this._x;
   }
   set x(value: number) {
+    if (Arena2D.debug && Number.isNaN(value)) {
+      console.warn(`Arena2D: [${this.id}] x set to NaN`);
+    }
     if (this._x !== value) {
       this._x = value;
       this.invalidate(DirtyFlags.Transform);
@@ -229,6 +233,9 @@ export class Element extends EventEmitter implements IElement {
     return this._y;
   }
   set y(value: number) {
+    if (Arena2D.debug && Number.isNaN(value)) {
+      console.warn(`Arena2D: [${this.id}] y set to NaN`);
+    }
     if (this._y !== value) {
       this._y = value;
       this.invalidate(DirtyFlags.Transform);
@@ -239,6 +246,9 @@ export class Element extends EventEmitter implements IElement {
     return this._rotation;
   }
   set rotation(value: number) {
+    if (Arena2D.debug && Number.isNaN(value)) {
+      console.warn(`Arena2D: [${this.id}] rotation set to NaN`);
+    }
     if (this._rotation !== value) {
       this._rotation = value;
       this.invalidate(DirtyFlags.Transform);
@@ -249,8 +259,12 @@ export class Element extends EventEmitter implements IElement {
     return this._scaleX;
   }
   set scaleX(value: number) {
-    if (this._scaleX !== value) {
-      this._scaleX = value;
+    if (Arena2D.debug && Number.isNaN(value)) {
+      console.warn(`Arena2D: [${this.id}] scaleX set to NaN`);
+    }
+    const safeValue = value === 0 ? Number.EPSILON : value;
+    if (this._scaleX !== safeValue) {
+      this._scaleX = safeValue;
       this.invalidate(DirtyFlags.Transform);
     }
   }
@@ -259,8 +273,12 @@ export class Element extends EventEmitter implements IElement {
     return this._scaleY;
   }
   set scaleY(value: number) {
-    if (this._scaleY !== value) {
-      this._scaleY = value;
+    if (Arena2D.debug && Number.isNaN(value)) {
+      console.warn(`Arena2D: [${this.id}] scaleY set to NaN`);
+    }
+    const safeValue = value === 0 ? Number.EPSILON : value;
+    if (this._scaleY !== safeValue) {
+      this._scaleY = safeValue;
       this.invalidate(DirtyFlags.Transform);
     }
   }
@@ -269,6 +287,9 @@ export class Element extends EventEmitter implements IElement {
     return this._skewX;
   }
   set skewX(value: number) {
+    if (Arena2D.debug && Number.isNaN(value)) {
+      console.warn(`Arena2D: [${this.id}] skewX set to NaN`);
+    }
     if (this._skewX !== value) {
       this._skewX = value;
       this.invalidate(DirtyFlags.Transform);
@@ -279,6 +300,9 @@ export class Element extends EventEmitter implements IElement {
     return this._skewY;
   }
   set skewY(value: number) {
+    if (Arena2D.debug && Number.isNaN(value)) {
+      console.warn(`Arena2D: [${this.id}] skewY set to NaN`);
+    }
     if (this._skewY !== value) {
       this._skewY = value;
       this.invalidate(DirtyFlags.Transform);
@@ -289,6 +313,9 @@ export class Element extends EventEmitter implements IElement {
     return this._pivotX;
   }
   set pivotX(value: number) {
+    if (Arena2D.debug && Number.isNaN(value)) {
+      console.warn(`Arena2D: [${this.id}] pivotX set to NaN`);
+    }
     if (this._pivotX !== value) {
       this._pivotX = value;
       this.invalidate(DirtyFlags.Transform);
@@ -299,6 +326,9 @@ export class Element extends EventEmitter implements IElement {
     return this._pivotY;
   }
   set pivotY(value: number) {
+    if (Arena2D.debug && Number.isNaN(value)) {
+      console.warn(`Arena2D: [${this.id}] pivotY set to NaN`);
+    }
     if (this._pivotY !== value) {
       this._pivotY = value;
       this.invalidate(DirtyFlags.Transform);
@@ -311,10 +341,14 @@ export class Element extends EventEmitter implements IElement {
     return this._width;
   }
   set width(value: number) {
-    if (this._width !== value) {
-      this._width = value;
+    if (Arena2D.debug && Number.isNaN(value)) {
+      console.warn(`Arena2D: [${this.id}] width set to NaN`);
+    }
+    const safeValue = Math.max(0, value || 0);
+    if (this._width !== safeValue) {
+      this._width = safeValue;
       this.invalidate(DirtyFlags.Visual);
-      this.localBounds.width = value; // Sync localBounds
+      this.localBounds.width = safeValue; // Sync localBounds
     }
   }
 
@@ -322,10 +356,14 @@ export class Element extends EventEmitter implements IElement {
     return this._height;
   }
   set height(value: number) {
-    if (this._height !== value) {
-      this._height = value;
+    if (Arena2D.debug && Number.isNaN(value)) {
+      console.warn(`Arena2D: [${this.id}] height set to NaN`);
+    }
+    const safeValue = Math.max(0, value || 0);
+    if (this._height !== safeValue) {
+      this._height = safeValue;
       this.invalidate(DirtyFlags.Visual);
-      this.localBounds.height = value; // Sync localBounds
+      this.localBounds.height = safeValue; // Sync localBounds
     }
   }
 
@@ -371,7 +409,10 @@ export class Element extends EventEmitter implements IElement {
     return this._alpha;
   }
   set alpha(value: number) {
-    const clamped = clamp(value, 0, 1);
+    if (Arena2D.debug && Number.isNaN(value)) {
+      console.warn(`Arena2D: [${this.id}] alpha set to NaN`);
+    }
+    const clamped = clamp(value || 0, 0, 1);
     if (this._alpha !== clamped) {
       this._alpha = clamped;
       this.invalidate(DirtyFlags.Visual);

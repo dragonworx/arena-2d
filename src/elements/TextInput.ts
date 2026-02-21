@@ -9,7 +9,7 @@
 
 import { DirtyFlags } from "../core/DirtyFlags";
 import type { IKeyboardEvent } from "../interaction/InteractionManager";
-import type { IArenaContext } from "../rendering/ArenaContext";
+import type { IArena2DContext, CanvasContext } from "../rendering/Arena2DContext";
 import { Text } from "./Text";
 
 // ── Constants ──
@@ -1001,7 +1001,7 @@ export class TextInput extends Text {
 
   // ── Rendering ──
 
-  override paint(ctx: IArenaContext): void {
+  override paint(ctx: IArena2DContext): void {
     const style = this.textStyle;
     const lineHeight = style.lineHeight;
     const raw = ctx.raw;
@@ -1062,7 +1062,7 @@ export class TextInput extends Text {
   }
 
   private _paintSelection(
-    raw: CanvasRenderingContext2D,
+    ctx: CanvasContext,
     layout: {
       lines: { text: string; width: number; advancements: number[] }[];
     },
@@ -1073,7 +1073,7 @@ export class TextInput extends Text {
     const selStart = Math.min(this._selectionStart, this._selectionEnd);
     const selEnd = Math.max(this._selectionStart, this._selectionEnd);
 
-    raw.fillStyle = style.selectionColor;
+    ctx.fillStyle = style.selectionColor;
 
     let charOffset = 0;
     for (let i = 0; i < layout.lines.length; i++) {
@@ -1104,7 +1104,7 @@ export class TextInput extends Text {
             : line.width;
 
         const y = i * lineHeight;
-        raw.fillRect(alignOffsetX + startX, y, endX - startX, lineHeight);
+        ctx.fillRect(alignOffsetX + startX, y, endX - startX, lineHeight);
       }
 
       charOffset += line.text.length;
@@ -1119,7 +1119,7 @@ export class TextInput extends Text {
   }
 
   private _paintCaret(
-    raw: CanvasRenderingContext2D,
+    ctx: CanvasContext,
     layout: {
       lines: { text: string; width: number; advancements: number[] }[];
     },
@@ -1145,8 +1145,8 @@ export class TextInput extends Text {
 
     const y = lineIdx * lineHeight;
 
-    raw.fillStyle = style.color;
-    raw.fillRect(alignOffsetX + caretX, y, 1.5, lineHeight);
+    ctx.fillStyle = style.color;
+    ctx.fillRect(alignOffsetX + caretX, y, 1.5, lineHeight);
   }
 
   // ── Cleanup ──

@@ -1,0 +1,88 @@
+<style>
+  .ship-card {
+    background: #1a1a2e;
+    border: 1px solid #4a90d9;
+    border-radius: 12px;
+    padding: 24px;
+    text-align: center;
+    margin-top: 20px;
+  }
+  .ship-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+  }
+  .ship-title {
+    font-size: 24px;
+    color: #4a90d9;
+    margin-bottom: 8px;
+  }
+  .ship-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin: 24px 0;
+  }
+  .stat-item {
+    background: #161625;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #333;
+  }
+  .stat-val {
+    font-size: 18px;
+    font-weight: bold;
+    color: #fff;
+    font-family: monospace;
+  }
+  .stat-label {
+    font-size: 11px;
+    color: #999;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+</style>
+
+<div class="main-header">
+  <h1>Layer 15 — API Surface & Shipment</h1>
+  <p>Finalizing the production bundle and documenting the complete engine architecture.</p>
+</div>
+
+<div class="card">
+  <h3>Shipment Overview</h3>
+  <p>Arena-2D has been successfully compiled into its final production form. All layers have been verified and integrated.</p>
+  
+  <div class="ship-stats">
+    <div class="stat-item">
+      <div class="stat-val">v0.0.1</div>
+      <div class="stat-label">Version</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-val" id="l15-bundle-size">~68 KB</div>
+      <div class="stat-label">Bundle Size (Min)</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-val" id="l15-test-count">481</div>
+      <div class="stat-label">Tests Passing</div>
+    </div>
+  </div>
+
+  <div class="ship-card">
+    <div class="ship-icon">🚀</div>
+    <div class="ship-title">Ready for Launch</div>
+    <p style="color: #ccc; max-width: 500px; margin: 0 auto;">
+      The library is now distributed as a single minified ESM bundle with comprehensive type definitions and source maps.
+    </p>
+  </div>
+</div>
+
+<div class="card" style="margin-top: 20px;">
+  <h3>Final Quality Gate</h3>
+  <ul class="checklist">
+    <li><span class="check done"></span> Single barrel export via <code>index.ts</code></li>
+    <li><span class="check done"></span> Production bundle with sourcemaps</li>
+    <li><span class="check done"></span> Single-file type declarations (<code>arena-2d.d.ts</code>)</li>
+    <li><span class="check done"></span> Comprehensive unit test coverage (all layers)</li>
+    <li><span class="check done"></span> Robust error handling & Debug Mode</li>
+    <li><span class="check done"></span> Multi-canvas High-performance renderer</li>
+  </ul>
+</div>
