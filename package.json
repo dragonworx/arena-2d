@@ -15,7 +15,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "bunx biome check src/ tests/ demo/ build.ts",
     "lint:fix": "bunx biome check --write src/ tests/ demo/ build.ts",
-    "quality": "bun run typecheck && bun run lint && bun test"
+    "quality": "bun run typecheck && bun run lint && bun test",
+    "docs": "bunx typedoc --out docs src/index.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.0",
@@ -25,5 +26,8 @@
   },
   "trustedDependencies": [
     "@biomejs/biome"
-  ]
+  ],
+  "dependencies": {
+    "typedoc": "^0.28.17"
+  }
 }
