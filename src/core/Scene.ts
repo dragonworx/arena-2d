@@ -67,9 +67,10 @@ export class Scene implements IScene {
   private _defaultLayer: Layer;
   private _elementIndex = new Map<string, IElement>();
   private _uidIndex = new Map<number, IElement>();
-  private _dprIndex = 0; // Not used but reserved for future
   private _dprMediaQuery: MediaQueryList | null = null;
   private _isDestroyed = false;
+  private _hitBufferCtx: OffscreenCanvasRenderingContext2D | null = null;
+  private _hitBufferDirty = true;
 
   private static _registry = new FinalizationRegistry((id: string) => {
     if (Arena2D.debug) {
@@ -97,6 +98,9 @@ export class Scene implements IScene {
 
     // Create hit buffer (offscreen canvas at scene resolution)
     this.hitBuffer = new OffscreenCanvas(width * this._dpr, height * this._dpr);
+    this._hitBufferCtx = this.hitBuffer.getContext("2d", {
+      willReadFrequently: true,
+    });
 
     // Create root container
     this.root = new Container();
@@ -249,9 +253,13 @@ export class Scene implements IScene {
       layer.resize(width, height, this._dpr);
     }
 
-    // Resize hit buffer
+    // Resize hit buffer (resizing clears the canvas, so re-acquire context)
     this.hitBuffer.width = width * this._dpr;
     this.hitBuffer.height = height * this._dpr;
+    this._hitBufferCtx = this.hitBuffer.getContext("2d", {
+      willReadFrequently: true,
+    });
+    this._hitBufferDirty = true;
 
     // Invalidate root to trigger layout and transform recalculation
     (this.root as IElement).invalidate(
@@ -307,6 +315,10 @@ export class Scene implements IScene {
   registerElement(element: IElement): void {
     this._elementIndex.set(element.id, element);
     this._uidIndex.set((element as any).uid, element);
+    if (element.interactive) {
+      this._hitBufferDirty = true;
+      (this.interaction as InteractionManager).markSpatialDirty(element);
+    }
   }
 
   /**
@@ -317,6 +329,9 @@ export class Scene implements IScene {
     this._elementIndex.delete(element.id);
     this._uidIndex.delete((element as any).uid);
     (this.interaction as InteractionManager).unregisterElement(element);
+    if (element.interactive) {
+      this._hitBufferDirty = true;
+    }
   }
 
   // ── Frame Pipeline ──
@@ -344,10 +359,22 @@ export class Scene implements IScene {
   }
 
   /**
+   * Mark the hit buffer as needing a repaint.
+   * Called when interactive elements change visually or spatially.
+   */
+  invalidateHitBuffer(): void {
+    this._hitBufferDirty = true;
+  }
+
+  /**
    * Paint all interactive elements to the offscreen hit buffer using unique colors.
+   * Skips repaint if nothing has changed since the last update.
    */
   private _updateHitBuffer(): void {
-    const ctx = this.hitBuffer.getContext("2d");
+    if (!this._hitBufferDirty) return;
+    this._hitBufferDirty = false;
+
+    const ctx = this._hitBufferCtx;
     if (!ctx) return;
 
     ctx.clearRect(0, 0, this.hitBuffer.width, this.hitBuffer.height);
@@ -394,7 +421,7 @@ export class Scene implements IScene {
    * Returns the element UID at that pixel, or 0 if none.
    */
   _sampleHitBuffer(sx: number, sy: number): number {
-    const ctx = this.hitBuffer.getContext("2d", { willReadFrequently: true });
+    const ctx = this._hitBufferCtx;
     if (!ctx) return 0;
 
     const dpr = this._dpr;

@@ -67,6 +67,8 @@ export interface IInteractionManager {
   tabPrev(): void;
 
   updateSpatialHash(): void;
+  markSpatialDirty(element: IElement): void;
+  markSpatialFullRebuild(): void;
   destroy(): void;
 
   // Drag & Drop support
@@ -187,6 +189,8 @@ export class InteractionManager implements IInteractionManager {
   private _hoveredElement: IElement | null = null;
   private _pointerDownElement: IElement | null = null;
   private _spatialEntries = new Map<IElement, ISpatialEntry>();
+  private _spatialDirtyElements = new Set<IElement>();
+  private _spatialFullRebuild = true;
 
   // Bound DOM handlers for cleanup
   private _onPointerDown: (e: PointerEvent) => void;
@@ -297,15 +301,43 @@ export class InteractionManager implements IInteractionManager {
   // ── Spatial Hash Update ──
 
   /**
-   * Update the spatial hash grid for all elements that have DirtyFlags.Spatial set.
-   * Should be called once per frame, after layout resolution.
+   * Mark an element as needing a spatial hash update.
+   * Called when an element's transform or visibility changes.
    */
-  updateSpatialHash(): void {
-    this._updateSpatialRecursive(this._scene.root as IElement);
+  markSpatialDirty(element: IElement): void {
+    this._spatialDirtyElements.add(element);
   }
 
-  private _updateSpatialRecursive(element: IElement): void {
-    // Update this element's spatial entry if it's interactive
+  /**
+   * Force a full rebuild of the spatial hash on the next frame.
+   */
+  markSpatialFullRebuild(): void {
+    this._spatialFullRebuild = true;
+  }
+
+  /**
+   * Update the spatial hash grid.
+   * On first call or after structural changes, performs a full rebuild.
+   * Otherwise, only updates elements that were marked dirty.
+   */
+  updateSpatialHash(): void {
+    if (this._spatialFullRebuild) {
+      this._spatialFullRebuild = false;
+      this._spatialDirtyElements.clear();
+      this._updateSpatialRecursive(this._scene.root as IElement);
+      return;
+    }
+
+    // Incremental update: only process dirty elements
+    if (this._spatialDirtyElements.size === 0) return;
+
+    for (const element of this._spatialDirtyElements) {
+      this._updateSpatialEntry(element);
+    }
+    this._spatialDirtyElements.clear();
+  }
+
+  private _updateSpatialEntry(element: IElement): void {
     if (element.interactive && element.visible) {
       const aabb = computeAABB(
         { x: 0, y: 0, width: element.width, height: element.height },
@@ -326,13 +358,16 @@ export class InteractionManager implements IInteractionManager {
         this._spatialHash.insert(entry);
       }
     } else {
-      // Remove non-interactive or invisible elements
       const entry = this._spatialEntries.get(element);
       if (entry) {
         this._spatialHash.remove(entry);
         this._spatialEntries.delete(element);
       }
     }
+  }
+
+  private _updateSpatialRecursive(element: IElement): void {
+    this._updateSpatialEntry(element);
 
     // Recurse into children
     if ("children" in element) {

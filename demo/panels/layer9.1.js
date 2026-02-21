@@ -7,12 +7,52 @@ export default async function (Arena2D) {
   const countSelect = document.getElementById("l9_1-count");
   const resetBtn = document.getElementById("l9_1-reset");
   const statusEl = document.getElementById("l9_1-status");
+  const isolateBtn = document.getElementById("l9_1-isolate-btn");
+
+  let isolateMode = false;
+  let isolatedElement = null;
 
   const width = container.clientWidth || 800;
   const height = container.clientHeight || 600;
 
   const scene = new Scene(container, width, height);
   scene.ticker.start();
+
+  if (isolateBtn) {
+    isolateBtn.addEventListener("click", () => {
+      isolateMode = !isolateMode;
+      isolateBtn.textContent = isolateMode ? "Disable" : "Enable";
+      isolateBtn.style.background = isolateMode ? "#e67e22" : "#3498db";
+      isolateBtn.style.borderColor = isolateMode ? "#d35400" : "#2980b9";
+    });
+  }
+
+  const updater = new Element("updater");
+  updater.update = (dt) => {
+    if (isolatedElement) {
+      const speed = 100; // px per second
+      isolatedElement.x += isolatedElement.vx * speed * dt;
+      isolatedElement.y += isolatedElement.vy * speed * dt;
+
+      if (isolatedElement.x < 0) {
+        isolatedElement.x = 0;
+        isolatedElement.vx *= -1;
+      }
+      if (isolatedElement.x + isolatedElement.width > width) {
+        isolatedElement.x = width - isolatedElement.width;
+        isolatedElement.vx *= -1;
+      }
+      if (isolatedElement.y < 0) {
+        isolatedElement.y = 0;
+        isolatedElement.vy *= -1;
+      }
+      if (isolatedElement.y + isolatedElement.height > height) {
+        isolatedElement.y = height - isolatedElement.height;
+        isolatedElement.vy *= -1;
+      }
+    }
+  };
+  scene.ticker.add(updater);
 
   const colors = [
     "#e74c3c", "#3498db", "#2ecc71", "#f39c12",
@@ -60,6 +100,25 @@ export default async function (Arena2D) {
   }
   function handlePointerDown(e) {
     e.target.isPressed = true;
+
+    if (isolateMode && !isolatedElement) {
+      isolatedElement = e.target;
+
+      // Give it bounce directions
+      isolatedElement.vx = (Math.random() < 0.5 ? 1 : -1);
+      isolatedElement.vy = (Math.random() < 0.5 ? 1 : -1);
+
+      // Make all other elements grey and non-interactive
+      scene.root.children.forEach(el => {
+        if (el !== isolatedElement) {
+          el.interactive = false;
+          el.cursor = "default";
+          const shade = Math.floor(Math.random() * 100 + 50); // random shade 50 to 150
+          const hex = shade.toString(16).padStart(2, '0');
+          el.baseColor = `#${hex}${hex}${hex}`;
+        }
+      });
+    }
   }
   function handlePointerUp(e) {
     e.target.isPressed = false;
@@ -77,6 +136,7 @@ export default async function (Arena2D) {
   }
 
   function generateScene() {
+    isolatedElement = null; // reset isolated element when regenerating scene
     const count = parseInt(countSelect.value, 10);
     if (statusEl) statusEl.textContent = `Generating ${count.toLocaleString()} elements...`;
     statusEl.style.color = "#f39c12";

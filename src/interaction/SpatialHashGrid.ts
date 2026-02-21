@@ -96,16 +96,25 @@ export class SpatialHashGrid {
 
   /**
    * Query all entries whose cells contain the given point.
+   * Returns a reusable internal array — do NOT store a reference to it.
    */
+  private _queryResult: ISpatialEntry[] = [];
+
   query(px: number, py: number): ISpatialEntry[] {
     const cx = Math.floor(px * this._inverseCellSize);
     const cy = Math.floor(py * this._inverseCellSize);
     const key = cellKey(cx, cy);
 
     const cell = this._cells.get(key);
-    if (!cell) return [];
+    if (!cell) return this._queryResult.length = 0, this._queryResult;
 
-    return Array.from(cell);
+    // Reuse array to avoid allocation on every pointer event
+    const result = this._queryResult;
+    result.length = 0;
+    for (const entry of cell) {
+      result.push(entry);
+    }
+    return result;
   }
 
   /**
