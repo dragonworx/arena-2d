@@ -17,9 +17,8 @@ Arena-2D is a retained-mode, hardware-accelerated UI library for TypeScript and 
 7. [Hierarchical Ticker System](#7-hierarchical-ticker-system)
 8. [Rendering Wrapper (Arena2DContext)](#8-rendering-wrapper-arena-2dcontext)
 9. [Image & Texture Elements](#9-image--texture-elements)
-10. [Animation System](#10-animation-system)
-11. [Scroll Containers](#11-scroll-containers)
-12. [Error Handling & Memory Management](#12-error-handling--memory-management)
+10. [Scroll Containers](#10-scroll-containers)
+11. [Error Handling & Memory Management](#11-error-handling--memory-management)
 
 ---
 
@@ -658,56 +657,14 @@ export interface IImage extends IElement {
 
 ---
 
-## 10. Animation System
+
+## 10. Scroll Containers
 
 ### 10.1 Philosophy
 
-A lightweight tweening system for animating element properties over time with easing functions. Animations are managed by the ticker and automatically cleaned up on completion.
-
-### 10.2 Behavioral Rules
-
-1. `animate()` returns an `IAnimation` handle. Multiple animations can run concurrently on the same element.
-2. If two animations target the same property, the most recently started one wins (the older animation for that property is cancelled).
-3. Animations are processed during the `update()` phase, before layout.
-4. When an element is `destroy()`ed, all its animations are cancelled.
-
-### 10.3 API Contract
-
-```typescript
-export type EasingFunction = (t: number) => number; // t is in [0, 1], returns [0, 1].
-
-export interface IAnimationOptions {
-  duration: number;                        // In seconds.
-  easing?: EasingFunction;                 // Default: linear (t => t).
-  delay?: number;                          // Default: 0. Seconds before animation starts.
-  loop?: boolean;                          // Default: false. Repeat indefinitely.
-  yoyo?: boolean;                          // Default: false. Alternate direction each loop.
-  onComplete?: () => void;
-  onUpdate?: (progress: number) => void;   // progress is [0, 1].
-}
-
-export interface IAnimation {
-  readonly isRunning: boolean;
-  cancel(): void;
-  pause(): void;
-  resume(): void;
-}
-
-// Called on any IElement:
-// element.animate({ x: 100, y: 200, alpha: 0.5 }, { duration: 0.3, easing: easeOutCubic });
-```
-
-Built-in easing functions provided: `linear`, `easeInQuad`, `easeOutQuad`, `easeInOutQuad`, `easeInCubic`, `easeOutCubic`, `easeInOutCubic`, `easeInBack`, `easeOutBack`, `easeOutElastic`.
-
----
-
-## 11. Scroll Containers
-
-### 11.1 Philosophy
-
 A specialized container that allows its children to overflow and be navigated via pointer drag or wheel events, with optional inertial scrolling and scroll bars.
 
-### 11.2 Behavioral Rules
+### 10.2 Behavioral Rules
 
 1. **Scroll offset**: The scroll container offsets its children's rendering by `(scrollX, scrollY)`. This is applied as a translation in the container's `paint()` method, not by modifying children's transforms.
 2. **Content bounds**: The scrollable area is determined by the union of all children's AABBs at layout time.
@@ -715,7 +672,7 @@ A specialized container that allows its children to overflow and be navigated vi
 4. **Inertia**: When `inertia` is `true`, releasing a drag applies residual velocity that decays exponentially. The decay factor is `decelerationRate` (default `0.95`, applied per frame).
 5. **Scroll bars**: When `showScrollBars` is `true`, a semi-transparent rounded-rect indicator is drawn on the right/bottom edges indicating scroll position. Bars fade out after `scrollBarFadeDelay` seconds of inactivity.
 
-### 11.3 API Contract
+### 10.3 API Contract
 
 ```typescript
 export interface IScrollContainer extends IContainer {
@@ -738,9 +695,9 @@ export interface IScrollContainer extends IContainer {
 
 ---
 
-## 12. Error Handling & Memory Management
+## 11. Error Handling & Memory Management
 
-### 12.1 Error Handling
+### 11.1 Error Handling
 
 The library uses the following conventions:
 
@@ -754,7 +711,7 @@ The library uses the following conventions:
 
 **Debug mode** is enabled by setting `Arena2D.debug = true`. In debug mode, warnings are printed to `console.warn` for invalid states and performance hints (e.g., "Container with 500+ children and no cacheAsBitmap").
 
-### 12.2 Memory Management
+### 11.2 Memory Management
 
 1. **`destroy()`** must be called on elements when they are no longer needed. `destroy()` on a container recursively destroys all children.
 2. `destroy()` releases: `OffscreenCanvas` objects (cache-as-bitmap), event listeners, spatial hash grid entries, animation handles, and the hidden `<textarea>` for text inputs.
@@ -783,10 +740,9 @@ IEventEmitter
 requestAnimationFrame
   │
   ├── 1. Ticker: compute deltaTime
-  ├── 2. Animations: advance all active tweens
-  ├── 3. Update: walk scene graph, resolve DirtyFlags.Transform
-  ├── 4. Layout: resolve DirtyFlags.Layout subtrees (measure → arrange)
-  ├── 5. Spatial: update SpatialHashGrid for moved elements
-  ├── 6. Paint: for each layer, paint elements in zIndex order
-  └── 7. Hit Buffer: render interactive elements for hit-testing (if pointer moved)
+  ├── 2. Update: walk scene graph, resolve DirtyFlags.Transform
+  ├── 3. Layout: resolve DirtyFlags.Layout subtrees (measure → arrange)
+  ├── 4. Spatial: update SpatialHashGrid for moved elements
+  ├── 5. Paint: for each layer, paint elements in zIndex order
+  └── 6. Hit Buffer: render interactive elements for hit-testing (if pointer moved)
 ```

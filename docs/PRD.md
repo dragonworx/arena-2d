@@ -59,13 +59,11 @@ Layer 11  Text Input & IME
   │
 Layer 12  Image & Nine-Slice
   │
-Layer 13  Animation System
+Layer 13  Scroll Containers
   │
-Layer 14  Scroll Containers
+Layer 14  Error Handling, Debug Mode & Memory Management
   │
-Layer 15  Error Handling, Debug Mode & Memory Management
-  │
-Layer 16  API Surface, Bundle & Documentation
+Layer 15  API Surface, Bundle & Documentation
 ```
 
 > **Reading the graph:** An arrow from A → B means "B depends on A". Layers 8 and 9 can be developed in parallel — they both depend on Layer 7 but not on each other. All subsequent layers depend on both.
@@ -495,38 +493,10 @@ An image gallery: standard image, sprite sheet with selectable region, and a nin
 
 ---
 
-## Layer 13 — Animation System
+
+## Layer 13 — Scroll Containers
 
 > **Spec Reference:** §10
-
-### Goal
-Lightweight tweening system for animating element properties with easing.
-
-### Deliverables
-
-| # | Item | Details |
-|---|---|---|
-| 13.1 | **`src/animation/Animation.ts`** | `element.animate(props, options)` returns `IAnimation`. Processes during `update()` phase. |
-| 13.2 | **Easing functions** | `linear`, `easeInQuad`, `easeOutQuad`, `easeInOutQuad`, `easeInCubic`, `easeOutCubic`, `easeInOutCubic`, `easeInBack`, `easeOutBack`, `easeOutElastic` |
-| 13.3 | **Conflict resolution** | Same-property conflict: newest animation cancels older one for that property. |
-| 13.4 | **Loop & yoyo** | `loop: true` repeats. `yoyo: true` alternates direction. |
-| 13.5 | **Lifecycle** | `cancel()`, `pause()`, `resume()`. Auto-cleanup on completion. Cancelled on `destroy()`. |
-| 13.6 | **Callbacks** | `onComplete`, `onUpdate(progress)`. |
-| 13.7 | **Unit tests** | Duration accuracy, easing curve verification, conflict cancellation, pause/resume, loop count, yoyo direction, destroy cleanup |
-
-### Acceptance Criteria
-- An animation completes within ±1 frame of the specified duration.
-- Same-property conflict correctly cancels the older tween.
-- `pause()` then `resume()` continues from the paused progress.
-
-### Demo Panel
-An animation playground: draggable elements with preset animations (slide, fade, scale, bounce). Easing curve selector with live preview. Loop/yoyo toggles.
-
----
-
-## Layer 14 — Scroll Containers
-
-> **Spec Reference:** §11
 
 ### Goal
 Implement scrollable containers with inertial scrolling and scroll bar indicators.
@@ -535,16 +505,16 @@ Implement scrollable containers with inertial scrolling and scroll bar indicator
 
 | # | Item | Details |
 |---|---|---|
-| 14.1 | **`src/elements/ScrollContainer.ts`** | Extends `Container`. Offsets children by `(scrollX, scrollY)` during paint. |
-| 14.2 | **Content bounds** | Union of children's AABBs determines scrollable area. |
-| 14.3 | **Clamping** | Scroll values clamped to `[0, max]`. Disabled axes when content fits. |
-| 14.4 | **Pointer drag scrolling** | Track pointer delta on `pointermove` while button down. |
-| 14.5 | **Wheel scrolling** | `wheel` event maps to scroll offset. |
-| 14.6 | **Inertia** | Residual velocity on release, decaying by `decelerationRate` per frame. |
-| 14.7 | **Scroll bars** | Semi-transparent rounded-rect indicators. Fade out after `scrollBarFadeDelay`. |
-| 14.8 | **`scrollTo` / `scrollBy`** | Programmatic scrolling, optional animation. |
-| 14.9 | **Events** | Emits `scroll` events with `{ scrollX, scrollY }`. |
-| 14.10 | **Unit tests** | Clamping correctness, inertia decay, scroll bar sizing, wheel delta mapping, disabled axis |
+| 13.1 | **`src/elements/ScrollContainer.ts`** | Extends `Container`. Offsets children by `(scrollX, scrollY)` during paint. |
+| 13.2 | **Content bounds** | Union of children's AABBs determines scrollable area. |
+| 13.3 | **Clamping** | Scroll values clamped to `[0, max]`. Disabled axes when content fits. |
+| 13.4 | **Pointer drag scrolling** | Track pointer delta on `pointermove` while button down. |
+| 13.5 | **Wheel scrolling** | `wheel` event maps to scroll offset. |
+| 13.6 | **Inertia** | Residual velocity on release, decaying by `decelerationRate` per frame. |
+| 13.7 | **Scroll bars** | Semi-transparent rounded-rect indicators. Fade out after `scrollBarFadeDelay`. |
+| 13.8 | **`scrollTo` / `scrollBy`** | Programmatic scrolling, optional animation. |
+| 13.9 | **Events** | Emits `scroll` events with `{ scrollX, scrollY }`. |
+| 13.10 | **Unit tests** | Clamping correctness, inertia decay, scroll bar sizing, wheel delta mapping, disabled axis |
 
 ### Acceptance Criteria
 - Scrolling clamps correctly and does not overshoot.
@@ -557,9 +527,9 @@ A scrollable list of items (100+ rows) with both vertical and horizontal scrolli
 
 ---
 
-## Layer 15 — Error Handling, Debug Mode & Memory Management
+## Layer 14 — Error Handling, Debug Mode & Memory Management
 
-> **Spec Reference:** §12
+> **Spec Reference:** §11
 
 ### Goal
 Implement defensive error handling, debug mode diagnostics, and robust memory cleanup.
@@ -568,14 +538,14 @@ Implement defensive error handling, debug mode diagnostics, and robust memory cl
 
 | # | Item | Details |
 |---|---|---|
-| 15.1 | **Error conventions** | Re-parenting auto-removes. Remove non-child is no-op. Scale 0 → `Number.EPSILON`. Invalid layout units → `0`. Alpha clamped to `[0, 1]`. |
-| 15.2 | **Debug mode** | `Arena2D.debug = true` enables `console.warn` for: invalid states, performance hints (500+ children without cache-as-bitmap). |
-| 15.3 | **`destroy()` audit** | Verify every element type releases: `OffscreenCanvas`, event listeners, spatial hash entries, animations, hidden `<textarea>`. |
-| 15.4 | **`FinalizationRegistry`** | In debug mode, warn when a Scene is GC'd without `destroy()`. |
-| 15.5 | **Unit tests** | Each error convention, debug mode warnings, destroy resource release |
+| 14.1 | **Error conventions** | Re-parenting auto-removes. Remove non-child is no-op. Scale 0 → `Number.EPSILON`. Invalid layout units → `0`. Alpha clamped to `[0, 1]`. |
+| 14.2 | **Debug mode** | `Arena2D.debug = true` enables `console.warn` for: invalid states, performance hints (500+ children without cache-as-bitmap). |
+| 14.3 | **`destroy()` audit** | Verify every element type releases: `OffscreenCanvas`, event listeners, spatial hash entries, animations, hidden `<textarea>`. |
+| 14.4 | **`FinalizationRegistry`** | In debug mode, warn when a Scene is GC'd without `destroy()`. |
+| 14.5 | **Unit tests** | Each error convention, debug mode warnings, destroy resource release |
 
 ### Acceptance Criteria
-- All error scenarios from SPEC §12 table are handled without throwing.
+- All error scenarios from SPEC §11 table are handled without throwing.
 - Debug mode produces actionable warnings.
 - After `scene.destroy()`, no DOM elements or animation frames remain.
 
@@ -584,7 +554,7 @@ A "Stress Test" panel: create/destroy hundreds of elements, monitor for memory l
 
 ---
 
-## Layer 16 — API Surface, Bundle & Documentation
+## Layer 15 — API Surface, Bundle & Documentation
 
 ### Goal
 Finalize the public API surface, produce the production bundle, and ensure the demo site serves as comprehensive documentation.
@@ -593,11 +563,11 @@ Finalize the public API surface, produce the production bundle, and ensure the d
 
 | # | Item | Details |
 |---|---|---|
-| 16.1 | **`src/index.ts`** | Single barrel export. Export only public API types and classes. |
-| 16.2 | **Production bundle** | `bun build` → `dist/arena-2d.js` (minified ESM) + `dist/arena-2d.d.ts` (type declarations). |
-| 16.3 | **Demo site polish** | All layer demo panels reviewed, navigation polished, mobile responsive. |
-| 16.4 | **README.md** | Quick-start guide linking to demo site and SPEC.md. |
-| 16.5 | **Final test sweep** | All `bun test` suites green. Manual walkthrough of every demo panel. |
+| 15.1 | **`src/index.ts`** | Single barrel export. Export only public API types and classes. |
+| 15.2 | **Production bundle** | `bun build` → `dist/arena-2d.js` (minified ESM) + `dist/arena-2d.d.ts` (type declarations). |
+| 15.3 | **Demo site polish** | All layer demo panels reviewed, navigation polished, mobile responsive. |
+| 15.4 | **README.md** | Quick-start guide linking to demo site and SPEC.md. |
+| 15.5 | **Final test sweep** | All `bun test` suites green. Manual walkthrough of every demo panel. |
 
 ### Acceptance Criteria
 - `import { Scene, Container, Text } from 'arena-2d'` works from a consumer project.
@@ -616,8 +586,8 @@ Finalize the public API surface, produce the production bundle, and ensure the d
 | **M2 — Rendering Pipeline** | 5–7 | Full frame loop, rendering to layered canvases, elements visible on screen |
 | **M3 — Layout & Interaction** | 8–9 | Flex/anchor layout, pointer/keyboard events, focus management |
 | **M4 — Content Elements** | 10–12 | Text, text input, images — all content types renderable |
-| **M5 — Polish** | 13–15 | Animation, scrolling, error handling, memory management |
-| **M6 — Ship** | 16 | Bundle, types, docs, final QA |
+| **M5 — Polish** | 13–14 | Scrolling, error handling, memory management |
+| **M6 — Ship** | 15 | Bundle, types, docs, final QA |
 
 ---
 

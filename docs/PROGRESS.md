@@ -7,7 +7,7 @@
 
 ## Current Phase
 
-Layer 13 — Animation System
+Layer 13 — Scroll Containers
 
 ## Status
 
@@ -214,52 +214,39 @@ Layer 13 — Animation System
 
 ---
 
-### 🟡 Layer 13 — Animation System
-- [ ] 13.1 `src/animation/Animation.ts` — `element.animate()` returning `IAnimation`
-- [ ] 13.2 Built-in easing functions (10 functions)
-- [ ] 13.3 Same-property conflict resolution (newest wins)
-- [ ] 13.4 Loop and yoyo support
-- [ ] 13.5 Lifecycle (`cancel`, `pause`, `resume`, auto-cleanup, destroy cleanup)
-- [ ] 13.6 Callbacks (`onComplete`, `onUpdate`)
-- [ ] 13.7 Unit tests (duration accuracy, easing curves, conflicts, pause/resume, loop, yoyo, destroy)
-- [ ] 13.8 Demo panel — animation playground with easing selector and loop/yoyo toggles
-- **Acceptance:** Completes within ±1 frame; conflicts cancel older tween; pause/resume works
-
----
-
-### 🟡 Layer 14 — Scroll Containers
-- [ ] 14.1 `src/elements/ScrollContainer.ts` — scroll offset during paint
-- [ ] 14.2 Content bounds computation (union of children AABBs)
-- [ ] 14.3 Scroll clamping and axis disabling
-- [ ] 14.4 Pointer drag scrolling
-- [ ] 14.5 Wheel scrolling
-- [ ] 14.6 Inertia with deceleration
-- [ ] 14.7 Scroll bar indicators with fade
-- [ ] 14.8 `scrollTo` / `scrollBy` (programmatic, optional animation)
-- [ ] 14.9 `scroll` event emission
-- [ ] 14.10 Unit tests (clamping, inertia decay, scroll bar sizing, wheel, disabled axis)
-- [ ] 14.11 Demo panel — scrollable list with 100+ items, toggles for inertia/bars
+### 🟡 Layer 13 — Scroll Containers
+- [ ] 13.1 `src/elements/ScrollContainer.ts` — scroll offset during paint
+- [ ] 13.2 Content bounds computation (union of children AABBs)
+- [ ] 13.3 Scroll clamping and axis disabling
+- [ ] 13.4 Pointer drag scrolling
+- [ ] 13.5 Wheel scrolling
+- [ ] 13.6 Inertia with deceleration
+- [ ] 13.7 Scroll bar indicators with fade
+- [ ] 13.8 `scrollTo` / `scrollBy` (programmatic, optional animation)
+- [ ] 13.9 `scroll` event emission
+- [ ] 13.10 Unit tests (clamping, inertia decay, scroll bar sizing, wheel, disabled axis)
+- [ ] 13.11 Demo panel — scrollable list with 100+ items, toggles for inertia/bars
 - **Acceptance:** No overshoot; inertia decelerates smoothly; bars fade; wheel works
 
 ---
 
-### 🟡 Layer 15 — Error Handling, Debug Mode & Memory Management
-- [ ] 15.1 Error conventions (re-parent auto-remove, scale 0 → epsilon, alpha clamp, etc.)
-- [ ] 15.2 Debug mode (`Arena2D.debug = true` → `console.warn`)
-- [ ] 15.3 `destroy()` audit across all element types
-- [ ] 15.4 `FinalizationRegistry` warning for un-destroyed Scenes
-- [ ] 15.5 Unit tests (each error convention, debug warnings, destroy release)
-- [ ] 15.6 Demo panel — stress test with create/destroy + debug toggle
+### 🟡 Layer 14 — Error Handling, Debug Mode & Memory Management
+- [ ] 14.1 Error conventions (re-parent auto-remove, scale 0 → epsilon, alpha clamp, etc.)
+- [ ] 14.2 Debug mode (`Arena2D.debug = true` → `console.warn`)
+- [ ] 14.3 `destroy()` audit across all element types
+- [ ] 14.4 `FinalizationRegistry` warning for un-destroyed Scenes
+- [ ] 14.5 Unit tests (each error convention, debug warnings, destroy release)
+- [ ] 14.6 Demo panel — stress test with create/destroy + debug toggle
 - **Acceptance:** No error scenarios throw; debug mode warns; destroy leaves no DOM/RAF residue
 
 ---
 
-### 🔴 Layer 16 — API Surface, Bundle & Documentation
-- [ ] 16.1 `src/index.ts` barrel export (public API only)
-- [ ] 16.2 Production bundle (`dist/arena-2d.js` minified + `dist/arena-2d.d.ts`)
-- [ ] 16.3 Demo site polish (all panels reviewed, responsive, nav complete)
-- [ ] 16.4 `README.md` (quick-start, link to demo + SPEC)
-- [ ] 16.5 Final test sweep (all suites green, manual walkthrough)
+### 🔴 Layer 15 — API Surface, Bundle & Documentation
+- [ ] 15.1 `src/index.ts` barrel export (public API only)
+- [ ] 15.2 Production bundle (`dist/arena-2d.js` minified + `dist/arena-2d.d.ts`)
+- [ ] 15.3 Demo site polish (all panels reviewed, responsive, nav complete)
+- [ ] 15.4 `README.md` (quick-start, link to demo + SPEC)
+- [ ] 15.5 Final test sweep (all suites green, manual walkthrough)
 - **Acceptance:** `import { Scene, Container, Text } from 'arena-2d'` works; types correct; all tests pass; demo complete
 
 ---
