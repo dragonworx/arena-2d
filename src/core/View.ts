@@ -112,6 +112,7 @@ export class View implements IView {
   private _isPanning = false;
   private _lastPointerX = 0;
   private _lastPointerY = 0;
+  private _activeProjection: IProjection | null = null;
 
   // Bound DOM handlers
   private _onPointerDown: (e: PointerEvent) => void;
@@ -309,11 +310,55 @@ export class View implements IView {
 
   // ── Navigation ──
 
-  lookAt(x: number, y: number, options: LookAtOptions = {}): void {
+  lookAt(
+    x: number,
+    y: number,
+    options: LookAtOptions & { projection?: IProjection } = {},
+  ): void {
     const align = options.align ?? "center";
-    const targetZoom = options.zoom ?? this._zoom;
+    const targetZoom = options.zoom ?? 1;
     const animate = options.animate ?? false;
+    const proj = options.projection;
 
+    // Per-projection lookAt: modify the projection's sourceRect
+    if (proj) {
+      const src = proj.sourceRect;
+      const dst = proj.destRect;
+
+      // New sourceRect dimensions based on zoom factor
+      // zoom > 1 means magnify = smaller sourceRect
+      const newW = dst.width / targetZoom;
+      const newH = dst.height / targetZoom;
+
+      switch (align) {
+        case "center":
+          src.x = x - newW / 2;
+          src.y = y - newH / 2;
+          break;
+        case "top":
+          src.x = x - newW / 2;
+          src.y = y;
+          break;
+        case "bottom":
+          src.x = x - newW / 2;
+          src.y = y - newH;
+          break;
+        case "left":
+          src.x = x;
+          src.y = y - newH / 2;
+          break;
+        case "right":
+          src.x = x - newW;
+          src.y = y - newH / 2;
+          break;
+      }
+
+      src.width = newW;
+      src.height = newH;
+      return;
+    }
+
+    // Global lookAt (legacy): modify view-level pan/zoom
     let targetPanX: number;
     let targetPanY: number;
 
@@ -344,7 +389,6 @@ export class View implements IView {
     }
 
     if (animate && this._inertiaEnabled) {
-      // Set velocity to animate towards target
       this._velocityX = (targetPanX - this._panX) * 0.3;
       this._velocityY = (targetPanY - this._panY) * 0.3;
       this._velocityZoom = (targetZoom - this._zoom) * 0.3;
@@ -707,35 +751,70 @@ export class View implements IView {
     }
   }
 
+  // ── Projection Hit Testing ──
+
+  /**
+   * Find the topmost projection whose destRect contains the given view-local point.
+   * Iterates in reverse order so the highest-index (topmost) projection wins.
+   */
+  private _hitTestProjection(
+    viewX: number,
+    viewY: number,
+  ): IProjection | null {
+    for (let i = this._projections.length - 1; i >= 0; i--) {
+      const p = this._projections[i];
+      const d = p.destRect;
+      if (
+        viewX >= d.x &&
+        viewX <= d.x + d.width &&
+        viewY >= d.y &&
+        viewY <= d.y + d.height
+      ) {
+        return p;
+      }
+    }
+    return null;
+  }
+
   // ── Pan/Zoom Handlers ──
 
   private _handlePanStart(e: PointerEvent): void {
-    // Only start pan on middle-click or when space is held (we'll use middle click for now)
+    // Only start pan on middle-click
     if (e.button === 1) {
-      // Middle mouse button
+      const rect = this.container.getBoundingClientRect();
+      const viewX = e.clientX - rect.left;
+      const viewY = e.clientY - rect.top;
+
+      // Find the projection under the cursor
+      this._activeProjection = this._hitTestProjection(viewX, viewY);
+      if (!this._activeProjection) return;
+
       this._isPanning = true;
       this._lastPointerX = e.clientX;
       this._lastPointerY = e.clientY;
       this._velocityX = 0;
       this._velocityY = 0;
       this._inertiaActive = false;
+      this.container.style.cursor = "grabbing";
       e.preventDefault();
     }
   }
 
   private _handlePanMove(e: PointerEvent): void {
-    if (!this._isPanning) return;
+    if (!this._isPanning || !this._activeProjection) return;
 
     const dx = e.clientX - this._lastPointerX;
     const dy = e.clientY - this._lastPointerY;
 
-    this._panX += dx;
-    this._panY += dy;
+    // Convert pixel delta from dest space to source space
+    const proj = this._activeProjection;
+    const scaleX = proj.sourceRect.width / proj.destRect.width;
+    const scaleY = proj.sourceRect.height / proj.destRect.height;
 
-    if (this._inertiaEnabled) {
-      this._velocityX = dx;
-      this._velocityY = dy;
-    }
+    // Pan moves the sourceRect in the opposite direction
+    // (dragging right should reveal content to the left)
+    proj.sourceRect.x -= dx * scaleX;
+    proj.sourceRect.y -= dy * scaleY;
 
     this._lastPointerX = e.clientX;
     this._lastPointerY = e.clientY;
@@ -744,10 +823,8 @@ export class View implements IView {
   private _handlePanEnd(_e: PointerEvent): void {
     if (!this._isPanning) return;
     this._isPanning = false;
-
-    if (this._inertiaEnabled && (Math.abs(this._velocityX) > this._minVelocity || Math.abs(this._velocityY) > this._minVelocity)) {
-      this._inertiaActive = true;
-    }
+    this._activeProjection = null;
+    this.container.style.cursor = this._enableMousePan ? "grab" : "";
   }
 
   private _handleWheel(e: WheelEvent): void {
@@ -757,17 +834,31 @@ export class View implements IView {
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
 
-    // Zoom towards mouse position
-    const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
-    const newZoom = Math.max(0.01, this._zoom * zoomFactor);
+    // Hit-test projections to find which mapping the cursor is over
+    const proj = this._hitTestProjection(mouseX, mouseY);
+    if (!proj) return;
 
-    // Adjust pan to keep the point under the mouse stationary
-    const sceneX = (mouseX - this._panX) / this._zoom;
-    const sceneY = (mouseY - this._panY) / this._zoom;
+    const src = proj.sourceRect;
+    const dst = proj.destRect;
 
-    this._zoom = newZoom;
-    this._panX = mouseX - sceneX * newZoom;
-    this._panY = mouseY - sceneY * newZoom;
+    // Map cursor position from destRect space to sourceRect (scene) space
+    const tX = (mouseX - dst.x) / dst.width; // 0..1 within destRect
+    const tY = (mouseY - dst.y) / dst.height;
+    const sceneX = src.x + tX * src.width;
+    const sceneY = src.y + tY * src.height;
+
+    // Apply zoom factor to the sourceRect dimensions
+    const zoomFactor = e.deltaY < 0 ? 1 / 1.1 : 1.1;
+    const newW = src.width * zoomFactor;
+    const newH = src.height * zoomFactor;
+
+    // Reposition sourceRect so the scene point under the cursor stays fixed
+    // The cursor is at fraction (tX, tY) within the destRect,
+    // so the scene point must remain at (src.x + tX * newW) = sceneX
+    src.x = sceneX - tX * newW;
+    src.y = sceneY - tY * newH;
+    src.width = newW;
+    src.height = newH;
   }
 
   // ── Inertia ──

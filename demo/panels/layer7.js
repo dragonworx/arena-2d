@@ -5,8 +5,6 @@ export default async function (Arena2D) {
 
   const speedSlider = document.getElementById("ctrl-speed");
   const speedVal = document.getElementById("speed-val");
-  const zoomSlider = document.getElementById("ctrl-zoom");
-  const zoomVal = document.getElementById("zoom-val");
   const statFps = document.getElementById("stat-fps");
 
   // ── Output canvas (the visible quad-view) ──
@@ -208,65 +206,74 @@ export default async function (Arena2D) {
 
   // ── Quad-view source→dest mapping ──
   //
-  // The 4 quadrants of the scene:
-  //   Q1 (TL): (0, 0, W/2, H/2)        → top-left of output
-  //   Q2 (TR): (W/2, 0, W/2, H/2)      → top-right of output
-  //   Q3 (BL): (0, H/2, W/2, H/2)      → bottom-left of output
-  //   Q4 (BR): (W/2, H/2, W/2, H/2)    → bottom-right of output
+  // Persistent mapping objects — their sourceRects are mutated
+  // independently by per-mapping wheel zoom and middle-click pan.
 
-  let currentZoom = 2.0;
+  const halfW = sceneW / 2;
+  const halfH = sceneH / 2;
+  const quadDestW = (outW - gap) / 2;
+  const quadDestH = (outH - gap) / 2;
 
-  function getQuadMappings() {
-    const halfW = sceneW / 2;
-    const halfH = sceneH / 2;
-    const destW = (outW - gap) / 2;
-    const destH = (outH - gap) / 2;
+  const mappings = [
+    {
+      label: "Q1",
+      source: { x: 0, y: 0, w: halfW, h: halfH },
+      dest: { x: 0, y: 0, w: quadDestW, h: quadDestH },
+    },
+    {
+      label: "Q2",
+      source: { x: halfW, y: 0, w: halfW, h: halfH },
+      dest: { x: quadDestW + gap, y: 0, w: quadDestW, h: quadDestH },
+    },
+    {
+      label: "Q3",
+      source: { x: 0, y: halfH, w: halfW, h: halfH },
+      dest: { x: 0, y: quadDestH + gap, w: quadDestW, h: quadDestH },
+    },
+    {
+      label: "Q4",
+      source: { x: halfW, y: halfH, w: halfW, h: halfH },
+      dest: {
+        x: quadDestW + gap,
+        y: quadDestH + gap,
+        w: quadDestW,
+        h: quadDestH,
+      },
+    },
+  ];
 
-    return [
-      {
-        label: "Q1",
-        source: { x: 0, y: 0, w: halfW, h: halfH },
-        dest: { x: 0, y: 0, w: destW, h: destH },
-      },
-      {
-        label: "Q2",
-        source: { x: halfW, y: 0, w: halfW, h: halfH },
-        dest: { x: destW + gap, y: 0, w: destW, h: destH },
-      },
-      {
-        label: "Q3",
-        source: { x: 0, y: halfH, w: halfW, h: halfH },
-        dest: { x: 0, y: destH + gap, w: destW, h: destH },
-      },
-      {
-        label: "Q4",
-        source: { x: halfW, y: halfH, w: halfW, h: halfH },
-        dest: { x: destW + gap, y: destH + gap, w: destW, h: destH },
-      },
-    ];
+  // ── Hit-test: find the topmost mapping under a canvas-local point ──
+
+  function hitTestMapping(canvasX, canvasY) {
+    for (let i = mappings.length - 1; i >= 0; i--) {
+      const m = mappings[i];
+      const d = m.dest;
+      if (
+        canvasX >= d.x &&
+        canvasX <= d.x + d.w &&
+        canvasY >= d.y &&
+        canvasY <= d.y + d.h
+      ) {
+        return m;
+      }
+    }
+    return null;
   }
 
   // ── Compositing: read from scene's layer canvas, draw to output ──
 
-  // Get the default layer's canvas (the one the View renders to)
   const defaultLayer = view.getLayer("default");
   const layerCanvas = defaultLayer.canvas;
-
-  // The DPR the layer was rendered at
   const dpr = view.dpr;
 
   scene.ticker.add({
     id: "quad-compositor",
     update: () => {
-      // The View has already rendered the scene to its layer canvas.
-      // Now composite the 4 quadrants to the output canvas.
       outCtx.clearRect(0, 0, outW, outH);
 
       // Draw grid background
       outCtx.fillStyle = "#222";
       outCtx.fillRect(0, 0, outW, outH);
-
-      const mappings = getQuadMappings();
 
       for (const { label, source, dest } of mappings) {
         // source coords in CSS pixels → physical pixels on the layer canvas
@@ -282,18 +289,17 @@ export default async function (Arena2D) {
           dest.h,
         );
 
-        // Draw label
+        // Draw label with effective magnification
+        const zoom = (dest.w / source.w).toFixed(1);
         outCtx.fillStyle = "rgba(255,255,255,0.6)";
         outCtx.font = "11px sans-serif";
-        outCtx.fillText(label, dest.x + 6, dest.y + 16);
+        outCtx.fillText(`${label} (${zoom}×)`, dest.x + 6, dest.y + 16);
       }
 
       // Draw crosshair lines
-      const destW = (outW - gap) / 2;
-      const destH = (outH - gap) / 2;
       outCtx.fillStyle = "#444";
-      outCtx.fillRect(destW, 0, gap, outH);
-      outCtx.fillRect(0, destH, outW, gap);
+      outCtx.fillRect(quadDestW, 0, gap, outH);
+      outCtx.fillRect(0, quadDestH, outW, gap);
     },
   });
 
@@ -323,11 +329,94 @@ export default async function (Arena2D) {
     speedVal.textContent = `${speedMultiplier.toFixed(1)}x`;
   });
 
-  zoomSlider.addEventListener("input", (e) => {
-    currentZoom = Number.parseFloat(e.target.value);
-    zoomVal.textContent = currentZoom.toFixed(1);
-    view.zoom = currentZoom;
+  // ── Wheel Zoom (per-mapping sourceRect) ──
+
+  outputCanvas.addEventListener(
+    "wheel",
+    (e) => {
+      e.preventDefault();
+
+      const rect = outputCanvas.getBoundingClientRect();
+      const canvasX = e.clientX - rect.left;
+      const canvasY = e.clientY - rect.top;
+
+      const hit = hitTestMapping(canvasX, canvasY);
+      if (!hit) return;
+
+      const src = hit.source;
+      const dst = hit.dest;
+
+      // Map cursor from destRect → sourceRect (scene) space
+      const tX = (canvasX - dst.x) / dst.w; // 0..1 within destRect
+      const tY = (canvasY - dst.y) / dst.h;
+      const sceneX = src.x + tX * src.w;
+      const sceneY = src.y + tY * src.h;
+
+      // Shrink sourceRect = zoom in, grow = zoom out
+      const zoomFactor = e.deltaY < 0 ? 1 / 1.1 : 1.1;
+      const newW = src.w * zoomFactor;
+      const newH = src.h * zoomFactor;
+
+      // Reposition so scene point stays under cursor
+      src.x = sceneX - tX * newW;
+      src.y = sceneY - tY * newH;
+      src.w = newW;
+      src.h = newH;
+    },
+    { passive: false },
+  );
+
+  // ── Middle-Click Pan (per-mapping sourceRect) ──
+
+  let panTarget = null;
+  let lastPanX = 0;
+  let lastPanY = 0;
+
+  outputCanvas.style.cursor = "grab";
+
+  outputCanvas.addEventListener("pointerdown", (e) => {
+    if (e.button === 1) {
+      const rect = outputCanvas.getBoundingClientRect();
+      const canvasX = e.clientX - rect.left;
+      const canvasY = e.clientY - rect.top;
+
+      panTarget = hitTestMapping(canvasX, canvasY);
+      if (!panTarget) return;
+
+      lastPanX = e.clientX;
+      lastPanY = e.clientY;
+      outputCanvas.style.cursor = "grabbing";
+      outputCanvas.setPointerCapture(e.pointerId);
+      e.preventDefault();
+    }
   });
+
+  outputCanvas.addEventListener("pointermove", (e) => {
+    if (!panTarget) return;
+    const dx = e.clientX - lastPanX;
+    const dy = e.clientY - lastPanY;
+
+    // Convert pixel delta from dest space to source (scene) space
+    const scaleX = panTarget.source.w / panTarget.dest.w;
+    const scaleY = panTarget.source.h / panTarget.dest.h;
+
+    // Drag right → reveal content to the left → sourceRect.x decreases
+    panTarget.source.x -= dx * scaleX;
+    panTarget.source.y -= dy * scaleY;
+
+    lastPanX = e.clientX;
+    lastPanY = e.clientY;
+  });
+
+  outputCanvas.addEventListener("pointerup", (e) => {
+    if (!panTarget) return;
+    panTarget = null;
+    outputCanvas.style.cursor = "grab";
+    outputCanvas.releasePointerCapture(e.pointerId);
+  });
+
+  // Prevent context menu on middle-click
+  outputCanvas.addEventListener("contextmenu", (e) => e.preventDefault());
 
   // ── Start ──
 

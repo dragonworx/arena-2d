@@ -722,21 +722,92 @@ describe("View — pan/zoom", () => {
 describe("View — lookAt", () => {
   test("lookAt centers on a point", () => {
     const container = createTestContainer();
-    // Container is 800x600
     const scene = new Scene(800, 600);
     const view = new View(container, scene);
 
-    view.lookAt(100, 100);
-
-    // center alignment: panX = viewW/2 - x * zoom, panY = viewH/2 - y * zoom
-    // With container 800x600 (but clientWidth might be 0 in happy-dom)
-    // Since clientWidth in happy-dom is 0, width and height will be 0
-    // Let's resize explicitly
     view.resize(800, 600);
     view.lookAt(100, 100);
 
+    // center alignment: panX = viewW/2 - x * zoom (default zoom=1)
     expect(view.panX).toBe(800 / 2 - 100 * 1); // 300
     expect(view.panY).toBe(600 / 2 - 100 * 1); // 200
+
+    view.destroy();
+    scene.destroy();
+    container.remove();
+  });
+
+  test("lookAt with zoom option sets both zoom and pan", () => {
+    const container = createTestContainer();
+    const scene = new Scene(800, 600);
+    const view = new View(container, scene);
+    view.resize(800, 600);
+
+    view.lookAt(200, 150, { zoom: 2 });
+
+    expect(view.zoom).toBe(2);
+    // center: panX = 400 - 200*2 = 0, panY = 300 - 150*2 = 0
+    expect(view.panX).toBe(0);
+    expect(view.panY).toBe(0);
+
+    view.destroy();
+    scene.destroy();
+    container.remove();
+  });
+
+  test("lookAt with projection modifies the projection's sourceRect", () => {
+    const container = createTestContainer();
+    const scene = new Scene(400, 300);
+    const proj = {
+      sourceRect: { x: 0, y: 0, width: 200, height: 150 },
+      destRect: { x: 0, y: 0, width: 200, height: 150 },
+    };
+    const view = new View(container, scene, { projections: [proj] });
+
+    // lookAt center of quad at 2x zoom (without resize to preserve destRect)
+    view.lookAt(100, 75, { zoom: 2, projection: proj });
+
+    // sourceRect should be: width = destW/zoom = 200/2 = 100, height = 150/2 = 75
+    // x = 100 - 100/2 = 50, y = 75 - 75/2 = 37.5
+    expect(proj.sourceRect.width).toBe(100);
+    expect(proj.sourceRect.height).toBe(75);
+    expect(proj.sourceRect.x).toBe(50);
+    expect(proj.sourceRect.y).toBe(37.5);
+
+    view.destroy();
+    scene.destroy();
+    container.remove();
+  });
+});
+
+// ── View Projection Hit Testing ──
+
+describe("View — projection hit testing", () => {
+  test("multiple projections exist and zoom/pan work correctly", () => {
+    const container = createTestContainer();
+    const scene = new Scene(400, 300);
+    const view = new View(container, scene, {
+      projections: [
+        {
+          sourceRect: { x: 0, y: 0, width: 200, height: 150 },
+          destRect: { x: 0, y: 0, width: 200, height: 150 },
+        },
+        {
+          sourceRect: { x: 200, y: 0, width: 200, height: 150 },
+          destRect: { x: 200, y: 0, width: 200, height: 150 },
+        },
+      ],
+    });
+    view.resize(400, 300);
+
+    expect(view.projections.length).toBe(2);
+    expect(view.projections[0].destRect.x).toBe(0);
+    expect(view.projections[1].destRect.x).toBe(200);
+
+    // Modifying sourceRect of one projection doesn't affect the other
+    view.projections[0].sourceRect.x = 10;
+    expect(view.projections[0].sourceRect.x).toBe(10);
+    expect(view.projections[1].sourceRect.x).toBe(200);
 
     view.destroy();
     scene.destroy();
