@@ -125,9 +125,10 @@ export class QuadraticCurve extends Geometry implements IQuadraticCurve {
     const local2 = this.worldToLocal(x2, y2);
 
     const results: Array<{ x: number; y: number }> = [];
+    const samples = 100;
 
-    for (let i = 0; i <= 64; i++) {
-      const t = i / 64;
+    for (let i = 0; i <= samples; i++) {
+      const t = i / samples;
       const cx = this.getX(t);
       const cy = this.getY(t);
 
@@ -145,9 +146,12 @@ export class QuadraticCurve extends Geometry implements IQuadraticCurve {
       const py = local1.y + u * dy;
       const dist = Math.sqrt((cx - px) ** 2 + (cy - py) ** 2);
 
-      if (dist < 0.5) {
+      if (dist < 1.0) {
         // Remove duplicates
-        if (!results.some(r => Math.abs(r.x - cx) < 0.5 && Math.abs(r.y - cy) < 0.5)) {
+        if (!results.some(r => {
+          const lr = this.worldToLocal(r.x, r.y);
+          return Math.abs(lr.x - cx) < 1.0 && Math.abs(lr.y - cy) < 1.0;
+        })) {
           results.push(this.localToWorld(cx, cy));
         }
       }
@@ -198,14 +202,16 @@ export class QuadraticCurve extends Geometry implements IQuadraticCurve {
   }
 
   pointAt(t: number): { x: number; y: number } {
-    const x = this.getX(t % 1);
-    const y = this.getY(t % 1);
+    const clamped = Math.max(0, Math.min(1, t));
+    const x = this.getX(clamped);
+    const y = this.getY(clamped);
     return this.localToWorld(x, y);
   }
 
   tangentAt(t: number): { x: number; y: number } {
-    const dx = this.getDerivativeX(t % 1);
-    const dy = this.getDerivativeY(t % 1);
+    const clamped = Math.max(0, Math.min(1, t));
+    const dx = this.getDerivativeX(clamped);
+    const dy = this.getDerivativeY(clamped);
     return this.transformVector(dx, dy);
   }
 

@@ -15,8 +15,6 @@ export class Path extends Geometry implements IPath {
   readonly type = 'path';
 
   segments: PathSegment[] = [];
-  private currentX: number = 0;
-  private currentY: number = 0;
   private cachedPerimeter: number | null = null;
 
   protected getLocalBounds(): IRect {
@@ -29,14 +27,15 @@ export class Path extends Geometry implements IPath {
     let minY = Number.POSITIVE_INFINITY;
     let maxY = Number.NEGATIVE_INFINITY;
 
-    // Sample all segments
-    for (let i = 0; i <= 64; i++) {
-      const t = i / 64;
+    // Sample all segments for bounds
+    for (let i = 0; i <= 100; i++) {
+      const t = i / 100;
       const pt = this.pointAt(t);
-      minX = Math.min(minX, pt.x);
-      maxX = Math.max(maxX, pt.x);
-      minY = Math.min(minY, pt.y);
-      maxY = Math.max(maxY, pt.y);
+      const local = this.worldToLocal(pt.x, pt.y);
+      minX = Math.min(minX, local.x);
+      maxX = Math.max(maxX, local.x);
+      minY = Math.min(minY, local.y);
+      maxY = Math.max(maxY, local.y);
     }
 
     return {
@@ -49,29 +48,21 @@ export class Path extends Geometry implements IPath {
 
   addMoveTo(x: number, y: number): void {
     this.segments.push({ type: 'moveTo', x, y });
-    this.currentX = x;
-    this.currentY = y;
     this.cachedPerimeter = null;
   }
 
   addLineTo(x: number, y: number): void {
     this.segments.push({ type: 'lineTo', x, y });
-    this.currentX = x;
-    this.currentY = y;
     this.cachedPerimeter = null;
   }
 
   addQuadraticCurveTo(cpx: number, cpy: number, x: number, y: number): void {
     this.segments.push({ type: 'quadraticCurveTo', cpx, cpy, x, y });
-    this.currentX = x;
-    this.currentY = y;
     this.cachedPerimeter = null;
   }
 
   addBezierCurveTo(cp1x: number, cp1y: number, cp2x: number, cp2y: number, x: number, y: number): void {
     this.segments.push({ type: 'bezierCurveTo', cp1x, cp1y, cp2x, cp2y, x, y });
-    this.currentX = x;
-    this.currentY = y;
     this.cachedPerimeter = null;
   }
 
@@ -95,23 +86,19 @@ export class Path extends Geometry implements IPath {
 
   clear(): void {
     this.segments = [];
-    this.currentX = 0;
-    this.currentY = 0;
     this.cachedPerimeter = null;
   }
 
-  /**
-   * Get a point at parameter t along the entire path.
-   */
   distanceTo(x: number, y: number): number {
     const local = this.worldToLocal(x, y);
     let minDistance = Number.POSITIVE_INFINITY;
 
-    for (let i = 0; i <= 64; i++) {
-      const t = i / 64;
+    for (let i = 0; i <= 100; i++) {
+      const t = i / 100;
       const pt = this.pointAt(t);
-      const dx = pt.x - local.x;
-      const dy = pt.y - local.y;
+      const localPt = this.worldToLocal(pt.x, pt.y);
+      const dx = localPt.x - local.x;
+      const dy = localPt.y - local.y;
       const distance = Math.sqrt(dx * dx + dy * dy);
       minDistance = Math.min(minDistance, distance);
     }
@@ -124,11 +111,12 @@ export class Path extends Geometry implements IPath {
     let minDistance = Number.POSITIVE_INFINITY;
     let bestT = 0;
 
-    for (let i = 0; i <= 64; i++) {
-      const t = i / 64;
+    for (let i = 0; i <= 100; i++) {
+      const t = i / 100;
       const pt = this.pointAt(t);
-      const dx = pt.x - local.x;
-      const dy = pt.y - local.y;
+      const localPt = this.worldToLocal(pt.x, pt.y);
+      const dx = localPt.x - local.x;
+      const dy = localPt.y - local.y;
       const distance = Math.sqrt(dx * dx + dy * dy);
       if (distance < minDistance) {
         minDistance = distance;
@@ -136,41 +124,72 @@ export class Path extends Geometry implements IPath {
       }
     }
 
-    const pt = this.pointAt(bestT);
-    return this.localToWorld(pt.x, pt.y);
+    return this.pointAt(bestT);
   }
 
   intersectsLine(x1: number, y1: number, x2: number, y2: number): Array<{ x: number; y: number }> {
-    const local1 = this.worldToLocal(x1, y1);
-    const local2 = this.worldToLocal(x2, y2);
-
     const results: Array<{ x: number; y: number }> = [];
+    
+    let curX = 0;
+    let curY = 0;
+    let startX = 0;
+    let startY = 0;
 
-    for (let i = 0; i <= 64; i++) {
-      const t = i / 64;
-      const pt = this.pointAt(t);
+    for (const segment of this.segments) {
+      const segmentIntersections: Array<{ x: number; y: number }> = [];
+      
+      if (segment.type === 'moveTo') {
+        curX = startX = segment.x;
+        curY = startY = segment.y;
+        continue;
+      }
 
-      const dx = local2.x - local1.x;
-      const dy = local2.y - local1.y;
-      const lengthSq = dx * dx + dy * dy;
+      // Convert segment to a concrete geometry to use its intersectsLine
+      let subShape: any = null;
+      if (segment.type === 'lineTo') {
+        subShape = new Line(curX, curY, segment.x, segment.y);
+      } else if (segment.type === 'quadraticCurveTo') {
+        subShape = new QuadraticCurve(curX, curY, segment.cpx, segment.cpy, segment.x, segment.y);
+      } else if (segment.type === 'bezierCurveTo') {
+        subShape = new BezierCurve([{ x: curX, y: curY }, { x: segment.cp1x, y: segment.cp1y }, { x: segment.cp2x, y: segment.cp2y }, { x: segment.x, y: segment.y }]);
+      } else if (segment.type === 'arc') {
+        subShape = new Arc(segment.cx, segment.cy, segment.radius, segment.startAngle, segment.endAngle, segment.counterclockwise);
+      } else if (segment.type === 'closePath') {
+        subShape = new Line(curX, curY, startX, startY);
+      }
 
-      if (lengthSq === 0) continue;
+      if (subShape) {
+        // We need to pass world coordinates to the subshape's intersectsLine,
+        // but it will internally call worldToLocal. 
+        // Our subshapes are in local space of the Path.
+        // So we should temporarily set the subshape's transform to match the Path's world transform.
+        subShape.worldMatrix = this.worldMatrix.slice();
+        const hits = subShape.intersectsLine(x1, y1, x2, y2);
+        results.push(...hits);
+      }
 
-      const u = ((pt.x - local1.x) * dx + (pt.y - local1.y) * dy) / lengthSq;
-      if (u < 0 || u > 1) continue;
-
-      const px = local1.x + u * dx;
-      const py = local1.y + u * dy;
-      const dist = Math.sqrt((pt.x - px) ** 2 + (pt.y - py) ** 2);
-
-      if (dist < 0.5) {
-        if (!results.some(r => Math.abs(r.x - pt.x) < 0.5 && Math.abs(r.y - pt.y) < 0.5)) {
-          results.push(this.localToWorld(pt.x, pt.y));
-        }
+      // Update current position
+      if (segment.type === 'lineTo' || segment.type === 'quadraticCurveTo' || segment.type === 'bezierCurveTo') {
+        curX = segment.x;
+        curY = segment.y;
+      } else if (segment.type === 'arc') {
+        curX = segment.cx + Math.cos(segment.endAngle) * segment.radius;
+        curY = segment.cy + Math.sin(segment.endAngle) * segment.radius;
+      } else if (segment.type === 'closePath') {
+        curX = startX;
+        curY = startY;
       }
     }
 
-    return results;
+    // Remove duplicates
+    const unique: Array<{ x: number; y: number }> = [];
+    for (const pt of results) {
+      if (!unique.some(p => Math.abs(p.x - pt.x) < 1e-6 && Math.abs(p.y - pt.y) < 1e-6)) {
+        unique.push(pt);
+      }
+    }
+
+    return unique;
   }
 
   intersectsShape(shape: any): Array<{ x: number; y: number }> {
@@ -200,10 +219,26 @@ export class Path extends Geometry implements IPath {
     }
 
     let length = 0;
+    let curX = 0;
+    let curY = 0;
+    let startX = 0;
+    let startY = 0;
 
-    // Calculate perimeter by summing all segment lengths
     for (const segment of this.segments) {
-      length += this.estimateSegmentLength(segment);
+      length += this.estimateSegmentLength(segment, curX, curY, startX, startY);
+      if (segment.type === 'moveTo') {
+        curX = startX = segment.x;
+        curY = startY = segment.y;
+      } else if (segment.type === 'lineTo' || segment.type === 'quadraticCurveTo' || segment.type === 'bezierCurveTo') {
+        curX = segment.x;
+        curY = segment.y;
+      } else if (segment.type === 'arc') {
+        curX = segment.cx + Math.cos(segment.endAngle) * segment.radius;
+        curY = segment.cy + Math.sin(segment.endAngle) * segment.radius;
+      } else if (segment.type === 'closePath') {
+        curX = startX;
+        curY = startY;
+      }
     }
 
     const scale = Math.sqrt(Math.abs(this.scaleX * this.scaleY));
@@ -216,24 +251,56 @@ export class Path extends Geometry implements IPath {
       return this.localToWorld(0, 0);
     }
 
-    // Find which segment we're in based on normalized parameter
-    const normalizedT = t % 1;
-    const segmentIndex = Math.floor(normalizedT * this.segments.length);
-    const clampedIndex = Math.min(segmentIndex, this.segments.length - 1);
+    // Count only drawable segments (skip moveTo, closePath)
+    const drawableSegments: number[] = [];
+    for (let i = 0; i < this.segments.length; i++) {
+      const seg = this.segments[i];
+      if (seg.type !== 'moveTo' && seg.type !== 'closePath') {
+        drawableSegments.push(i);
+      }
+    }
 
-    if (clampedIndex < 0) {
+    if (drawableSegments.length === 0) {
       return this.localToWorld(0, 0);
     }
 
-    const segment = this.segments[clampedIndex];
-    const segmentT = (normalizedT * this.segments.length) % 1;
-    const { x, y } = this.pointOnSegment(segment, segmentT);
+    const clamped = Math.max(0, Math.min(1, t));
+    const drawableIndex = Math.floor(clamped * drawableSegments.length);
+    const clampedDrawableIndex = Math.min(drawableIndex, drawableSegments.length - 1);
+    const actualSegmentIndex = drawableSegments[clampedDrawableIndex];
+
+    // Find current start position for this segment
+    let curX = 0;
+    let curY = 0;
+    let startX = 0;
+    let startY = 0;
+    for (let i = 0; i < actualSegmentIndex; i++) {
+      const seg = this.segments[i];
+      if (seg.type === 'moveTo') {
+        curX = startX = seg.x;
+        curY = startY = seg.y;
+      } else if (seg.type === 'lineTo' || seg.type === 'quadraticCurveTo' || seg.type === 'bezierCurveTo') {
+        curX = seg.x;
+        curY = seg.y;
+      } else if (seg.type === 'arc') {
+        curX = seg.cx + Math.cos(seg.endAngle) * seg.radius;
+        curY = seg.cy + Math.sin(seg.endAngle) * seg.radius;
+      } else if (seg.type === 'closePath') {
+        curX = startX;
+        curY = startY;
+      }
+    }
+
+    const segment = this.segments[actualSegmentIndex];
+    const segmentT = (clamped * drawableSegments.length) % 1;
+    // If we're at the very end of the path (t=1), segmentT will be 0 but we want 1 for the last segment
+    const finalT = (clamped === 1) ? 1 : segmentT;
+    const { x, y } = this.pointOnSegment(segment, finalT, curX, curY, startX, startY);
 
     return this.localToWorld(x, y);
   }
 
   tangentAt(t: number): { x: number; y: number } {
-    // Approximate tangent using finite differences
     const delta = 0.001;
     const p1 = this.pointAt(t - delta);
     const p2 = this.pointAt(t + delta);
@@ -243,29 +310,32 @@ export class Path extends Geometry implements IPath {
   }
 
   get centroid(): { x: number; y: number } {
-    return this.localToWorld(this.pointAt(0.5).x, this.pointAt(0.5).y);
+    return this.pointAt(0.5);
   }
 
-  private estimateSegmentLength(segment: PathSegment): number {
+  private estimateSegmentLength(segment: PathSegment, curX: number, curY: number, startX: number, startY: number): number {
     if (segment.type === 'moveTo') return 0;
 
-    const from = this.currentX || 0; // Approximate
-    const y = this.currentY || 0;
-
     if (segment.type === 'lineTo') {
-      const dx = segment.x - from;
-      const dy = segment.y - y;
+      const dx = segment.x - curX;
+      const dy = segment.y - curY;
       return Math.sqrt(dx * dx + dy * dy);
     }
 
-    // For curves, estimate by sampling
+    if (segment.type === 'closePath') {
+      const dx = startX - curX;
+      const dy = startY - curY;
+      return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    // For curves and arcs, estimate by sampling
     let length = 0;
-    let prevX = from;
-    let prevY = y;
+    let prevX = curX;
+    let prevY = curY;
 
     for (let i = 1; i <= 16; i++) {
       const t = i / 16;
-      const { x, y } = this.pointOnSegment(segment, t);
+      const { x, y } = this.pointOnSegment(segment, t, curX, curY, startX, startY);
       const dx = x - prevX;
       const dy = y - prevY;
       length += Math.sqrt(dx * dx + dy * dy);
@@ -276,30 +346,34 @@ export class Path extends Geometry implements IPath {
     return length;
   }
 
-  private pointOnSegment(segment: PathSegment, t: number): { x: number; y: number } {
+  private pointOnSegment(segment: PathSegment, t: number, curX: number, curY: number, startX: number, startY: number): { x: number; y: number } {
     const clamped = Math.max(0, Math.min(1, t));
 
     switch (segment.type) {
       case 'moveTo':
-      case 'lineTo':
         return { x: segment.x, y: segment.y };
+      case 'lineTo':
+        return { 
+          x: curX + (segment.x - curX) * clamped, 
+          y: curY + (segment.y - curY) * clamped 
+        };
 
       case 'quadraticCurveTo': {
         const mt = 1 - clamped;
-        const x = mt * mt * (this.currentX || 0) + 2 * mt * clamped * segment.cpx + clamped * clamped * segment.x;
-        const y = mt * mt * (this.currentY || 0) + 2 * mt * clamped * segment.cpy + clamped * clamped * segment.y;
+        const x = mt * mt * curX + 2 * mt * clamped * segment.cpx + clamped * clamped * segment.x;
+        const y = mt * mt * curY + 2 * mt * clamped * segment.cpy + clamped * clamped * segment.y;
         return { x, y };
       }
 
       case 'bezierCurveTo': {
         const mt = 1 - clamped;
         const x =
-          mt * mt * mt * (this.currentX || 0) +
+          mt * mt * mt * curX +
           3 * mt * mt * clamped * segment.cp1x +
           3 * mt * clamped * clamped * segment.cp2x +
           clamped * clamped * clamped * segment.x;
         const y =
-          mt * mt * mt * (this.currentY || 0) +
+          mt * mt * mt * curY +
           3 * mt * mt * clamped * segment.cp1y +
           3 * mt * clamped * clamped * segment.cp2y +
           clamped * clamped * clamped * segment.y;
@@ -317,7 +391,10 @@ export class Path extends Geometry implements IPath {
       }
 
       case 'closePath':
-        return { x: 0, y: 0 };
+        return { 
+          x: curX + (startX - curX) * clamped, 
+          y: curY + (startY - curY) * clamped 
+        };
     }
   }
 }

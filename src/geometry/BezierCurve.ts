@@ -135,9 +135,10 @@ export class BezierCurve extends Geometry implements IBezierCurve {
     const local2 = this.worldToLocal(x2, y2);
 
     const results: Array<{ x: number; y: number }> = [];
+    const samples = 100;
 
-    for (let i = 0; i <= 64; i++) {
-      const t = i / 64;
+    for (let i = 0; i <= samples; i++) {
+      const t = i / samples;
       const pt = this.evaluate(t);
 
       const dx = local2.x - local1.x;
@@ -153,8 +154,11 @@ export class BezierCurve extends Geometry implements IBezierCurve {
       const py = local1.y + u * dy;
       const dist = Math.sqrt((pt.x - px) ** 2 + (pt.y - py) ** 2);
 
-      if (dist < 0.5) {
-        if (!results.some(r => Math.abs(r.x - pt.x) < 0.5 && Math.abs(r.y - pt.y) < 0.5)) {
+      if (dist < 1.0) {
+        if (!results.some(r => {
+          const lr = this.worldToLocal(r.x, r.y);
+          return Math.abs(lr.x - pt.x) < 1.0 && Math.abs(lr.y - pt.y) < 1.0;
+        })) {
           results.push(this.localToWorld(pt.x, pt.y));
         }
       }
@@ -202,12 +206,14 @@ export class BezierCurve extends Geometry implements IBezierCurve {
   }
 
   pointAt(t: number): { x: number; y: number } {
-    const pt = this.evaluate(t % 1);
+    const clamped = Math.max(0, Math.min(1, t));
+    const pt = this.evaluate(clamped);
     return this.localToWorld(pt.x, pt.y);
   }
 
   tangentAt(t: number): { x: number; y: number } {
-    const deriv = this.derivative(t % 1);
+    const clamped = Math.max(0, Math.min(1, t));
+    const deriv = this.derivative(clamped);
     return this.transformVector(deriv.x, deriv.y);
   }
 

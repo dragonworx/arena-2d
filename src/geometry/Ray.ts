@@ -19,31 +19,32 @@ export class Ray extends Geometry implements IRay {
     super();
     this.originX = originX;
     this.originY = originY;
-    this.setDirection(directionX, directionY);
+    this.directionX = directionX;
+    this.directionY = directionY;
   }
 
   /**
-   * Set the direction and normalize it.
+   * Set the direction.
    */
   setDirection(dx: number, dy: number): void {
-    const length = Math.sqrt(dx * dx + dy * dy);
-    if (length === 0) {
-      this.directionX = 1;
-      this.directionY = 0;
-    } else {
-      this.directionX = dx / length;
-      this.directionY = dy / length;
-    }
+    this.directionX = dx;
+    this.directionY = dy;
   }
 
   protected getLocalBounds(): IRect {
     // Rays extend to infinity, so use a large bounding box
     const large = 1e6;
+    const dx = this.directionX;
+    const dy = this.directionY;
+    const len = Math.sqrt(dx * dx + dy * dy);
+    const nx = len > 0 ? dx / len : 1;
+    const ny = len > 0 ? dy / len : 0;
+
     return {
-      x: Math.min(this.originX, this.originX + this.directionX * large),
-      y: Math.min(this.originY, this.originY + this.directionY * large),
-      width: Math.abs(this.directionX * large) || 1,
-      height: Math.abs(this.directionY * large) || 1,
+      x: Math.min(this.originX, this.originX + nx * large),
+      y: Math.min(this.originY, this.originY + ny * large),
+      width: Math.abs(nx * large) || 1,
+      height: Math.abs(ny * large) || 1,
     };
   }
 
@@ -53,7 +54,10 @@ export class Ray extends Geometry implements IRay {
     const dy = local.y - this.originY;
 
     // Project point onto ray
-    const dot = dx * this.directionX + dy * this.directionY;
+    const lenSq = this.directionX * this.directionX + this.directionY * this.directionY;
+    if (lenSq === 0) return Math.sqrt(dx * dx + dy * dy);
+
+    const dot = (dx * this.directionX + dy * this.directionY) / lenSq;
     if (dot < 0) {
       // Point is behind the origin
       return Math.sqrt(dx * dx + dy * dy);
@@ -71,7 +75,10 @@ export class Ray extends Geometry implements IRay {
     const dx = local.x - this.originX;
     const dy = local.y - this.originY;
 
-    const dot = dx * this.directionX + dy * this.directionY;
+    const lenSq = this.directionX * this.directionX + this.directionY * this.directionY;
+    if (lenSq === 0) return this.localToWorld(this.originX, this.originY);
+
+    const dot = (dx * this.directionX + dy * this.directionY) / lenSq;
     const t = Math.max(0, dot);
     const projX = this.originX + t * this.directionX;
     const projY = this.originY + t * this.directionY;
@@ -129,11 +136,14 @@ export class Ray extends Geometry implements IRay {
     const dy = local.y - this.originY;
 
     // Check if point is on the ray
-    const dot = dx * this.directionX + dy * this.directionY;
-    if (dot < 0) return false;
+    const lenSq = this.directionX * this.directionX + this.directionY * this.directionY;
+    if (lenSq === 0) return Math.sqrt(dx * dx + dy * dy) < 1e-6;
 
-    const projX = this.originX + dot * this.directionX;
-    const projY = this.originY + dot * this.directionY;
+    const t = (dx * this.directionX + dy * this.directionY) / lenSq;
+    if (t < 0) return false;
+
+    const projX = this.originX + t * this.directionX;
+    const projY = this.originY + t * this.directionY;
     const px = local.x - projX;
     const py = local.y - projY;
     return Math.sqrt(px * px + py * py) < 1e-6;
@@ -148,9 +158,8 @@ export class Ray extends Geometry implements IRay {
   }
 
   pointAt(t: number): { x: number; y: number } {
-    const distance = t * 1e6; // Use a large distance for visualization
-    const x = this.originX + this.directionX * distance;
-    const y = this.originY + this.directionY * distance;
+    const x = this.originX + this.directionX * t;
+    const y = this.originY + this.directionY * t;
     return this.localToWorld(x, y);
   }
 
