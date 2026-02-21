@@ -88,7 +88,7 @@ export class ScrollContainer extends Container implements IScrollContainer {
   /** Minimum distance to initiate drag (in scene units). */
   private static readonly DRAG_THRESHOLD = 5;
   /** Minimum time before deferring click to children (in milliseconds). */
-  private _clickDeferralThreshold = 250;
+  private _clickDeferralThreshold = 100;
   /** Timer for click deferral. */
   private _clickDeferralTimer: number | null = null;
   /** The child element that should receive the deferred click event. */

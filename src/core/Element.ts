@@ -505,20 +505,18 @@ export class Element extends EventEmitter implements IElement {
     ) {
       const s = this.scene as {
         invalidateHitBuffer?: () => void;
-        interaction?: {
-          markSpatialDirty?: (el: IElement) => void;
-        };
+        markSpatialDirty?: (el: IElement) => void;
       };
       // Notify the scene that the hit buffer needs repainting
       if (s.invalidateHitBuffer) {
         s.invalidateHitBuffer();
       }
-      // Mark this element for incremental spatial hash update
+      // Mark this element for incremental spatial hash update on all views
       if (
         flag & (DirtyFlags.Transform | DirtyFlags.Spatial) &&
-        s.interaction?.markSpatialDirty
+        s.markSpatialDirty
       ) {
-        s.interaction.markSpatialDirty(this);
+        s.markSpatialDirty(this);
       }
     }
   }

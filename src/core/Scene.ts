@@ -231,6 +231,17 @@ export class Scene implements IScene {
   }
 
   /**
+   * Mark an element as needing a spatial hash update on all attached views.
+   * Called by Element.invalidate() when transform or spatial flags change.
+   * @internal
+   */
+  markSpatialDirty(element: IElement): void {
+    for (const view of this._views) {
+      (view.interaction as { markSpatialDirty?: (el: IElement) => void }).markSpatialDirty?.(element);
+    }
+  }
+
+  /**
    * Paint all interactive elements to the hit buffer using unique colors.
    * Called by View.render() for the first registered view.
    * @internal
