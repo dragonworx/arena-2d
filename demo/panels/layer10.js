@@ -1,5 +1,5 @@
 export default async function (Arena2D) {
-  const { Scene, Text } = Arena2D;
+  const { Scene, View, Text } = Arena2D;
 
   // ── Control elements ──
   const textArea = document.getElementById("l10-text");
@@ -31,7 +31,9 @@ export default async function (Arena2D) {
 
   // ── Create Scene ──
   const sceneContainer = document.getElementById("l10-canvas-wrap");
-  const scene = new Scene(sceneContainer, 800, 500);
+  const scene = new Scene(800, 500);
+  const view = new View(sceneContainer, scene);
+  view.resize(800, 500);
 
   // ── Create Text Element ──
   const textEl = new Text("demo-text");

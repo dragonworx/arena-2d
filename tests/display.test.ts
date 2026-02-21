@@ -3,6 +3,7 @@ import { Container } from "../src/core/Container";
 import { DirtyFlags } from "../src/core/DirtyFlags";
 import { Element } from "../src/core/Element";
 import { Scene } from "../src/core/Scene";
+import { View } from "../src/core/View";
 import { resolveLayout } from "../src/layout/LayoutResolver";
 
 // Mock DOM logic
@@ -107,7 +108,8 @@ describe("Display & Visibility", () => {
   it("display: 'hidden' keeps layout and interactivity, but skips paint", () => {
     // biome-ignore lint/suspicious/noExplicitAny: Mock container
     const container = document.createElement("div") as any;
-    const scene = new Scene(container, 800, 600);
+    const scene = new Scene(800, 600);
+    const view = new View(container, scene);
 
     // Pass ID in constructor to satisfy strict ID checks if any
     const child = new TestElement("child");
@@ -135,12 +137,12 @@ describe("Display & Visibility", () => {
     expect(hit).toBe(child);
 
     // Check paint
-    scene.render();
+    view.render();
     expect(child.paintCallCount).toBe(0);
 
     // Verify visible element WOULD paint
     child.display = "visible";
-    scene.render();
+    view.render();
     // paint is called twice: once for hitBuffer, once for regular render
     expect(child.paintCallCount).toBe(2);
   });

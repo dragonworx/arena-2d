@@ -1,5 +1,5 @@
 export default async function (Arena2D) {
-  const { Scene, Element } = Arena2D;
+  const { Scene, View, Element } = Arena2D;
 
   const container = document.getElementById("l9_1-scene-container");
   if (!container) return;
@@ -14,7 +14,9 @@ export default async function (Arena2D) {
   const width = container.clientWidth || 800;
   const height = container.clientHeight || 600;
 
-  const scene = new Scene(container, width, height);
+  const scene = new Scene(width, height);
+  const view = new View(container, scene);
+  view.resize(width, height);
   scene.ticker.start();
 
   container.addEventListener("pointermove", (e) => {

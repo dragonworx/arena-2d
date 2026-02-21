@@ -171,20 +171,24 @@ class CanvasKeyboardEvent implements IKeyboardEvent {
   }
 }
 
-// ── Scene Interface (minimal, to avoid circular imports) ──
+// ── View Interface (minimal, to avoid circular imports) ──
 
-interface ISceneRef {
+interface IViewRef {
   readonly container: HTMLElement;
-  readonly root: IContainer;
-  readonly width: number;
-  readonly height: number;
+  readonly scene: {
+    readonly root: IContainer;
+    readonly width: number;
+    readonly height: number;
+    _sampleHitBuffer(sx: number, sy: number): number;
+    _getElementByUID(uid: number): IElement | null;
+  };
   screenToScene(screenX: number, screenY: number): { x: number; y: number };
 }
 
 // ── InteractionManager ──
 
 export class InteractionManager implements IInteractionManager {
-  private _scene: ISceneRef;
+  private _view: IViewRef;
   private _spatialHash: SpatialHashGrid;
   private _focusedElement: IElement | null = null;
   private _hoveredElement: IElement | null = null;
@@ -207,8 +211,8 @@ export class InteractionManager implements IInteractionManager {
   private _onKeyUp: (e: KeyboardEvent) => void;
   private _onDoubleClick: (e: MouseEvent) => void;
 
-  constructor(scene: ISceneRef, cellSize = 128) {
-    this._scene = scene;
+  constructor(view: IViewRef, cellSize = 128) {
+    this._view = view;
     this._spatialHash = new SpatialHashGrid(cellSize);
     this._dragManager = new DragManager(this);
 
@@ -221,8 +225,8 @@ export class InteractionManager implements IInteractionManager {
     this._onKeyUp = this._handleKeyUp.bind(this);
     this._onDoubleClick = this._handleDoubleClick.bind(this);
 
-    // Attach listeners to the scene container
-    const container = this._scene.container;
+    // Attach listeners to the view container
+    const container = this._view.container;
     container.addEventListener("pointerdown", this._onPointerDown);
     container.addEventListener("pointerup", this._onPointerUp);
     container.addEventListener("pointermove", this._onPointerMove);
@@ -330,7 +334,7 @@ export class InteractionManager implements IInteractionManager {
     if (this._spatialFullRebuild) {
       this._spatialFullRebuild = false;
       this._spatialDirtyElements.clear();
-      this._updateSpatialRecursive(this._scene.root as IElement);
+      this._updateSpatialRecursive(this._view.scene.root as IElement);
       return;
     }
 
@@ -506,14 +510,14 @@ export class InteractionManager implements IInteractionManager {
 
     // ── NEW: Hit Buffer Pass (Pixel-perfect) ──
     // Sample the hit buffer for the topmost interactive element
-    const sceneAsAny = this._scene as any;
+    const scene = this._view.scene;
     if (
-      typeof sceneAsAny._sampleHitBuffer === "function" &&
-      typeof sceneAsAny._getElementByUID === "function"
+      typeof scene._sampleHitBuffer === "function" &&
+      typeof scene._getElementByUID === "function"
     ) {
-      const hitUid = sceneAsAny._sampleHitBuffer(sceneX, sceneY);
+      const hitUid = scene._sampleHitBuffer(sceneX, sceneY);
       if (hitUid > 0) {
-        const hitEl = sceneAsAny._getElementByUID(hitUid);
+        const hitEl = scene._getElementByUID(hitUid);
         if (hitEl) {
           // Double check filtering/exclusion
           let current: IElement | null = hitEl;
@@ -677,7 +681,7 @@ export class InteractionManager implements IInteractionManager {
     x: number;
     y: number;
   } {
-    return this._scene.screenToScene(domEvent.clientX, domEvent.clientY);
+    return this._view.screenToScene(domEvent.clientX, domEvent.clientY);
   }
 
   private _getLocalCoords(
@@ -732,7 +736,7 @@ export class InteractionManager implements IInteractionManager {
     const target = this.hitTest(scene.x, scene.y);
 
     // Ensure DragManager gets the up event even if we hit nothing (to end drag)
-    const effectiveTarget = target || (this._scene.root as IElement);
+    const effectiveTarget = target || (this._view.scene.root as IElement);
     const local = this._getLocalCoords(effectiveTarget, scene.x, scene.y);
     const event = new CanvasPointerEvent(
       "pointerup",
@@ -832,7 +836,7 @@ export class InteractionManager implements IInteractionManager {
       // DragManager handles its own events. But we need to pass a valid IPointerEvent to it.
       // If target is null (mouse over empty space), we should probably use root or fallback?
 
-      const effectiveTarget = target || this._scene.root; // Fallback to root
+      const effectiveTarget = target || this._view.scene.root; // Fallback to root
       const local = this._getLocalCoords(effectiveTarget, scene.x, scene.y);
 
       const moveEvent = new CanvasPointerEvent(
@@ -940,9 +944,9 @@ export class InteractionManager implements IInteractionManager {
 
   private _updateCursor(element: IElement | null): void {
     if (element?.cursor) {
-      this._scene.container.style.cursor = element.cursor;
+      this._view.container.style.cursor = element.cursor;
     } else {
-      this._scene.container.style.cursor = "default";
+      this._view.container.style.cursor = "default";
     }
   }
 
@@ -954,7 +958,7 @@ export class InteractionManager implements IInteractionManager {
    */
   private _buildTabOrder(): IElement[] {
     const order: IElement[] = [];
-    this._collectFocusable(this._scene.root as IElement, order);
+    this._collectFocusable(this._view.scene.root as IElement, order);
     return order;
   }
 
@@ -976,7 +980,7 @@ export class InteractionManager implements IInteractionManager {
   // ── Cleanup ──
 
   destroy(): void {
-    const container = this._scene.container;
+    const container = this._view.container;
     container.removeEventListener("pointerdown", this._onPointerDown);
     container.removeEventListener("pointerup", this._onPointerUp);
     container.removeEventListener("pointermove", this._onPointerMove);

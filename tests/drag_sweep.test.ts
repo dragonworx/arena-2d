@@ -13,6 +13,7 @@ import type { IContainer } from "../src/core/Container";
 import { Element } from "../src/core/Element";
 import type { IElement } from "../src/core/Element";
 import { Scene } from "../src/core/Scene";
+import { View } from "../src/core/View";
 import { InteractionManager } from "../src/interaction/InteractionManager";
 import type { ISpatialEntry } from "../src/interaction/SpatialHashGrid";
 import { computeAABB, intersect } from "../src/math/aabb";
@@ -135,13 +136,15 @@ afterAll(() => {
 
 describe("Drag Hit Detection Sweep", () => {
   let scene: Scene;
+  let view: View;
   let root: IContainer;
 
   beforeEach(() => {
     document.body.innerHTML = '<div id="app"></div>';
     const app = document.getElementById("app");
     if (!app) throw new Error("App element not found");
-    scene = new Scene(app, 800, 600);
+    scene = new Scene(800, 600);
+    view = new View(app, scene);
     root = scene.root;
   });
 
@@ -167,14 +170,14 @@ describe("Drag Hit Detection Sweep", () => {
 
     // Initial spatial hash update
     scene.root.update(0.016);
-    scene.interaction.updateSpatialHash();
+    view.interaction.updateSpatialHash();
 
     // Verify dropZone is in spatial hash
     const dropZoneAABB = computeAABB(
       { x: 0, y: 0, width: 100, height: 100 },
       dropZone.worldMatrix,
     );
-    const candidates = scene.interaction.spatialHash.queryAABB(dropZoneAABB);
+    const candidates = view.interaction.spatialHash.queryAABB(dropZoneAABB);
     const found = candidates.find(
       (c) =>
         (c as ISpatialEntry & { element: Element }).element ===
@@ -205,13 +208,13 @@ describe("Drag Hit Detection Sweep", () => {
         draggable.worldMatrix,
       );
 
-      const hit = scene.interaction.hitTestAABB(dragAABB, draggable);
+      const hit = view.interaction.hitTestAABB(dragAABB, draggable);
 
       if (hit === dropZone) {
         firstHitDistance = i;
         // Also manually verify intersection
         // biome-ignore lint/suspicious/noExplicitAny: accessing private property for test verification
-        const entry = (scene.interaction as any)._spatialEntries.get(dropZone);
+        const entry = (view.interaction as any)._spatialEntries.get(dropZone);
         const manualIntersect = intersect(dragAABB, entry.aabb);
         if (!manualIntersect) {
           console.error(

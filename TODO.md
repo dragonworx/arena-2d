@@ -1,0 +1,11 @@
+Refactor the relationship between Scene, Layer, and the HTML container used to display it. We currently have a limit of one Scene to one container, which will not support multiviews of the same Scene to the same canvas(es). Instead we will create a new class:
+- View: A class that is given an html container, a Scene, and an array of sourceRect -> destRect mappings. There can only be one Scene for the View, however there can be multiple projections of the Scene onto the View. The View will create the necessary layers and canvases to display the Scene in the given container.
+- Move the current rendering/painting code which is in Scene into the View class, so that the View is responsible for rendering the Scene to the HTML container.
+- Scene will no longer have a reference to the HTML container, and will only be responsible for managing the scene graph and the hit buffer.
+- By default there is only one mapping from the Scene's sourceRect to the View's destRect, and this mapping is the identity mapping. However, we can add more mappings to display the same Scene in different ways. For example, we can have a quad view mapping of completely different areas and zooms of the same scene.
+- Add zoom and pan support to the View class.
+- Add a lookAt method to the View class that will pan and zoom the view to look at a specific point in the scene.
+- The lookAt method should take an alignment argument (default center) that specifies how the point should be aligned with the view. Other options include top, bottom, left, right.
+- Allow optional inertia for the zoom and pan support.
+- Create a demo showing off the new API
+- Refactor existing affected demos

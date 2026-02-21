@@ -11,6 +11,7 @@ import { Window } from "happy-dom";
 import type { Container } from "../src/core/Container";
 import { Element } from "../src/core/Element";
 import { Scene } from "../src/core/Scene";
+import { View } from "../src/core/View";
 import type { IDragEvent } from "../src/interaction/DragManager";
 
 // ── DOM setup ──
@@ -131,6 +132,7 @@ afterAll(() => {
 
 describe("Drag & Drop System", () => {
   let scene: Scene;
+  let view: View;
   let root: Container;
 
   beforeEach(() => {
@@ -138,7 +140,8 @@ describe("Drag & Drop System", () => {
     const app = document.getElementById("app");
     if (!app) throw new Error("App element not found");
 
-    scene = new Scene(app, 800, 600);
+    scene = new Scene(800, 600);
+    view = new View(app, scene);
     root = scene.root as Container;
   });
 
@@ -149,7 +152,7 @@ describe("Drag & Drop System", () => {
       button,
       bubbles: true,
     });
-    scene.container.dispatchEvent(event);
+    view.container.dispatchEvent(event);
   }
 
   test("draggable property defaults to false", () => {
@@ -167,7 +170,7 @@ describe("Drag & Drop System", () => {
 
     // Update before interaction to ensure hit testing works
     scene.root.update(0.016);
-    scene.interaction.updateSpatialHash();
+    view.interaction.updateSpatialHash();
 
     const onDragStart = mock((_e: IDragEvent) => {});
     draggable.on("dragstart", onDragStart);
@@ -198,7 +201,7 @@ describe("Drag & Drop System", () => {
 
     // We need to ensure world matrices are updated for hit testing
     scene.root.update(0.016);
-    scene.interaction.updateSpatialHash();
+    view.interaction.updateSpatialHash();
 
     const onDragMove = mock((_e: IDragEvent) => {});
     draggable.on("dragmove", onDragMove);
@@ -221,7 +224,7 @@ describe("Drag & Drop System", () => {
     root.addChild(el);
 
     scene.root.update(0.016);
-    scene.interaction.updateSpatialHash();
+    view.interaction.updateSpatialHash();
 
     const onDragStart = mock(() => {});
     el.on("dragstart", onDragStart);
@@ -242,7 +245,7 @@ describe("Drag & Drop System", () => {
     root.addChild(draggable);
 
     scene.root.update(0.016);
-    scene.interaction.updateSpatialHash();
+    view.interaction.updateSpatialHash();
 
     dispatchPointer("pointerdown", 50, 50);
     dispatchPointer("pointermove", 60, 70); // dx=10, dy=20
@@ -272,7 +275,7 @@ describe("Drag & Drop System", () => {
     root.addChild(dropZone);
 
     scene.root.update(0.016);
-    scene.interaction.updateSpatialHash();
+    view.interaction.updateSpatialHash();
 
     const onDrop = mock((_e: IDragEvent) => {});
     dropZone.on("drop", onDrop);
@@ -310,7 +313,7 @@ describe("Drag & Drop System", () => {
     root.addChild(dropZone);
 
     scene.root.update(0.016);
-    scene.interaction.updateSpatialHash();
+    view.interaction.updateSpatialHash();
 
     const onEnter = mock((_e: IDragEvent) => {});
     const onLeave = mock((_e: IDragEvent) => {});

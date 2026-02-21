@@ -440,11 +440,18 @@ function createMockScene() {
 
   const root = new Container("root");
 
+  // Return a mock that matches IViewRef shape
   return {
     container,
-    root,
-    width: 400,
-    height: 300,
+    scene: {
+      root,
+      width: 400,
+      height: 300,
+      _sampleHitBuffer(_sx: number, _sy: number) { return 0; },
+      _getElementByUID(_uid: number) { return null; },
+    },
+    // convenience alias for tests that access root directly
+    get root() { return root; },
     screenToScene(screenX: number, screenY: number) {
       const rect = container.getBoundingClientRect();
       return { x: screenX - rect.left, y: screenY - rect.top };
@@ -452,9 +459,9 @@ function createMockScene() {
   };
 }
 
-function cleanupMockScene(scene: ReturnType<typeof createMockScene>) {
-  if (scene.container.parentNode) {
-    scene.container.parentNode.removeChild(scene.container);
+function cleanupMockScene(mock: ReturnType<typeof createMockScene>) {
+  if (mock.container.parentNode) {
+    mock.container.parentNode.removeChild(mock.container);
   }
 }
 

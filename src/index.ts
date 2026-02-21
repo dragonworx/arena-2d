@@ -86,6 +86,16 @@ export { Scene } from "./core/Scene";
 export type { ILayer } from "./core/Layer";
 export { Layer } from "./core/Layer";
 
+// --- View (Multi-view, Pan/Zoom, Projections) ---
+export type {
+  IView,
+  IProjection,
+  ViewAlignment,
+  LookAtOptions,
+  ViewOptions,
+} from "./core/View";
+export { View } from "./core/View";
+
 // --- Layer 8: Layout Engine (Flex & Anchor) ---
 export type { LayoutUnit, IStyle } from "./layout/Style";
 export {

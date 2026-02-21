@@ -11,6 +11,7 @@ import { Container } from "../src/core/Container";
 import { Element } from "../src/core/Element";
 import type { Layer } from "../src/core/Layer";
 import { Scene } from "../src/core/Scene";
+import { View } from "../src/core/View";
 
 // Set up DOM environment for all tests
 let window: Window;
@@ -153,76 +154,61 @@ function createTestContainer(): HTMLElement {
 // ── Scene Construction ──
 
 describe("Scene — construction", () => {
-  test("creates a scene with container, root, and default layer", () => {
-    const container = createTestContainer();
-    const scene = new Scene(container, 800, 600);
+  test("creates a scene with root and ticker", () => {
+    const scene = new Scene(800, 600);
 
-    expect(scene.container).toBe(container);
     expect(scene.width).toBe(800);
     expect(scene.height).toBe(600);
     expect(scene.root).toBeDefined();
     expect(scene.ticker).toBeDefined();
 
-    // Should have a default layer
-    const defaultLayer = scene.getLayer("default");
-    expect(defaultLayer).not.toBeNull();
-    expect(defaultLayer?.id).toBe("default");
-
     scene.destroy();
-    container.remove();
-  });
-
-  test("sets container position to relative if static", () => {
-    const container = document.createElement("div");
-    container.style.position = "static";
-    document.body.appendChild(container);
-
-    const scene = new Scene(container, 800, 600);
-    expect(container.style.position).toBe("relative");
-
-    scene.destroy();
-    container.remove();
   });
 
   test("creates hit buffer with correct resolution", () => {
-    const container = createTestContainer();
-    const scene = new Scene(container, 800, 600);
+    const scene = new Scene(800, 600);
 
     expect(scene.hitBuffer).toBeDefined();
-    const dpr = window.devicePixelRatio || 1;
-    expect(scene.hitBuffer.width).toBe(800 * dpr);
-    expect(scene.hitBuffer.height).toBe(600 * dpr);
+    expect(scene.hitBuffer.width).toBe(800);
+    expect(scene.hitBuffer.height).toBe(600);
 
     scene.destroy();
-    container.remove();
   });
 
-  test("root is assigned to default layer", () => {
-    const container = createTestContainer();
-    const scene = new Scene(container, 800, 600);
+  test("root has scene reference", () => {
+    const scene = new Scene(800, 600);
 
-    const defaultLayer = scene.getLayer("default");
-    expect(scene.root.layer).toBe(defaultLayer);
     expect(scene.root.scene).toBe(scene);
 
     scene.destroy();
-    container.remove();
   });
 });
 
-// ── Layer Management ──
+// ── View + Layer Management ──
 
-describe("Scene — layer management", () => {
+describe("View — layer management", () => {
   let container: HTMLElement;
   let scene: Scene;
+  let view: View;
 
   beforeEach(() => {
     container = createTestContainer();
-    scene = new Scene(container, 800, 600);
+    scene = new Scene(800, 600);
+    view = new View(container, scene);
+  });
+
+  test("View creates default layer", () => {
+    const defaultLayer = view.getLayer("default");
+    expect(defaultLayer).not.toBeNull();
+    expect(defaultLayer?.id).toBe("default");
+
+    view.destroy();
+    scene.destroy();
+    container.remove();
   });
 
   test("createLayer adds a new layer with correct z-index", () => {
-    const layer = scene.createLayer("background", -1);
+    const layer = view.createLayer("background", -1);
 
     expect(layer).toBeDefined();
     expect(layer.id).toBe("background");
@@ -230,66 +216,71 @@ describe("Scene — layer management", () => {
     expect(layer.canvas).toBeDefined();
     expect(layer.canvas.parentElement).toBe(container);
 
+    view.destroy();
     scene.destroy();
     container.remove();
   });
 
   test("createLayer throws if layer with same id exists", () => {
-    scene.createLayer("test", 1);
+    view.createLayer("test", 1);
 
     expect(() => {
-      scene.createLayer("test", 2);
+      view.createLayer("test", 2);
     }).toThrow('Layer with id "test" already exists');
 
+    view.destroy();
     scene.destroy();
     container.remove();
   });
 
   test("getLayer returns layer by id or null", () => {
-    const layer = scene.createLayer("test", 1);
+    const layer = view.createLayer("test", 1);
 
-    expect(scene.getLayer("test")).toBe(layer);
-    expect(scene.getLayer("nonexistent")).toBeNull();
+    expect(view.getLayer("test")).toBe(layer);
+    expect(view.getLayer("nonexistent")).toBeNull();
 
+    view.destroy();
     scene.destroy();
     container.remove();
   });
 
-  test("removeLayer removes layer and reassigns elements", () => {
-    const layer = scene.createLayer("test", 1);
+  test("removeLayer removes layer and cleans up", () => {
+    const layer = view.createLayer("test", 1);
 
-    // Create element and assign to this layer
     const element = new Element();
     element.layer = layer;
     (layer as Layer).addElement(element);
 
-    scene.removeLayer("test");
+    view.removeLayer("test");
 
-    expect(scene.getLayer("test")).toBeNull();
+    expect(view.getLayer("test")).toBeNull();
     expect(layer.canvas.parentElement).toBeNull();
 
+    view.destroy();
     scene.destroy();
     container.remove();
   });
 
   test("removeLayer throws if trying to remove default layer", () => {
     expect(() => {
-      scene.removeLayer("default");
+      view.removeLayer("default");
     }).toThrow("Cannot remove default layer");
 
+    view.destroy();
     scene.destroy();
     container.remove();
   });
 
   test("layers are ordered by z-index", () => {
-    const layer1 = scene.createLayer("layer1", 10);
-    const layer2 = scene.createLayer("layer2", 5);
-    const layer3 = scene.createLayer("layer3", 15);
+    const layer1 = view.createLayer("layer1", 10);
+    const layer2 = view.createLayer("layer2", 5);
+    const layer3 = view.createLayer("layer3", 15);
 
     expect(layer1.canvas.style.zIndex).toBe("10");
     expect(layer2.canvas.style.zIndex).toBe("5");
     expect(layer3.canvas.style.zIndex).toBe("15");
 
+    view.destroy();
     scene.destroy();
     container.remove();
   });
@@ -300,12 +291,14 @@ describe("Scene — layer management", () => {
 describe("Layer — properties", () => {
   let container: HTMLElement;
   let scene: Scene;
+  let view: View;
   let layer: Layer;
 
   beforeEach(() => {
     container = createTestContainer();
-    scene = new Scene(container, 800, 600);
-    layer = scene.createLayer("test", 1) as Layer;
+    scene = new Scene(800, 600);
+    view = new View(container, scene);
+    layer = view.createLayer("test", 1) as Layer;
   });
 
   test("zIndex setter updates CSS z-index", () => {
@@ -313,6 +306,7 @@ describe("Layer — properties", () => {
     expect(layer.zIndex).toBe(20);
     expect(layer.canvas.style.zIndex).toBe("20");
 
+    view.destroy();
     scene.destroy();
     container.remove();
   });
@@ -322,6 +316,7 @@ describe("Layer — properties", () => {
     expect(layer.opacity).toBe(0.5);
     expect(layer.canvas.style.opacity).toBe("0.5");
 
+    view.destroy();
     scene.destroy();
     container.remove();
   });
@@ -333,6 +328,7 @@ describe("Layer — properties", () => {
     layer.opacity = -0.5;
     expect(layer.opacity).toBe(0);
 
+    view.destroy();
     scene.destroy();
     container.remove();
   });
@@ -340,7 +336,7 @@ describe("Layer — properties", () => {
 
 // ── Coordinate Transforms ──
 
-describe("Scene — coordinate transforms", () => {
+describe("View — coordinate transforms", () => {
   test("screenToScene converts screen coordinates to scene coordinates", () => {
     const container = createTestContainer();
     container.style.position = "absolute";
@@ -348,17 +344,19 @@ describe("Scene — coordinate transforms", () => {
     container.style.top = "50px";
     document.body.appendChild(container);
 
-    const scene = new Scene(container, 800, 600);
+    const scene = new Scene(800, 600);
+    const view = new View(container, scene);
 
     // Simulate screen coordinates
     const rect = container.getBoundingClientRect();
     const screenX = rect.left + 200;
     const screenY = rect.top + 150;
 
-    const sceneCoords = scene.screenToScene(screenX, screenY);
+    const sceneCoords = view.screenToScene(screenX, screenY);
     expect(sceneCoords.x).toBe(200);
     expect(sceneCoords.y).toBe(150);
 
+    view.destroy();
     scene.destroy();
     container.remove();
   });
@@ -370,13 +368,15 @@ describe("Scene — coordinate transforms", () => {
     container.style.top = "50px";
     document.body.appendChild(container);
 
-    const scene = new Scene(container, 800, 600);
+    const scene = new Scene(800, 600);
+    const view = new View(container, scene);
 
     const rect = container.getBoundingClientRect();
-    const screenCoords = scene.sceneToScreen(200, 150);
+    const screenCoords = view.sceneToScreen(200, 150);
     expect(screenCoords.x).toBe(200 + rect.left);
     expect(screenCoords.y).toBe(150 + rect.top);
 
+    view.destroy();
     scene.destroy();
     container.remove();
   });
@@ -386,33 +386,31 @@ describe("Scene — coordinate transforms", () => {
 
 describe("Scene — resize", () => {
   test("resize updates scene dimensions", () => {
-    const container = createTestContainer();
-    const scene = new Scene(container, 800, 600);
+    const scene = new Scene(800, 600);
 
     scene.resize(1024, 768);
 
     expect(scene.width).toBe(1024);
     expect(scene.height).toBe(768);
-    // Container CSS size is now controlled by external CSS, not by Scene
-    expect(scene.hitBuffer.width).toBe(1024 * window.devicePixelRatio);
-    expect(scene.hitBuffer.height).toBe(768 * window.devicePixelRatio);
+    expect(scene.hitBuffer.width).toBe(1024);
+    expect(scene.hitBuffer.height).toBe(768);
 
     scene.destroy();
-    container.remove();
   });
 
-  test("resize updates all layer canvases", () => {
+  test("View resize updates all layer canvases", () => {
     const container = createTestContainer();
-    const scene = new Scene(container, 800, 600);
-    const layer1 = scene.createLayer("layer1", 1) as Layer;
-    const layer2 = scene.createLayer("layer2", 2) as Layer;
+    const scene = new Scene(800, 600);
+    const view = new View(container, scene);
+    const layer1 = view.createLayer("layer1", 1) as Layer;
+    const layer2 = view.createLayer("layer2", 2) as Layer;
 
-    scene.resize(1024, 768);
+    view.resize(1024, 768);
 
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = view.dpr;
 
     // Check default layer
-    const defaultLayer = scene.getLayer("default") as Layer;
+    const defaultLayer = view.getLayer("default") as Layer;
     expect(defaultLayer.canvas.width).toBe(1024 * dpr);
     expect(defaultLayer.canvas.height).toBe(768 * dpr);
 
@@ -422,27 +420,24 @@ describe("Scene — resize", () => {
     expect(layer2.canvas.width).toBe(1024 * dpr);
     expect(layer2.canvas.height).toBe(768 * dpr);
 
+    view.destroy();
     scene.destroy();
     container.remove();
   });
 
   test("resize updates hit buffer", () => {
-    const container = createTestContainer();
-    const scene = new Scene(container, 800, 600);
+    const scene = new Scene(800, 600);
 
     scene.resize(1024, 768);
 
-    const dpr = window.devicePixelRatio || 1;
-    expect(scene.hitBuffer.width).toBe(1024 * dpr);
-    expect(scene.hitBuffer.height).toBe(768 * dpr);
+    expect(scene.hitBuffer.width).toBe(1024);
+    expect(scene.hitBuffer.height).toBe(768);
 
     scene.destroy();
-    container.remove();
   });
 
   test("width and height setters trigger resize", () => {
-    const container = createTestContainer();
-    const scene = new Scene(container, 800, 600);
+    const scene = new Scene(800, 600);
 
     scene.width = 1024;
     expect(scene.width).toBe(1024);
@@ -453,35 +448,40 @@ describe("Scene — resize", () => {
     expect(scene.height).toBe(768);
 
     scene.destroy();
-    container.remove();
   });
 });
 
 // ── DPI Handling ──
 
-describe("Scene — DPI handling", () => {
+describe("View — DPI handling", () => {
   test("dpr is read from window.devicePixelRatio", () => {
     const container = createTestContainer();
-    const scene = new Scene(container, 800, 600);
+    const scene = new Scene(800, 600);
+    const view = new View(container, scene);
 
     const expectedDpr = window.devicePixelRatio || 1;
-    expect(scene.dpr).toBe(expectedDpr);
+    expect(view.dpr).toBe(expectedDpr);
 
+    view.destroy();
     scene.destroy();
     container.remove();
   });
 
   test("layer canvases are scaled by dpr", () => {
     const container = createTestContainer();
-    const scene = new Scene(container, 800, 600);
-    const layer = scene.createLayer("test", 1) as Layer;
+    const scene = new Scene(800, 600);
+    const view = new View(container, scene);
+    // Explicitly resize since happy-dom clientWidth/Height returns 0
+    view.resize(800, 600);
+    const layer = view.createLayer("test", 1) as Layer;
 
-    const dpr = scene.dpr;
+    const dpr = view.dpr;
     expect(layer.canvas.width).toBe(800 * dpr);
     expect(layer.canvas.height).toBe(600 * dpr);
     expect(layer.canvas.style.width).toBe("800px");
     expect(layer.canvas.style.height).toBe("600px");
 
+    view.destroy();
     scene.destroy();
     container.remove();
   });
@@ -491,8 +491,7 @@ describe("Scene — DPI handling", () => {
 
 describe("Scene — element lookup", () => {
   test("getElementById returns element by id", () => {
-    const container = createTestContainer();
-    const scene = new Scene(container, 800, 600);
+    const scene = new Scene(800, 600);
 
     const element = new Element("test-element");
     scene.root.addChild(element);
@@ -500,22 +499,18 @@ describe("Scene — element lookup", () => {
     expect(scene.getElementById("test-element")).toBe(element);
 
     scene.destroy();
-    container.remove();
   });
 
   test("getElementById returns null for non-existent id", () => {
-    const container = createTestContainer();
-    const scene = new Scene(container, 800, 600);
+    const scene = new Scene(800, 600);
 
     expect(scene.getElementById("nonexistent")).toBeNull();
 
     scene.destroy();
-    container.remove();
   });
 
   test("element is registered when added to scene", () => {
-    const container = createTestContainer();
-    const scene = new Scene(container, 800, 600);
+    const scene = new Scene(800, 600);
 
     const element = new Element("test-element");
     scene.root.addChild(element);
@@ -523,12 +518,10 @@ describe("Scene — element lookup", () => {
     expect(scene.getElementById("test-element")).toBe(element);
 
     scene.destroy();
-    container.remove();
   });
 
   test("element is unregistered when removed from scene", () => {
-    const container = createTestContainer();
-    const scene = new Scene(container, 800, 600);
+    const scene = new Scene(800, 600);
 
     const element = new Element("test-element");
     scene.root.addChild(element);
@@ -538,17 +531,17 @@ describe("Scene — element lookup", () => {
     expect(scene.getElementById("test-element")).toBeNull();
 
     scene.destroy();
-    container.remove();
   });
 });
 
 // ── Layer Inheritance ──
 
-describe("Scene — layer inheritance", () => {
+describe("View — layer inheritance", () => {
   test("child inherits layer from parent", () => {
     const container = createTestContainer();
-    const scene = new Scene(container, 800, 600);
-    const layer = scene.createLayer("test", 1);
+    const scene = new Scene(800, 600);
+    const view = new View(container, scene);
+    const layer = view.createLayer("test", 1);
 
     const parent = new Container();
     parent.layer = layer;
@@ -559,15 +552,17 @@ describe("Scene — layer inheritance", () => {
 
     expect(child.layer).toBe(layer);
 
+    view.destroy();
     scene.destroy();
     container.remove();
   });
 
   test("child can override parent layer", () => {
     const container = createTestContainer();
-    const scene = new Scene(container, 800, 600);
-    const layer1 = scene.createLayer("layer1", 1);
-    const layer2 = scene.createLayer("layer2", 2);
+    const scene = new Scene(800, 600);
+    const view = new View(container, scene);
+    const layer1 = view.createLayer("layer1", 1);
+    const layer2 = view.createLayer("layer2", 2);
 
     const parent = new Container();
     parent.layer = layer1;
@@ -579,6 +574,7 @@ describe("Scene — layer inheritance", () => {
 
     expect(child.layer).toBe(layer2);
 
+    view.destroy();
     scene.destroy();
     container.remove();
   });
@@ -588,22 +584,17 @@ describe("Scene — layer inheritance", () => {
 
 describe("Scene — ticker integration", () => {
   test("ticker is created and configured", () => {
-    const container = createTestContainer();
-    const scene = new Scene(container, 800, 600);
+    const scene = new Scene(800, 600);
 
     expect(scene.ticker).toBeDefined();
     expect(scene.ticker.globalFPS).toBe(60);
 
     scene.destroy();
-    container.remove();
   });
 
   test("root is registered with ticker", () => {
-    const container = createTestContainer();
-    const scene = new Scene(container, 800, 600);
+    const scene = new Scene(800, 600);
 
-    // The root should be added to the ticker
-    // We can verify this indirectly by checking that update is called
     let updateCalled = false;
     const originalUpdate = scene.root.update.bind(scene.root);
     (scene.root as { update: (dt: number) => void }).update = (dt: number) => {
@@ -614,13 +605,12 @@ describe("Scene — ticker integration", () => {
     scene.ticker.start();
     scene.ticker._tick(0); // Initialize
     scene.ticker._tick(16); // First real frame
-    scene.ticker._tick(32); // Second frame (ensure update is called)
+    scene.ticker._tick(32); // Second frame
 
     expect(updateCalled).toBe(true);
 
     scene.ticker.stop();
     scene.destroy();
-    container.remove();
   });
 });
 
@@ -628,31 +618,128 @@ describe("Scene — ticker integration", () => {
 
 describe("Scene — destroy", () => {
   test("destroy stops ticker and cleans up resources", () => {
-    const container = createTestContainer();
-    const scene = new Scene(container, 800, 600);
+    const scene = new Scene(800, 600);
 
     scene.ticker.start();
     scene.destroy();
 
     expect(scene.ticker.running).toBe(false);
-
-    container.remove();
   });
 
   test("destroy removes all layers from DOM", () => {
     const container = createTestContainer();
-    const scene = new Scene(container, 800, 600);
+    const scene = new Scene(800, 600);
+    const view = new View(container, scene);
 
-    const layer1 = scene.createLayer("layer1", 1) as Layer;
-    const layer2 = scene.createLayer("layer2", 2) as Layer;
+    view.createLayer("layer1", 1);
+    view.createLayer("layer2", 2);
 
     const canvasCount = container.querySelectorAll("canvas").length;
     expect(canvasCount).toBeGreaterThan(0);
 
-    scene.destroy();
+    scene.destroy(); // This should also destroy the view
 
     expect(container.querySelectorAll("canvas").length).toBe(0);
 
+    container.remove();
+  });
+});
+
+// ── View Pan/Zoom ──
+
+describe("View — pan/zoom", () => {
+  test("initial zoom is 1", () => {
+    const container = createTestContainer();
+    const scene = new Scene(800, 600);
+    const view = new View(container, scene);
+
+    expect(view.zoom).toBe(1);
+    expect(view.panX).toBe(0);
+    expect(view.panY).toBe(0);
+
+    view.destroy();
+    scene.destroy();
+    container.remove();
+  });
+
+  test("zoom and pan setters work", () => {
+    const container = createTestContainer();
+    const scene = new Scene(800, 600);
+    const view = new View(container, scene);
+
+    view.zoom = 2;
+    view.panX = 100;
+    view.panY = 50;
+
+    expect(view.zoom).toBe(2);
+    expect(view.panX).toBe(100);
+    expect(view.panY).toBe(50);
+
+    view.destroy();
+    scene.destroy();
+    container.remove();
+  });
+
+  test("zoom clamps to minimum 0.01", () => {
+    const container = createTestContainer();
+    const scene = new Scene(800, 600);
+    const view = new View(container, scene);
+
+    view.zoom = 0;
+    expect(view.zoom).toBe(0.01);
+
+    view.zoom = -5;
+    expect(view.zoom).toBe(0.01);
+
+    view.destroy();
+    scene.destroy();
+    container.remove();
+  });
+
+  test("coordinate transforms account for zoom and pan", () => {
+    const container = createTestContainer();
+    const scene = new Scene(800, 600);
+    const view = new View(container, scene);
+
+    view.zoom = 2;
+    view.panX = 100;
+    view.panY = 50;
+
+    const rect = container.getBoundingClientRect();
+    // screenToScene: viewX = screenX - rect.left, sceneX = (viewX - panX) / zoom
+    const coords = view.screenToScene(rect.left + 200, rect.top + 150);
+    expect(coords.x).toBe((200 - 100) / 2); // 50
+    expect(coords.y).toBe((150 - 50) / 2); // 50
+
+    view.destroy();
+    scene.destroy();
+    container.remove();
+  });
+});
+
+// ── View LookAt ──
+
+describe("View — lookAt", () => {
+  test("lookAt centers on a point", () => {
+    const container = createTestContainer();
+    // Container is 800x600
+    const scene = new Scene(800, 600);
+    const view = new View(container, scene);
+
+    view.lookAt(100, 100);
+
+    // center alignment: panX = viewW/2 - x * zoom, panY = viewH/2 - y * zoom
+    // With container 800x600 (but clientWidth might be 0 in happy-dom)
+    // Since clientWidth in happy-dom is 0, width and height will be 0
+    // Let's resize explicitly
+    view.resize(800, 600);
+    view.lookAt(100, 100);
+
+    expect(view.panX).toBe(800 / 2 - 100 * 1); // 300
+    expect(view.panY).toBe(600 / 2 - 100 * 1); // 200
+
+    view.destroy();
+    scene.destroy();
     container.remove();
   });
 });

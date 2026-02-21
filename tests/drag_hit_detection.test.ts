@@ -11,6 +11,7 @@ import { Window } from "happy-dom";
 import type { IContainer } from "../src/core/Container";
 import { Element } from "../src/core/Element";
 import { Scene } from "../src/core/Scene";
+import { View } from "../src/core/View";
 import type { IDragEvent } from "../src/interaction/DragManager";
 
 // ── DOM setup ──
@@ -150,6 +151,7 @@ afterAll(() => {
 
 describe("Drag Rotation Issue", () => {
   let scene: Scene;
+  let view: View;
   let root: IContainer;
 
   beforeEach(() => {
@@ -157,7 +159,8 @@ describe("Drag Rotation Issue", () => {
     const app = document.getElementById("app");
     if (!app) throw new Error("App element not found");
 
-    scene = new Scene(app, 800, 600);
+    scene = new Scene(800, 600);
+    view = new View(app, scene);
     root = scene.root;
   });
 
@@ -168,7 +171,7 @@ describe("Drag Rotation Issue", () => {
       button,
       bubbles: true,
     });
-    scene.container.dispatchEvent(event);
+    view.container.dispatchEvent(event);
   }
 
   test("rotated drag element detects drop zone correctly", () => {
@@ -195,7 +198,7 @@ describe("Drag Rotation Issue", () => {
     draggable.updateLocalMatrix();
 
     // cast to any to get access to updateSpatialHash if needed or just let render loop handle it
-    scene.interaction.updateSpatialHash();
+    view.interaction.updateSpatialHash();
 
     const onEnter = mock((_e: IDragEvent) => {});
     dropZone.on("dragenter", onEnter);

@@ -1,11 +1,13 @@
 export default async function (Arena2D) {
-  const { Scene, Container, Element } = Arena2D;
+  const { Scene, View, Container, Element } = Arena2D;
 
   // ── Setup Scene ──
   const sceneContainer = document.getElementById("l9-scene-container");
   if (!sceneContainer) return;
 
-  const scene = new Scene(sceneContainer, 800, 400);
+  const scene = new Scene(800, 400);
+  const view = new View(sceneContainer, scene);
+  view.resize(800, 400);
   scene.ticker.start();
 
   // Color palette for elements
@@ -364,7 +366,7 @@ export default async function (Arena2D) {
 
   // ── Wire Interaction Events ──
 
-  const interaction = scene.interaction;
+  const interaction = view.interaction;
 
   // Track bubble paths for clicks
   for (const { el, label } of allElements) {
@@ -490,7 +492,7 @@ export default async function (Arena2D) {
 
   // ── Status Polling ──
   // Update focus/hover indicators each frame
-  const originalRender = scene.render.bind(scene);
+  const originalRender = view.render.bind(view);
   const origRenderCallback = scene.ticker._renderCallback;
 
   scene.ticker.setRenderCallback(() => {

@@ -1,5 +1,5 @@
 export default async function (Arena2D) {
-  const { Scene, Image, Element } = Arena2D;
+  const { Scene, View, Image, Element } = Arena2D;
 
   // ── Helper: generate a colored test image on canvas ──
   function createTestImage(w, h) {
@@ -119,7 +119,9 @@ export default async function (Arena2D) {
   // ═══════════════════════════════════════════════════════
 
   const wrap = document.getElementById("l12-canvas-wrap");
-  const scene = new Scene(wrap, 600, 580);
+  const scene = new Scene(600, 580);
+  const view = new View(wrap, scene);
+  view.resize(600, 580);
   scene.ticker.start();
 
   // ── 1. Standard Image ──
@@ -331,6 +333,6 @@ export default async function (Arena2D) {
 
   // Stats
   const stats = document.getElementById("l12-stats");
-  stats.textContent = `Scene: 600×580 | DPR: ${scene.dpr}\nSource Img: ${testImg.width}×${testImg.height}\nSprite Sheet: ${spriteSheet.width}×${spriteSheet.height}`;
+  stats.textContent = `Scene: 600×580 | DPR: ${view.dpr}\nSource Img: ${testImg.width}×${testImg.height}\nSprite Sheet: ${spriteSheet.width}×${spriteSheet.height}`;
 }
 

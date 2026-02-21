@@ -1,5 +1,5 @@
 export default async function (Arena2D) {
-  const { Scene, Container, TextInput, Text } = Arena2D;
+  const { Scene, View, Container, TextInput, Text } = Arena2D;
 
   // ── Controls ──
   const fontSizeSlider = document.getElementById("l11-font-size");
@@ -22,7 +22,9 @@ export default async function (Arena2D) {
   };
 
   const dims = getCanvasDims();
-  const scene = new Scene(sceneContainer, dims.width, dims.height);
+  const scene = new Scene(dims.width, dims.height);
+  const view = new View(sceneContainer, scene);
+  view.resize(dims.width, dims.height);
 
   // Helper to log events
   function logEvent(msg) {

@@ -1,8 +1,10 @@
 export default async function (Arena2D) {
-  const { Scene, ScrollContainer, Element, Text, Image } = Arena2D;
+  const { Scene, View, ScrollContainer, Element, Text, Image } = Arena2D;
 
   const wrap = document.getElementById("l13-canvas-wrap");
-  const scene = new Scene(wrap, 600, 400);
+  const scene = new Scene(600, 400);
+  const view = new View(wrap, scene);
+  view.resize(600, 400);
   scene.ticker.start();
 
   // ── Create ScrollContainer ──
@@ -40,7 +42,7 @@ export default async function (Arena2D) {
 
       // Draw background
       card.paint = (ctx) => {
-        const isHover = card === scene.interaction.hoverElement;
+        const isHover = card === view.interaction.hoverElement;
         const color = isHover ? "#4a90d9" : "#2a2a3a";
         ctx.drawRoundedRect(0, 0, card.width, card.height, 8, color, "#444");
 

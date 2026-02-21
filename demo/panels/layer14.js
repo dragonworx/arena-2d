@@ -1,7 +1,8 @@
 export default function (Arena2D) {
-  const { Scene, Container, Element, Rectangle } = Arena2D;
+  const { Scene, View, Container, Element, Rectangle } = Arena2D;
 
   let scene = null;
+  let view = null;
   const container = document.getElementById('scene-container');
   const logContainer = document.getElementById('debug-logs');
 
@@ -24,7 +25,8 @@ export default function (Arena2D) {
   const initScene = () => {
     if (scene) scene.destroy();
 
-    scene = new Scene(container, container.clientWidth, container.clientHeight);
+    scene = new Scene(container.clientWidth, container.clientHeight);
+    view = new View(container, scene);
     scene.root.id = "root";
 
     // Create a stress-test group
@@ -112,6 +114,7 @@ export default function (Arena2D) {
     if (scene) {
       scene.destroy();
       scene = null;
+      view = null;
     }
   };
 
