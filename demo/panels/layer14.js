@@ -1,5 +1,5 @@
-export default async function (Arena2D) {
-  const { Scene, Container, Text, Element, Image } = Arena2D;
+export default async function (ArenaUI) {
+  const { Scene, Container, Text, Element, Image, Arena2D } = ArenaUI;
 
   // ── Logger Helper ──
   const logEl = document.getElementById("l14-log");
@@ -28,16 +28,27 @@ export default async function (Arena2D) {
   // ── Scene Setup ──
   const container = document.getElementById("l14-canvas-wrap");
   const scene = new Scene(container, 500, 400);
+  scene.ticker.start();
 
   const testBox = new Container("test-box");
   testBox.width = 100;
   testBox.height = 100;
   testBox.x = 200;
   testBox.y = 150;
-  // We can't draw primitives easily on Container, but we can add a Text child
+  // Add a visual background so we can see the bounds
+  const bg = new Element("test-bg");
+  bg.paint = (ctx) => {
+    ctx.raw.fillStyle = "rgba(255, 255, 255, 0.1)";
+    ctx.raw.strokeStyle = "#4a90d9";
+    ctx.raw.lineWidth = 2;
+    ctx.raw.fillRect(0, 0, testBox.width, testBox.height);
+    ctx.raw.strokeRect(0, 0, testBox.width, testBox.height);
+  };
+  testBox.addChild(bg);
+
   const label = new Text("Label");
   label.text = "Target";
-  label.updateStyle({ color: "#fff", fontSize: 14 });
+  label.updateTextStyle({ color: "#fff", fontSize: 14 });
   label.x = 20;
   label.y = 40;
   testBox.addChild(label);
@@ -48,10 +59,10 @@ export default async function (Arena2D) {
 
   // Debug Toggle
   const debugToggle = document.getElementById("l14-debug-enable");
-  debugToggle.checked = Arena2D.Arena2D.debug;
+  debugToggle.checked = Arena2D.debug;
   debugToggle.onchange = (e) => {
-    Arena2D.Arena2D.debug = e.target.checked;
-    log(`Arena2D.debug = ${Arena2D.Arena2D.debug}`, "info");
+    Arena2D.debug = e.target.checked;
+    log(`Arena2D.debug = ${Arena2D.debug}`, "info");
   };
 
   // NaN Assignments

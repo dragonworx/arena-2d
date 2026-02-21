@@ -154,6 +154,11 @@ export class Container extends Element implements IContainer {
     // Lifecycle: onAdded
     child.onAdded(this);
 
+    // Propagate layer reference recursively to descendants
+    if (child instanceof Container) {
+      this._propagateLayerRecursive(child);
+    }
+
     // Propagate scene reference
     this._propagateScene(child, this.scene);
 
@@ -200,6 +205,27 @@ export class Container extends Element implements IContainer {
     if (child instanceof Container) {
       for (const grandchild of child._children) {
         child._propagateScene(grandchild, newScene);
+      }
+    }
+  }
+
+  /**
+   * Recursively propagate layer reference through the subtree.
+   * This ensures that children added to a container *before* the container
+   * is added to the scene still inherit the layer properly.
+   */
+  private _propagateLayerRecursive(container: Container): void {
+    for (const child of container._children) {
+      if (!child.layer && container.layer) {
+        child.layer = container.layer;
+        // Register with layer
+        const layer = child.layer as { addElement?: (el: IElement) => void };
+        if (layer.addElement) {
+          layer.addElement(child);
+        }
+      }
+      if (child instanceof Container) {
+        this._propagateLayerRecursive(child as Container);
       }
     }
   }

@@ -1,0 +1,34 @@
+* Create new Layer 9.1 Demo - "Interaction Scale"
+  - Use a slider to define number of random elements
+  - Create random elements with random positions, sizes, and colors
+  - Attach hover and press events to change color by tinting
+  - Add a button to reset the demo
+* Add new Layer 1.1 - "Geometry"
+  - Create efficient and fundamental geometry primitives
+    - Point
+    - Vector (support Polar and Cartesian coordinates)
+    - Line
+    - Rectangle
+    - Circle
+    - Ellipse
+    - Polygon
+    - Arc
+    - Bezier Curve
+    - Quadratic Curve
+    - Path
+  - All primitives should support via superclass:
+    - Nesting
+    - Transform
+    - Parametric point along shape interpolation
+    - Distance from point to shape
+    - Closest point on shape
+    - Intersection with line
+    - Intersection with other shapes
+    - Area
+    - Perimeter
+    - Bounding box
+    - Centroid
+  - All primitives should be able to be rendered by the renderer
+  - All primitives should be able to be hit tested by the hit tester
+  - Create Layer 1.1 Demo
+  
