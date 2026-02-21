@@ -17,6 +17,8 @@ export default async function (Arena2D) {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
 
+  const arenaCtx = new Arena2D.Arena2DContext(ctx);
+
   // Setup canvas - get parent container size
   function resizeCanvas() {
     const parent = canvas.parentElement;
@@ -115,65 +117,10 @@ export default async function (Arena2D) {
 
   // Helper to draw shape geometry
   function drawShapeGeometry(ctx, shape, label) {
-    if (label === 'Circle') {
-      ctx.beginPath();
-      ctx.arc(0, 0, shape.radius, 0, Math.PI * 2);
-    } else if (label === 'Rectangle') {
-      ctx.beginPath();
-      ctx.rect(shape.rectX, shape.rectY, shape.width, shape.height);
-    } else if (label === 'Line') {
-      ctx.beginPath();
-      ctx.moveTo(shape.x1, shape.y1);
-      ctx.lineTo(shape.x2, shape.y2);
-    } else if (label === 'Ellipse') {
-      ctx.beginPath();
-      ctx.ellipse(shape.cx, shape.cy, shape.rx, shape.ry, 0, 0, Math.PI * 2);
-    } else if (label === 'Polygon' || label === 'Polyline') {
-      if (shape.points.length > 0) {
-        ctx.beginPath();
-        ctx.moveTo(shape.points[0].x, shape.points[0].y);
-        for (let i = 1; i < shape.points.length; i++) {
-          ctx.lineTo(shape.points[i].x, shape.points[i].y);
-        }
-        if (shape.closed) ctx.closePath();
-      }
-    } else if (label === 'Arc') {
-      ctx.beginPath();
-      ctx.arc(shape.cx, shape.cy, shape.radius, shape.startAngle, shape.endAngle);
-    } else if (label === 'QuadraticCurve') {
-      ctx.beginPath();
-      ctx.moveTo(shape.x0, shape.y0);
-      ctx.quadraticCurveTo(shape.cpx, shape.cpy, shape.x1, shape.y1);
-    } else if (label === 'BezierCurve' || label === 'Bezier-5' || label === 'Spline') {
-      ctx.beginPath();
-      if (shape.controlPoints && shape.controlPoints.length >= 2) {
-        ctx.moveTo(shape.controlPoints[0].x, shape.controlPoints[0].y);
-        if (label === 'BezierCurve' && shape.controlPoints.length === 4) {
-          ctx.bezierCurveTo(
-            shape.controlPoints[1].x, shape.controlPoints[1].y,
-            shape.controlPoints[2].x, shape.controlPoints[2].y,
-            shape.controlPoints[3].x, shape.controlPoints[3].y
-          );
-        } else {
-          // Sample high-order Beziers
-          for (let i = 1; i <= 64; i++) {
-            const pt = shape.pointAt(i / 64);
-            const local = shape.worldToLocal(pt.x, pt.y);
-            ctx.lineTo(local.x, local.y);
-          }
-        }
-      }
-    } else if (label === 'Path') {
-      ctx.beginPath();
-      for (const seg of shape.segments) {
-        if (seg.type === 'moveTo') ctx.moveTo(seg.x, seg.y);
-        else if (seg.type === 'lineTo') ctx.lineTo(seg.x, seg.y);
-        else if (seg.type === 'quadraticCurveTo') ctx.quadraticCurveTo(seg.cpx, seg.cpy, seg.x, seg.y);
-        else if (seg.type === 'bezierCurveTo') ctx.bezierCurveTo(seg.cp1x, seg.cp1y, seg.cp2x, seg.cp2y, seg.x, seg.y);
-        else if (seg.type === 'arc') ctx.arc(seg.cx, seg.cy, seg.radius, seg.startAngle, seg.endAngle, seg.counterclockwise);
-        else if (seg.type === 'closePath') ctx.closePath();
-      }
-    }
+    // Only fill closed shapes
+    const shouldFill = label === 'Circle' || label === 'Rectangle' || label === 'Polygon' || label === 'Ellipse';
+    const fillColor = shouldFill ? "rgba(74, 144, 226, 0.2)" : undefined;
+    ctx.drawGeometry(shape, fillColor, "#4a90e2");
   }
 
   // Animation loop
@@ -258,7 +205,7 @@ export default async function (Arena2D) {
         ctx.lineWidth = 2;
       }
 
-      drawShapeGeometry(ctx, shape, label);
+      drawShapeGeometry(arenaCtx, shape, label);
       ctx.stroke();
 
       // Draw segment points (white dots) for multi-segment shapes

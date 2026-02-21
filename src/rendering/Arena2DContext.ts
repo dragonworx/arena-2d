@@ -8,6 +8,7 @@
  * SPEC: §8 — Rendering Wrapper (Arena2DContext)
  */
 
+import type { IGeometry, IRectangle, ICircle, IEllipse, ILine, IPolygon, IArc, IQuadraticCurve, IBezierCurve, IPath } from "../geometry/types";
 import type { IElement } from "../core/Element";
 
 // ── Constants ──
@@ -78,8 +79,10 @@ export interface IArena2DContext {
     points: Array<{ x: number; y: number }>,
     fill?: FillStyle,
     stroke?: FillStyle,
+    closed?: boolean,
   ): void;
   drawPath(path: Path2D, fill?: FillStyle, stroke?: FillStyle): void;
+  drawGeometry(geometry: IGeometry, fill?: FillStyle, stroke?: FillStyle): void;
 
   // Image (6.2)
   drawImage(
@@ -325,6 +328,7 @@ export class Arena2DContext implements IArena2DContext {
     points: Array<{ x: number; y: number }>,
     fill?: FillStyle,
     stroke?: FillStyle,
+    closed: boolean = true,
   ): void {
     if (points.length === 0) return;
     const ctx = this.raw;
@@ -333,7 +337,9 @@ export class Arena2DContext implements IArena2DContext {
     for (let i = 1; i < points.length; i++) {
       ctx.lineTo(points[i].x, points[i].y);
     }
-    ctx.closePath();
+    if (closed) {
+      ctx.closePath();
+    }
     if (fill !== undefined) {
       ctx.fillStyle = fill;
       ctx.fill();
@@ -353,6 +359,93 @@ export class Arena2DContext implements IArena2DContext {
     if (stroke !== undefined) {
       ctx.strokeStyle = stroke;
       ctx.stroke(path);
+    }
+  }
+
+  drawGeometry(
+    geometry: IGeometry,
+    fill?: FillStyle,
+    stroke?: FillStyle,
+  ): void {
+    const type = geometry.type;
+
+    if (type === "rectangle") {
+      const g = geometry as IRectangle;
+      this.drawRect(g.rectX, g.rectY, g.width, g.height, fill, stroke);
+    } else if (type === "circle") {
+      const g = geometry as ICircle;
+      this.drawCircle(g.cx, g.cy, g.radius, fill, stroke);
+    } else if (type === "ellipse") {
+      const g = geometry as IEllipse;
+      this.drawEllipse(g.cx, g.cy, g.rx, g.ry, fill, stroke);
+    } else if (type === "line") {
+      const g = geometry as ILine;
+      this.drawLine(g.x1, g.y1, g.x2, g.y2, stroke || "#000", this.raw.lineWidth);
+    } else if (type === "polygon") {
+      const g = geometry as IPolygon;
+      this.drawPolygon(g.points, fill, stroke, g.closed);
+    } else if (type === "arc") {
+      const g = geometry as IArc;
+      const ctx = this.raw;
+      ctx.beginPath();
+      ctx.arc(g.cx, g.cy, g.radius, g.startAngle, g.endAngle, g.counterclockwise);
+      if (stroke !== undefined) {
+        ctx.strokeStyle = stroke;
+        ctx.stroke();
+      }
+    } else if (type === "quadraticCurve") {
+      const g = geometry as IQuadraticCurve;
+      const ctx = this.raw;
+      ctx.beginPath();
+      ctx.moveTo(g.x0, g.y0);
+      ctx.quadraticCurveTo(g.cpx, g.cpy, g.x1, g.y1);
+      if (stroke !== undefined) {
+        ctx.strokeStyle = stroke;
+        ctx.stroke();
+      }
+    } else if (type === "bezierCurve") {
+      const g = geometry as IBezierCurve;
+      const ctx = this.raw;
+      const cp = g.controlPoints;
+      if (cp.length < 2) return;
+
+      if (cp.length === 4) {
+        // Native cubic
+        ctx.beginPath();
+        ctx.moveTo(cp[0].x, cp[0].y);
+        ctx.bezierCurveTo(cp[1].x, cp[1].y, cp[2].x, cp[2].y, cp[3].x, cp[3].y);
+      } else {
+        // Higher-order or quadratic: Sample it
+        ctx.beginPath();
+        ctx.moveTo(cp[0].x, cp[0].y);
+        const samples = 32;
+        for (let i = 1; i <= samples; i++) {
+          const pt = g.pointAt(i / samples);
+          const local = (g as any).worldToLocal(pt.x, pt.y);
+          ctx.lineTo(local.x, local.y);
+        }
+      }
+
+      if (stroke !== undefined) {
+        ctx.strokeStyle = stroke;
+        ctx.stroke();
+      }
+    } else if (type === "path") {
+      const g = geometry as IPath;
+      const ctx = this.raw;
+      ctx.beginPath();
+      for (const seg of g.segments) {
+        if (seg.type === "moveTo") ctx.moveTo(seg.x, seg.y);
+        else if (seg.type === "lineTo") ctx.lineTo(seg.x, seg.y);
+        else if (seg.type === "quadraticCurveTo") ctx.quadraticCurveTo(seg.cpx, seg.cpy, seg.x, seg.y);
+        else if (seg.type === "bezierCurveTo") ctx.bezierCurveTo(seg.cp1x, seg.cp1y, seg.cp2x, seg.cp2y, seg.x, seg.y);
+        else if (seg.type === "arc") ctx.arc(seg.cx, seg.cy, seg.radius, seg.startAngle, seg.endAngle, seg.counterclockwise);
+        else if (seg.type === "closePath") ctx.closePath();
+      }
+      if (stroke !== undefined) {
+        ctx.strokeStyle = stroke;
+        ctx.stroke();
+      }
     }
   }
 

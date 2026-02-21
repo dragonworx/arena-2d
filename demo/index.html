@@ -19,10 +19,7 @@
     <nav class="nav">
       <div class="nav-section">
         <div class="nav-section-title">Foundation</div>
-        <a class="nav-link active" data-panel="layer-0">
-          <span class="nav-dot"></span> Layer 0 — Scaffold
-        </a>
-        <a class="nav-link" data-panel="layer-1">
+        <a class="nav-link active" data-panel="layer-1">
           <span class="nav-dot"></span> Layer 1 — Transform
         </a>
         <a class="nav-link" data-panel="layer-1.1">
@@ -79,14 +76,8 @@
         <a class="nav-link" data-panel="layer-13">
           <span class="nav-dot"></span> Layer 13 — Scroll
         </a>
-      </div>
-      <div class="nav-section">
-        <div class="nav-section-title">Polish</div>
         <a class="nav-link" data-panel="layer-14">
           <span class="nav-dot"></span> Layer 14 — Debug
-        </a>
-        <a class="nav-link" data-panel="layer-15">
-          <span class="nav-dot"></span> Layer 15 — Bundle
         </a>
       </div>
     </nav>
@@ -94,31 +85,6 @@
 
   <!-- Main Content -->
   <main class="main">
-    <!-- Layer 0 Panel -->
-    <div id="layer-0" class="panel active">
-      <div class="main-header">
-        <h2>Layer 0 — Scaffold Ready</h2>
-        <p>Project skeleton, build pipeline, and live-reloading dev server are up and running.</p>
-      </div>
-      <div class="card">
-        <div class="status-badge ready">
-          <span class="pulse"></span> Pipeline Active
-        </div>
-        <h3>Hello, Arena-2D</h3>
-        <p>
-          The project scaffold is complete. This demo site will grow with each layer —
-          new panels will appear in the sidebar as features are implemented.
-        </p>
-        <ul class="checklist">
-          <li><span class="check done"></span> Project structure</li>
-          <li><span class="check done"></span> TypeScript config</li>
-          <li><span class="check done"></span> Build pipeline</li>
-          <li><span class="check done"></span> Dev server</li>
-          <li><span class="check done"></span> Live reload</li>
-          <li><span class="check done"></span> Demo shell</li>
-        </ul>
-      </div>
-    </div>
 
     <!-- Layer 1 Panel -->
     <div id="layer-1" class="panel">
@@ -172,14 +138,11 @@
 
     <!-- Layer 14 Panel -->
     <div id="layer-14" class="panel"></div>
-
-    <!-- Layer 15 Panel -->
-    <div id="layer-15" class="panel"></div>
   </main>
 
   <!-- Routing -->
   <script>
-    const loadedPanels = new Set(['layer-0']);
+    const loadedPanels = new Set(['layer-1']);
     const initializedPanels = new Set();
     let Arena2D = null;
 
@@ -200,7 +163,7 @@
       }
 
       // Dynamic demo loading
-      if (panelId !== 'layer-0' && !initializedPanels.has(panelId)) {
+      if (!initializedPanels.has(panelId)) {
         await initPanel(panelId);
       }
     }
@@ -249,7 +212,7 @@
 
     // Browser back/forward
     window.addEventListener('popstate', (e) => {
-      const panelId = e.state?.panel || location.hash.slice(1) || 'layer-0';
+      const panelId = e.state?.panel || location.hash.slice(1) || 'layer-1';
       navigateTo(panelId, false);
     });
 
@@ -258,6 +221,8 @@
       const hash = location.hash.slice(1);
       if (hash && document.getElementById(hash)) {
         navigateTo(hash, false);
+      } else {
+        navigateTo('layer-1', false);
       }
     })();
   </script>
@@ -331,9 +296,8 @@
         if (h.closest('.sidebar-header')) return;
         
         if (!h.querySelector('.view-source-btn')) {
-          const panel = h.closest('.panel');
-          // Only sub-panels (except layer-0 which is scaffold)
-          if (panel && panel.id !== 'layer-0') {
+          // Only sub-panels
+          if (panel) {
             const btn = document.createElement('span');
             btn.className = 'view-source-btn';
             btn.textContent = 'View Source';

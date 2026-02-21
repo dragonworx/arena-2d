@@ -267,6 +267,8 @@ export class InteractionManager implements IInteractionManager {
   private _spatialDirtyElements = new Set<IElement>();
   /** Whether the entire spatial hash needs rebuilding. */
   private _spatialFullRebuild = true;
+  /** Distance threshold in scene units to distinguish a click from a drag. */
+  public clickDeferralThreshold = 5;
 
   /** Last known pointer X in scene space. */
   private _lastPointerSceneX = 0;

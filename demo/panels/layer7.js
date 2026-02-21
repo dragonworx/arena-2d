@@ -1,5 +1,5 @@
 export default async function (Arena2D) {
-  const { Scene, View, Container, Element } = Arena2D;
+  const { Scene, View, Container, Element, Rect, CircleElement } = Arena2D;
 
   // ── Controls ──
 
@@ -37,49 +37,7 @@ export default async function (Arena2D) {
   });
   view.resize(sceneW, sceneH);
 
-  // ── Custom element classes ──
-
-  class Box extends Element {
-    constructor(color1, color2) {
-      super();
-      this.color1 = color1;
-      this.color2 = color2;
-      this.width = 60;
-      this.height = 60;
-    }
-
-    paint(ctx) {
-      const gradient = ctx.createLinearGradient(0, 0, this.width, this.height, [
-        { offset: 0, color: this.color1 },
-        { offset: 1, color: this.color2 },
-      ]);
-      ctx.drawRect(0, 0, this.width, this.height, gradient);
-    }
-  }
-
-  class Circle extends Element {
-    constructor(radius, color1, color2) {
-      super();
-      this.radius = radius;
-      this.color1 = color1;
-      this.color2 = color2;
-      this.width = radius * 2;
-      this.height = radius * 2;
-    }
-
-    paint(ctx) {
-      const gradient = ctx.createRadialGradient(
-        this.radius,
-        this.radius,
-        this.radius,
-        [
-          { offset: 0, color: this.color1 },
-          { offset: 1, color: this.color2 },
-        ],
-      );
-      ctx.drawCircle(this.radius, this.radius, this.radius, gradient);
-    }
-  }
+  // Box and Circle removed in favor of core Rect/CircleElement
 
   class GradientBackground extends Element {
     constructor(width, height) {
@@ -106,32 +64,59 @@ export default async function (Arena2D) {
   root.addChild(bg);
 
   // Static shapes — one per quadrant
-  const box1 = new Box("#ffffff", "#4299e1");
+  const createBox = (c1, c2) => {
+    const r = new Rect();
+    r.width = 60;
+    r.height = 60;
+    r.paint = (ctx) => {
+      const g = ctx.createLinearGradient(0, 0, r.width, r.height, [
+        { offset: 0, color: c1 },
+        { offset: 1, color: c2 },
+      ]);
+      ctx.drawRect(0, 0, r.width, r.height, g);
+    };
+    return r;
+  };
+
+  const createCircle = (radius, c1, c2) => {
+    const c = new CircleElement();
+    c.radius = radius;
+    c.paint = (ctx) => {
+      const g = ctx.createRadialGradient(radius, radius, radius, [
+        { offset: 0, color: c1 },
+        { offset: 1, color: c2 },
+      ]);
+      ctx.drawCircle(radius, radius, radius, g);
+    };
+    return c;
+  };
+
+  const box1 = createBox("#ffffff", "#4299e1");
   box1.x = 30;
   box1.y = 30;
   root.addChild(box1);
 
-  const box2 = new Box("#ffffff", "#667eea");
+  const box2 = createBox("#ffffff", "#667eea");
   box2.x = 250;
   box2.y = 40;
   root.addChild(box2);
 
-  const box3 = new Box("#ffffff", "#ed64a6");
+  const box3 = createBox("#ffffff", "#ed64a6");
   box3.x = 40;
   box3.y = 190;
   root.addChild(box3);
 
-  const box4 = new Box("#ffffff", "#38b2ac");
+  const box4 = createBox("#ffffff", "#38b2ac");
   box4.x = 280;
   box4.y = 200;
   root.addChild(box4);
 
-  const circle1 = new Circle(25, "#ffffff", "#f56565");
+  const circle1 = createCircle(25, "#ffffff", "#f56565");
   circle1.x = 150;
   circle1.y = 20;
   root.addChild(circle1);
 
-  const circle2 = new Circle(30, "#ffffff", "#9f7aea");
+  const circle2 = createCircle(30, "#ffffff", "#9f7aea");
   circle2.x = 160;
   circle2.y = 180;
   root.addChild(circle2);
@@ -141,7 +126,7 @@ export default async function (Arena2D) {
   let speedMultiplier = 1.0;
 
   // Bouncing box
-  const animBox = new Box("#ffffff", "#f56565");
+  const animBox = createBox("#ffffff", "#f56565");
   animBox.width = 50;
   animBox.height = 50;
   animBox.x = 80;
@@ -177,7 +162,7 @@ export default async function (Arena2D) {
   };
 
   // Orbiting circle
-  const animCircle = new Circle(20, "#ffffff", "#48bb78");
+  const animCircle = createCircle(20, "#ffffff", "#48bb78");
   let angle = 0;
   root.addChild(animCircle);
 
@@ -191,7 +176,7 @@ export default async function (Arena2D) {
   };
 
   // Orbiting circle 2 (opposite phase)
-  const animCircle2 = new Circle(15, "#ffffff", "#ecc94b");
+  const animCircle2 = createCircle(15, "#ffffff", "#ecc94b");
   let angle2 = Math.PI;
   root.addChild(animCircle2);
 

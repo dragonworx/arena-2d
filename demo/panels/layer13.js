@@ -122,7 +122,7 @@ export default async function (Arena2D) {
     hVal.textContent = sc.height;
 
     const threshold = Number(thresholdSlider.value);
-    sc.clickDeferralThreshold = threshold;
+    view.interaction.clickDeferralThreshold = threshold;
     thresholdVal.textContent = threshold;
 
     sc.scrollEnabledX = scrollXCheck.checked;
