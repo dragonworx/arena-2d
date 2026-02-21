@@ -132,6 +132,9 @@ export class Scene implements IScene {
         const { width, height } = entry.contentRect;
         const w = Math.round(width);
         const h = Math.round(height);
+        if ((w === 0 && h === 0 && (this._width !== 0 || this._height !== 0))) {
+          return;
+        }
         if (w !== this._width || h !== this._height) {
           this.resize(w, h);
         }
@@ -554,12 +557,34 @@ export class Scene implements IScene {
 
     // Paint children (each child uses its own absolute worldMatrix)
     if (container) {
+      if (container.clipContent) {
+        layer.ctx.save();
+        // Path for clipping in world coordinates
+        const m = container.worldMatrix;
+        const dpr = this._dpr;
+        layer.ctx.setTransform(
+          dpr * m[0],
+          dpr * m[1],
+          dpr * m[2],
+          dpr * m[3],
+          dpr * m[4],
+          dpr * m[5],
+        );
+        layer.ctx.beginPath();
+        layer.ctx.rect(0, 0, container.width, container.height);
+        layer.ctx.clip();
+      }
+
       // Sort by zIndex for correct layering
       const sortedChildren = Array.from(container.children).sort(
         (a, b) => a.zIndex - b.zIndex,
       );
       for (const child of sortedChildren) {
         this._paintRecursive(child);
+      }
+
+      if (container.clipContent) {
+        layer.ctx.restore();
       }
     }
   }

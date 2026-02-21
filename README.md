@@ -19,7 +19,6 @@ Arena-2D is a retained-mode, hardware-accelerated UI library for building rich 2
 - ⚡ **High Performance**: Affine transformations via 2D matrices and GPU-composited layers.
 - 🖱️ **Unified Interaction**: Normalized pointer and keyboard pipeline with event bubbling.
 - 📝 **Rich Text Subsystem**: Greedy word-wrap, character-level metrics, and IME bridge support.
-- 🎞️ **Tweening System**: Built-in animation engine with standard easing functions.
 - 🖼️ **Nine-Slice Scaling**: Smart UI scaling for panels and buttons.
 - 🏗️ **Retained Mode**: VDOM with intelligent dirty-flagging and `cacheAsBitmap` support.
 
@@ -48,7 +47,7 @@ yarn add arena-2d
 Create a `Scene`, add some elements, and start the `Ticker`.
 
 ```typescript
-import { Scene, Container, Ticker, Rect } from 'arena-2d';
+import { Scene, Container, Ticker, Text } from 'arena-2d';
 
 // 1. Initialize the Scene
 const scene = new Scene(
@@ -60,11 +59,10 @@ const scene = new Scene(
 // 2. Create a Root Container
 // scene.root is automatically created
 
-// 3. Add a styled Container
+// 3. Add a Container
 const box = new Container();
 box.width = 100;
 box.height = 100;
-box.style.backgroundColor = '#ff0000'; // Note: Container styling shown in Layer 8
 scene.root.addChild(box);
 
 // 4. Start the Loop
@@ -141,30 +139,15 @@ button.on('pointerdown', (e) => {
 
 button.on('pointerenter', () => {
   button.cursor = 'pointer';
-  button.animate({ scaleX: 1.1, scaleY: 1.1 }, { duration: 0.1 });
+  button.alpha = 0.8;
 });
 
 button.on('pointerleave', () => {
-  button.animate({ scaleX: 1.0, scaleY: 1.0 }, { duration: 0.1 });
+  button.cursor = 'default';
+  button.alpha = 1.0;
 });
 ```
 
-### 🎞️ Smooth Animations
-Animate any property with built-in easing functions.
-
-```typescript
-import { Easing } from 'arena-2d';
-
-element.animate({
-  x: 500,
-  rotation: Math.PI * 2,
-  alpha: 0
-}, {
-  duration: 1.5,
-  easing: Easing.easeOutBack,
-  onComplete: () => element.destroy()
-});
-```
 
 ---
 

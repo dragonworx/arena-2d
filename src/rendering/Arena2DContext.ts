@@ -18,7 +18,7 @@ const TAU = Math.PI * 2;
 
 export type FillStyle = string | CanvasGradient | CanvasPattern;
 
-export interface ITextStyle {
+export interface IRenderTextStyle {
   fontSize: number;
   fontFamily: string;
   fontWeight?: string;
@@ -102,10 +102,10 @@ export interface IArena2DContext {
   ): void;
 
   // Text (6.3)
-  drawText(text: string, x: number, y: number, style: ITextStyle): void;
+  drawText(text: string, x: number, y: number, style: IRenderTextStyle): void;
   measureText(
     text: string,
-    style: ITextStyle,
+    style: IRenderTextStyle,
   ): { width: number; height: number };
 
   // Effects (6.4)
@@ -149,7 +149,7 @@ export interface IArena2DContext {
 
 // ── Helpers ──
 
-export function buildFontString(style: ITextStyle): string {
+export function buildFontString(style: IRenderTextStyle): string {
   const weight = style.fontWeight ?? "normal";
   const fontStyle = style.fontStyle ?? "normal";
   return `${weight} ${fontStyle} ${style.fontSize}px ${style.fontFamily}`;
@@ -335,7 +335,7 @@ export class Arena2DContext implements IArena2DContext {
 
   // ── Text Drawing (6.3) ──
 
-  drawText(text: string, x: number, y: number, style: ITextStyle): void {
+  drawText(text: string, x: number, y: number, style: IRenderTextStyle): void {
     const ctx = this.raw;
     ctx.font = buildFontString(style);
     ctx.fillStyle = style.fill ?? "#000";
@@ -346,7 +346,7 @@ export class Arena2DContext implements IArena2DContext {
 
   measureText(
     text: string,
-    style: ITextStyle,
+    style: IRenderTextStyle,
   ): { width: number; height: number } {
     const ctx = this.raw;
     ctx.font = buildFontString(style);

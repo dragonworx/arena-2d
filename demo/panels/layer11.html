@@ -3,40 +3,40 @@
   <p>Editable text inputs with cursor, selection, clipboard, password masking, and multiline support.</p>
 </div>
 
-<div class="card" style="display: flex; gap: 24px; flex-wrap: wrap;">
-  <!-- Canvas area -->
-  <div style="flex: 1; min-width: 500px;">
-    <div id="l11-canvas-wrap" style="width: 600px; height: 600px; background: #1a1a2e; border-radius: 8px; overflow: hidden;"></div>
+<div class="card" style="display: flex; gap: 24px; height: calc(100vh - 200px);">
+  <!-- Canvas area (50%) -->
+  <div style="flex: 0 0 50%; display: flex; align-items: center; justify-content: center;">
+    <div id="l11-canvas-wrap" style="width: 100%; height: 100%; background: #1a1a2e; border-radius: 8px; overflow: hidden;"></div>
   </div>
 
-  <!-- Controls -->
-  <div style="flex: 0 0 280px;">
+  <!-- Controls (50%) -->
+  <div style="flex: 0 0 50%; overflow-y: auto; padding-right: 12px;">
     <h3 style="margin-top: 0;">Submitted Values</h3>
-    <div id="l11-submit-log" style="font-family: monospace; font-size: 12px; height: 120px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 4px; margin-bottom: 16px;">
+    <div id="l11-submit-log" style="font-family: monospace; font-size: 12px; height: 90px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 4px; margin-bottom: 12px;">
       <em>Press Enter in single-line inputs to submit</em>
     </div>
 
-    <h3>Input Events</h3>
-    <div id="l11-event-log" style="font-family: monospace; font-size: 11px; height: 100px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 4px; margin-bottom: 16px;">
+    <h3 style="margin-top: 12px; margin-bottom: 8px;">Input Events</h3>
+    <div id="l11-event-log" style="font-family: monospace; font-size: 11px; height: 80px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 4px; margin-bottom: 12px;">
       <em>Click an input to focus, then type</em>
     </div>
 
-    <h3>Controls</h3>
-    <div style="display: flex; flex-direction: column; gap: 8px;">
-      <label style="display: flex; align-items: center; gap: 8px;">
-        <span style="min-width: 80px;">Font Size</span>
+    <h3 style="margin-top: 12px; margin-bottom: 8px;">Controls</h3>
+    <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px;">
+      <label style="display: flex; align-items: center; gap: 8px; font-size: 13px;">
+        <span style="min-width: 70px;">Font Size</span>
         <input type="range" id="l11-font-size" min="10" max="32" value="16" style="flex: 1;">
-        <span id="l11-font-size-val" style="min-width: 40px;">16px</span>
+        <span id="l11-font-size-val" style="min-width: 35px; text-align: right;">16px</span>
       </label>
-      <label style="display: flex; align-items: center; gap: 8px;">
-        <span style="min-width: 80px;">Input Width</span>
-        <input type="range" id="l11-input-width" min="100" max="550" value="350" style="flex: 1;">
-        <span id="l11-input-width-val" style="min-width: 40px;">350px</span>
+      <label style="display: flex; align-items: center; gap: 8px; font-size: 13px;">
+        <span style="min-width: 70px;">Input Width</span>
+        <input type="range" id="l11-input-width" min="100" max="450" value="350" style="flex: 1;">
+        <span id="l11-input-width-val" style="min-width: 35px; text-align: right;">350px</span>
       </label>
     </div>
 
-    <h3 style="margin-top: 16px;">Instructions</h3>
-    <ul style="font-size: 13px; padding-left: 16px; line-height: 1.6;">
+    <h3 style="margin-top: 12px; margin-bottom: 8px;">Instructions</h3>
+    <ul style="font-size: 12px; padding-left: 16px; line-height: 1.5; margin: 0;">
       <li>Click to position cursor</li>
       <li>Shift+Arrow to select</li>
       <li>Cmd/Ctrl+A to select all</li>

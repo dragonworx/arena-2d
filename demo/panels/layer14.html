@@ -1,126 +1,65 @@
-<style>
-  #l14-demo-container {
-    display: flex;
-    gap: 20px;
-    align-items: flex-start;
-  }
-  #l14-canvas-column {
-    flex: 1;
-  }
-  #l14-controls-column {
-    width: 300px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-  .control-group {
-    background: #1a1a2e;
-    border: 1px solid #333;
-    border-radius: 8px;
-    padding: 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-  .control-group h4 {
-    margin: 0 0 4px 0;
-    font-size: 13px;
-    color: #4a90d9;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-  .control-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 12px;
-    color: #ccc;
-  }
-  .btn {
-    background: #4a90d9;
-    color: white;
-    border: none;
-    padding: 6px 12px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 12px;
-    transition: background 0.2s;
-  }
-  .btn:hover {
-    background: #357abd;
-  }
-  .btn-danger {
-    background: #d9534f;
-  }
-  .btn-danger:hover {
-    background: #c9302c;
-  }
-  #l14-log {
-    background: #000;
-    color: #0f0;
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 11px;
-    padding: 8px;
-    border-radius: 4px;
-    height: 150px;
-    overflow-y: auto;
-    border: 1px solid #333;
-    margin-top: 12px;
-  }
-  .log-entry { margin-bottom: 4px; }
-  .log-warn { color: #ebcb8b; }
-  .log-error { color: #bf616a; }
-</style>
-
 <div class="main-header">
-  <h1>Layer 14 — Error Handling & Debug Mode</h1>
-  <p>Robust property guards, global debug mode, and memory management lifecycle.</p>
+  <h2>Layer 14 — Debug Mode & Stress test</h2>
+  <p>Verify robustness against invalid values, performance warnings, and memory management.</p>
 </div>
 
-<div id="l14-demo-container">
-  <div id="l14-canvas-column">
-    <div id="l14-canvas-wrap" class="card" style="padding: 0; overflow: hidden; display: inline-block; border: 1px solid #333;"></div>
-    
-    <div style="margin-top: 12px;">
-      <h4 style="font-size: 13px; color: #4a90d9; margin-bottom: 8px;">DEBUG CONSOLE</h4>
-      <div id="l14-log"></div>
-      <button class="btn" id="l14-clear-log" style="margin-top: 8px;">Clear Log</button>
-    </div>
+<div class="demo-layout">
+  <div class="demo-canvas-container">
+    <div id="scene-container" style="width: 100%; height: 500px; background: #1a1a1a; border-radius: 8px; border: 1px solid #333;"></div>
   </div>
 
-  <div id="l14-controls-column">
-    <!-- Global Debug Toggle -->
-    <div class="control-group">
-      <h4>Global Config</h4>
-      <div class="control-row">
-        <input type="checkbox" id="l14-debug-enable" checked>
-        <label for="l14-debug-enable">Enable Arena2D.debug</label>
+  <div class="demo-controls-sidebar">
+    <div class="card">
+      <h3>Global Settings</h3>
+      <div class="control-group">
+        <label>Debug Mode</label>
+        <div class="toggle-group">
+          <button id="debug-on" class="toggle-btn">ON</button>
+          <button id="debug-off" class="toggle-btn active">OFF</button>
+        </div>
       </div>
-      <p style="font-size: 11px; color: #666; margin: 0;">When enabled, invalid assignments and performance issues will be logged below.</p>
     </div>
 
-    <!-- Error Conventions -->
-    <div class="control-group">
-      <h4>Error Conventions</h4>
-      <button class="btn" id="l14-btn-nan">Assign NaN to properties</button>
-      <button class="btn" id="l14-btn-alpha">Set Alpha > 1.0 (Clamp)</button>
-      <button class="btn" id="l14-btn-scale">Set Scale = 0 (Epsilon)</button>
-      <button class="btn" id="l14-btn-size">Set Negative size (Min 0)</button>
+    <div class="card">
+      <h3>Stress Test</h3>
+      <div class="control-group">
+        <label>Element Count: <span id="count-val">0</span></label>
+        <input type="range" id="count-slider" min="0" max="2000" step="100" value="0">
+      </div>
+      <div class="control-group">
+        <label>Cache Group</label>
+        <div class="toggle-group">
+          <button id="cache-on" class="toggle-btn">ON</button>
+          <button id="cache-off" class="toggle-btn active">OFF</button>
+        </div>
+      </div>
+      <p class="hint">In Debug Mode, >500 elements without cache triggers a warning.</p>
     </div>
 
-    <!-- Performance Hints -->
-    <div class="control-group">
-      <h4>Performance Hints</h4>
-      <button class="btn" id="l14-btn-perf">Add 600 children (Warning)</button>
-      <button class="btn" id="l14-btn-cache">Toggle cacheAsBitmap</button>
+    <div class="card">
+      <h3>Error Conventions</h3>
+      <div class="button-grid">
+        <button id="btn-nan" class="btn">Set alpha = NaN</button>
+        <button id="btn-inf" class="btn">Set x = Infinity</button>
+        <button id="btn-zero-scale" class="btn">Set scale = 0</button>
+      </div>
     </div>
 
-    <!-- Memory Management -->
-    <div class="control-group">
-      <h4>Memory & Cleanup</h4>
-      <button class="btn btn-danger" id="l14-btn-stress">Run Stress Test (Leak?)</button>
-      <p style="font-size: 11px; color: #666; margin: 0;">Stress test creates and discards Scenes. GC warning will appear if not destroyed.</p>
+    <div class="card">
+      <h3>Memory Management</h3>
+      <div class="button-grid">
+        <button id="btn-destroy" class="btn btn-danger">Destroy Scene</button>
+        <button id="btn-reinit" class="btn">Re-init Scene</button>
+      </div>
+      <p class="hint">Check console after GC if Scene was leaked (requires Debug=ON).</p>
     </div>
 
+    <div class="card">
+      <h3>Debug Logs</h3>
+      <div id="debug-logs" style="font-family: monospace; font-size: 11px; color: #aaa; height: 150px; overflow-y: auto; background: #000; padding: 8px; border-radius: 4px;">
+        <div style="color: #666;">No logs yet...</div>
+      </div>
+      <button id="clear-logs" class="btn" style="margin-top: 8px; width: 100%;">Clear Logs</button>
+    </div>
   </div>
 </div>

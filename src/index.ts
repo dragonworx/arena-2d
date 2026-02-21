@@ -46,7 +46,7 @@ export { Vector } from "./geometry/Vector";
 export { Point } from "./geometry/Point";
 export { Ray } from "./geometry/Ray";
 export { Line } from "./geometry/Line";
-export { Rectangle } from "./geometry/Rectangle";
+export { Rectangle, Rectangle as Rect } from "./geometry/Rectangle";
 export { Circle } from "./geometry/Circle";
 export { Ellipse } from "./geometry/Ellipse";
 export { Polygon } from "./geometry/Polygon";
@@ -75,8 +75,8 @@ export { Ticker } from "./core/Ticker";
 // --- Layer 6: Rendering Wrapper (Arena2DContext) ---
 export type {
   FillStyle,
-  ITextStyle,
   IArena2DContext,
+  IRenderTextStyle,
 } from "./rendering/Arena2DContext";
 export { Arena2DContext, buildFontString } from "./rendering/Arena2DContext";
 
@@ -132,3 +132,7 @@ export { TextInput } from "./elements/TextInput";
 
 // --- Layer 12: Image & Nine-Slice ---
 export { Image } from "./elements/Image";
+
+// --- Layer 13: Scroll Containers ---
+export type { IScrollContainer } from "./elements/ScrollContainer";
+export { ScrollContainer } from "./elements/ScrollContainer";

@@ -9,12 +9,11 @@
  *
  * SPEC: §6.1–6.3
  */
-
 import { DirtyFlags } from "../core/DirtyFlags";
 import { Element } from "../core/Element";
 import type {
   IArena2DContext,
-  ITextStyle as IRenderTextStyle,
+  IRenderTextStyle,
 } from "../rendering/Arena2DContext";
 import {
   type ITextLayout,

@@ -2,7 +2,7 @@ import { describe, expect, mock, test } from "bun:test";
 import { Element } from "../src/core/Element";
 import {
   Arena2DContext,
-  type ITextStyle,
+  type IRenderTextStyle,
   buildFontString,
 } from "../src/rendering/Arena2DContext";
 
@@ -433,7 +433,7 @@ describe("Arena2DContext — text", () => {
     const mockCtx = createMockCtx();
     const uiCtx = new Arena2DContext(mockCtx);
 
-    const style: ITextStyle = {
+    const style: IRenderTextStyle = {
       fontSize: 16,
       fontFamily: "Arial",
       fontWeight: "bold",

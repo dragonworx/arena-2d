@@ -111,6 +111,9 @@ export interface IElement {
   // biome-ignore lint/suspicious/noExplicitAny: Arena2DContext type defined in Layer 6
   paint(ctx: any): void;
 
+  /** @internal Returns the matrix that children should use as their parent matrix. */
+  getWorldMatrixForChildren(): MatrixArray;
+
   // Disposal
   destroy(): void;
 }
@@ -220,11 +223,12 @@ export class Element extends EventEmitter implements IElement {
     return this._x;
   }
   set x(value: number) {
-    if (Arena2D.debug && Number.isNaN(value)) {
-      console.warn(`Arena2D: [${this.id}] x set to NaN`);
+    if (Arena2D.debug && !Number.isFinite(value)) {
+      console.warn(`Arena2D: [${this.id}] x set to ${value}`);
     }
-    if (this._x !== value) {
-      this._x = value;
+    const safeValue = Number.isFinite(value) ? value : this._x;
+    if (this._x !== safeValue) {
+      this._x = safeValue;
       this.invalidate(DirtyFlags.Transform);
     }
   }
@@ -233,11 +237,12 @@ export class Element extends EventEmitter implements IElement {
     return this._y;
   }
   set y(value: number) {
-    if (Arena2D.debug && Number.isNaN(value)) {
-      console.warn(`Arena2D: [${this.id}] y set to NaN`);
+    if (Arena2D.debug && !Number.isFinite(value)) {
+      console.warn(`Arena2D: [${this.id}] y set to ${value}`);
     }
-    if (this._y !== value) {
-      this._y = value;
+    const safeValue = Number.isFinite(value) ? value : this._y;
+    if (this._y !== safeValue) {
+      this._y = safeValue;
       this.invalidate(DirtyFlags.Transform);
     }
   }
@@ -246,11 +251,12 @@ export class Element extends EventEmitter implements IElement {
     return this._rotation;
   }
   set rotation(value: number) {
-    if (Arena2D.debug && Number.isNaN(value)) {
-      console.warn(`Arena2D: [${this.id}] rotation set to NaN`);
+    if (Arena2D.debug && !Number.isFinite(value)) {
+      console.warn(`Arena2D: [${this.id}] rotation set to ${value}`);
     }
-    if (this._rotation !== value) {
-      this._rotation = value;
+    const safeValue = Number.isFinite(value) ? value : this._rotation;
+    if (this._rotation !== safeValue) {
+      this._rotation = safeValue;
       this.invalidate(DirtyFlags.Transform);
     }
   }
@@ -259,10 +265,12 @@ export class Element extends EventEmitter implements IElement {
     return this._scaleX;
   }
   set scaleX(value: number) {
-    if (Arena2D.debug && Number.isNaN(value)) {
-      console.warn(`Arena2D: [${this.id}] scaleX set to NaN`);
+    if (Arena2D.debug && !Number.isFinite(value)) {
+      console.warn(`Arena2D: [${this.id}] scaleX set to ${value}`);
     }
-    const safeValue = value === 0 ? Number.EPSILON : value;
+    let safeValue = Number.isFinite(value) ? value : this._scaleX;
+    if (safeValue === 0) safeValue = Number.EPSILON;
+
     if (this._scaleX !== safeValue) {
       this._scaleX = safeValue;
       this.invalidate(DirtyFlags.Transform);
@@ -273,10 +281,12 @@ export class Element extends EventEmitter implements IElement {
     return this._scaleY;
   }
   set scaleY(value: number) {
-    if (Arena2D.debug && Number.isNaN(value)) {
-      console.warn(`Arena2D: [${this.id}] scaleY set to NaN`);
+    if (Arena2D.debug && !Number.isFinite(value)) {
+      console.warn(`Arena2D: [${this.id}] scaleY set to ${value}`);
     }
-    const safeValue = value === 0 ? Number.EPSILON : value;
+    let safeValue = Number.isFinite(value) ? value : this._scaleY;
+    if (safeValue === 0) safeValue = Number.EPSILON;
+
     if (this._scaleY !== safeValue) {
       this._scaleY = safeValue;
       this.invalidate(DirtyFlags.Transform);
@@ -287,11 +297,12 @@ export class Element extends EventEmitter implements IElement {
     return this._skewX;
   }
   set skewX(value: number) {
-    if (Arena2D.debug && Number.isNaN(value)) {
-      console.warn(`Arena2D: [${this.id}] skewX set to NaN`);
+    if (Arena2D.debug && !Number.isFinite(value)) {
+      console.warn(`Arena2D: [${this.id}] skewX set to ${value}`);
     }
-    if (this._skewX !== value) {
-      this._skewX = value;
+    const safeValue = Number.isFinite(value) ? value : this._skewX;
+    if (this._skewX !== safeValue) {
+      this._skewX = safeValue;
       this.invalidate(DirtyFlags.Transform);
     }
   }
@@ -300,11 +311,12 @@ export class Element extends EventEmitter implements IElement {
     return this._skewY;
   }
   set skewY(value: number) {
-    if (Arena2D.debug && Number.isNaN(value)) {
-      console.warn(`Arena2D: [${this.id}] skewY set to NaN`);
+    if (Arena2D.debug && !Number.isFinite(value)) {
+      console.warn(`Arena2D: [${this.id}] skewY set to ${value}`);
     }
-    if (this._skewY !== value) {
-      this._skewY = value;
+    const safeValue = Number.isFinite(value) ? value : this._skewY;
+    if (this._skewY !== safeValue) {
+      this._skewY = safeValue;
       this.invalidate(DirtyFlags.Transform);
     }
   }
@@ -313,11 +325,12 @@ export class Element extends EventEmitter implements IElement {
     return this._pivotX;
   }
   set pivotX(value: number) {
-    if (Arena2D.debug && Number.isNaN(value)) {
-      console.warn(`Arena2D: [${this.id}] pivotX set to NaN`);
+    if (Arena2D.debug && !Number.isFinite(value)) {
+      console.warn(`Arena2D: [${this.id}] pivotX set to ${value}`);
     }
-    if (this._pivotX !== value) {
-      this._pivotX = value;
+    const safeValue = Number.isFinite(value) ? value : this._pivotX;
+    if (this._pivotX !== safeValue) {
+      this._pivotX = safeValue;
       this.invalidate(DirtyFlags.Transform);
     }
   }
@@ -326,11 +339,12 @@ export class Element extends EventEmitter implements IElement {
     return this._pivotY;
   }
   set pivotY(value: number) {
-    if (Arena2D.debug && Number.isNaN(value)) {
-      console.warn(`Arena2D: [${this.id}] pivotY set to NaN`);
+    if (Arena2D.debug && !Number.isFinite(value)) {
+      console.warn(`Arena2D: [${this.id}] pivotY set to ${value}`);
     }
-    if (this._pivotY !== value) {
-      this._pivotY = value;
+    const safeValue = Number.isFinite(value) ? value : this._pivotY;
+    if (this._pivotY !== safeValue) {
+      this._pivotY = safeValue;
       this.invalidate(DirtyFlags.Transform);
     }
   }
@@ -341,10 +355,10 @@ export class Element extends EventEmitter implements IElement {
     return this._width;
   }
   set width(value: number) {
-    if (Arena2D.debug && Number.isNaN(value)) {
-      console.warn(`Arena2D: [${this.id}] width set to NaN`);
+    if (Arena2D.debug && !Number.isFinite(value)) {
+      console.warn(`Arena2D: [${this.id}] width set to ${value}`);
     }
-    const safeValue = Math.max(0, value || 0);
+    const safeValue = Math.max(0, Number.isFinite(value) ? value : this._width);
     if (this._width !== safeValue) {
       this._width = safeValue;
       this.invalidate(DirtyFlags.Visual);
@@ -356,10 +370,10 @@ export class Element extends EventEmitter implements IElement {
     return this._height;
   }
   set height(value: number) {
-    if (Arena2D.debug && Number.isNaN(value)) {
-      console.warn(`Arena2D: [${this.id}] height set to NaN`);
+    if (Arena2D.debug && !Number.isFinite(value)) {
+      console.warn(`Arena2D: [${this.id}] height set to ${value}`);
     }
-    const safeValue = Math.max(0, value || 0);
+    const safeValue = Math.max(0, Number.isFinite(value) ? value : this._height);
     if (this._height !== safeValue) {
       this._height = safeValue;
       this.invalidate(DirtyFlags.Visual);
@@ -409,8 +423,8 @@ export class Element extends EventEmitter implements IElement {
     return this._alpha;
   }
   set alpha(value: number) {
-    if (Arena2D.debug && Number.isNaN(value)) {
-      console.warn(`Arena2D: [${this.id}] alpha set to NaN`);
+    if (Arena2D.debug && !Number.isFinite(value)) {
+      console.warn(`Arena2D: [${this.id}] alpha set to ${value}`);
     }
     const clamped = clamp(value || 0, 0, 1);
     if (this._alpha !== clamped) {
@@ -540,7 +554,7 @@ export class Element extends EventEmitter implements IElement {
       // Compute worldMatrix = parent.worldMatrix × localMatrix
       if (this.parent && "worldMatrix" in this.parent) {
         this.worldMatrix = multiply(
-          (this.parent as IElement).worldMatrix,
+          (this.parent as IElement).getWorldMatrixForChildren(),
           this.localMatrix,
         );
       } else {
@@ -552,6 +566,15 @@ export class Element extends EventEmitter implements IElement {
       // Clear transform flag
       this._dirtyFlags &= ~DirtyFlags.Transform;
     }
+  }
+
+  /**
+   * Returns the matrix that children should use as their parent matrix.
+   * Default implementation returns this.worldMatrix.
+   * ScrollContainer overrides this to include scroll offset.
+   */
+  getWorldMatrixForChildren(): MatrixArray {
+    return this.worldMatrix;
   }
 
   /**

@@ -9,7 +9,7 @@
  */
 
 import {
-  type ITextStyle as IRenderTextStyle,
+  type IRenderTextStyle,
   buildFontString,
 } from "../rendering/Arena2DContext";
 

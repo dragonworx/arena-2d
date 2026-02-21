@@ -256,13 +256,9 @@ export class Container extends Element implements IContainer {
    * Recursively mark all descendants with Transform dirty.
    */
   private _cascadeTransform(): void {
-    // Get interaction manager once for the entire cascade
-    const scene = this.scene as {
-      invalidateHitBuffer?: () => void;
-      interaction?: { markSpatialDirty?: (el: IElement) => void };
-    } | null;
-    const markDirty = scene?.interaction?.markSpatialDirty;
-    const invalidateHit = scene?.invalidateHitBuffer;
+    const scene = this.scene as any;
+    const markDirty = scene?.interaction?.markSpatialDirty?.bind(scene.interaction);
+    const invalidateHit = scene?.invalidateHitBuffer?.bind(scene);
 
     this._cascadeTransformInner(markDirty, invalidateHit);
   }

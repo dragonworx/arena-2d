@@ -11,7 +11,18 @@ export default async function (Arena2D) {
 
   // ── Create Scene ──
   const sceneContainer = document.getElementById("l11-canvas-wrap");
-  const scene = new Scene(sceneContainer, 600, 600);
+
+  // Get responsive dimensions from container
+  const getCanvasDims = () => {
+    const rect = sceneContainer.getBoundingClientRect();
+    return {
+      width: Math.max(300, Math.min(500, rect.width - 20)),
+      height: Math.max(300, Math.min(500, rect.height - 20))
+    };
+  };
+
+  const dims = getCanvasDims();
+  const scene = new Scene(sceneContainer, dims.width, dims.height);
 
   // Helper to log events
   function logEvent(msg) {
@@ -54,7 +65,9 @@ export default async function (Arena2D) {
 
   // ── Create inputs ──
 
-  let inputWidth = 350;
+  let canvasWidth = dims.width;
+  let canvasHeight = dims.height;
+  let inputWidth = Math.min(350, canvasWidth - 80);
   const inputPadding = 8;
   const inputHeight = 32;
   const labelStyle = { fontSize: 13, color: "#888899" };
