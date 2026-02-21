@@ -58,6 +58,7 @@ export default async function (ArenaUI) {
   // ── Controls ──
 
   // Debug Toggle
+  Arena2D.debug = true;
   const debugToggle = document.getElementById("l14-debug-enable");
   debugToggle.checked = Arena2D.debug;
   debugToggle.onchange = (e) => {
