@@ -39,6 +39,8 @@ export class Container extends Element implements IContainer {
   private _cacheValid = false;
   private _cacheOffsetX = 0;
   private _cacheOffsetY = 0;
+  private _cacheLogicalW = 0;
+  private _cacheLogicalH = 0;
 
   get children(): ReadonlyArray<IElement> {
     return this._children;
@@ -340,7 +342,7 @@ export class Container extends Element implements IContainer {
       // because the Scene has already applied our world transform.
       // However, the cache might have an offset if the children's bounds
       // don't start at (0,0).
-      ctx.drawImage(this._cacheCanvas, this._cacheOffsetX, this._cacheOffsetY);
+      ctx.drawImage(this._cacheCanvas, this._cacheOffsetX, this._cacheOffsetY, this._cacheLogicalW, this._cacheLogicalH);
     }
   }
 
@@ -370,9 +372,11 @@ export class Container extends Element implements IContainer {
    * @internal
    * Set the cache offset and mark as valid.
    */
-  _setCacheResult(offsetX: number, offsetY: number): void {
+  _setCacheResult(offsetX: number, offsetY: number, logicalW: number, logicalH: number): void {
     this._cacheOffsetX = offsetX;
     this._cacheOffsetY = offsetY;
+    this._cacheLogicalW = logicalW;
+    this._cacheLogicalH = logicalH;
     this._cacheValid = true;
   }
 

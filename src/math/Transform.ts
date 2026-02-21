@@ -1,8 +1,20 @@
 /**
- * ITransform interface and concrete Transform class.
+ * 2D Affine Transformation system.
  *
  * Composes the local matrix as:
- *   T(x, y) × R(rotation) × S(scaleX, scaleY) × T(-pivotX, -pivotY)
+ * `Translate(x, y) × Rotate(rotation) × Skew(skewX, skewY) × Scale(scaleX, scaleY) × Translate(-pivotX, -pivotY)`
+ *
+ * @module Math
+ * @example
+ * ```typescript
+ * import { Transform } from 'arena-2d';
+ *
+ * const transform = new Transform();
+ * transform.x = 100;
+ * transform.y = 50;
+ * transform.rotation = Math.PI / 4;
+ * transform.updateLocalMatrix();
+ * ```
  */
 
 import {
@@ -15,38 +27,48 @@ import {
   translate,
 } from "./matrix";
 
-/** Transform properties for 2D affine positioning. */
+/**
+ * Interface for 2D transform properties and operations.
+ */
 export interface ITransform {
+  /** The 6-element local transformation matrix. */
   localMatrix: MatrixArray;
+  /** The 6-element world transformation matrix (accumulated through parent chain). */
   worldMatrix: MatrixArray;
+  /** The X coordinate of the transform origin in parent space. */
   x: number;
+  /** The Y coordinate of the transform origin in parent space. */
   y: number;
-  /** Rotation in radians, clockwise. */
+  /** The rotation angle in radians, clockwise. */
   rotation: number;
-  /** Horizontal scale. Default: 1. Must not be 0. */
+  /** Horizontal scale factor. Default: 1. Must not be 0. */
   scaleX: number;
-  /** Vertical scale. Default: 1. Must not be 0. */
+  /** Vertical scale factor. Default: 1. Must not be 0. */
   scaleY: number;
-  /** Horizontal skew in radians. Default: 0. */
+  /** Horizontal skew angle in radians. Default: 0. */
   skewX: number;
-  /** Vertical skew in radians. Default: 0. */
+  /** Vertical skew angle in radians. Default: 0. */
   skewY: number;
-  /** Local-space pivot X. Default: 0. */
+  /** The X coordinate of the local pivot point. Default: 0. */
   pivotX: number;
-  /** Local-space pivot Y. Default: 0. */
+  /** The Y coordinate of the local pivot point. Default: 0. */
   pivotY: number;
-  /** Recompute localMatrix from current property values. */
+  /**
+   * Recomputes the local matrix from the current property values.
+   */
   updateLocalMatrix(): void;
 }
 
 /**
- * Concrete Transform implementation.
+ * Concrete implementation of a 2D transform.
  *
- * Tracks transform properties and composes them into a local matrix.
- * The worldMatrix is computed as parentWorldMatrix × localMatrix.
+ * It manages individual properties (position, rotation, scale, skew, pivot)
+ * and composes them into a single affine transformation matrix.
  */
 export class Transform implements ITransform {
+  /** @inheritdoc */
   localMatrix: MatrixArray = identity();
+  /** @inheritdoc */
   worldMatrix: MatrixArray = identity();
 
   private _x = 0;
@@ -60,6 +82,7 @@ export class Transform implements ITransform {
   private _pivotY = 0;
   private _dirty = true;
 
+  /** The X coordinate of the transform origin in parent space. */
   get x(): number {
     return this._x;
   }
@@ -70,6 +93,7 @@ export class Transform implements ITransform {
     }
   }
 
+  /** The Y coordinate of the transform origin in parent space. */
   get y(): number {
     return this._y;
   }
@@ -80,6 +104,7 @@ export class Transform implements ITransform {
     }
   }
 
+  /** The rotation angle in radians, clockwise. */
   get rotation(): number {
     return this._rotation;
   }
@@ -90,6 +115,7 @@ export class Transform implements ITransform {
     }
   }
 
+  /** Horizontal scale factor. Default: 1. */
   get scaleX(): number {
     return this._scaleX;
   }
@@ -100,6 +126,7 @@ export class Transform implements ITransform {
     }
   }
 
+  /** Vertical scale factor. Default: 1. */
   get scaleY(): number {
     return this._scaleY;
   }
@@ -110,6 +137,7 @@ export class Transform implements ITransform {
     }
   }
 
+  /** Horizontal skew angle in radians. Default: 0. */
   get skewX(): number {
     return this._skewX;
   }
@@ -120,6 +148,7 @@ export class Transform implements ITransform {
     }
   }
 
+  /** Vertical skew angle in radians. Default: 0. */
   get skewY(): number {
     return this._skewY;
   }
@@ -130,6 +159,7 @@ export class Transform implements ITransform {
     }
   }
 
+  /** The X coordinate of the local pivot point. Default: 0. */
   get pivotX(): number {
     return this._pivotX;
   }
@@ -140,6 +170,7 @@ export class Transform implements ITransform {
     }
   }
 
+  /** The Y coordinate of the local pivot point. Default: 0. */
   get pivotY(): number {
     return this._pivotY;
   }
@@ -150,15 +181,18 @@ export class Transform implements ITransform {
     }
   }
 
-  /** Returns true if transform properties have changed since last updateLocalMatrix(). */
+  /**
+   * Returns true if any transform properties have changed since the last matrix update.
+   */
   get isDirty(): boolean {
     return this._dirty;
   }
 
   /**
-   * Recompute the local matrix from current property values.
+   * Recomputes the local matrix from the current property values.
    *
-   * Composition: T(x, y) × R(rotation) × S(scaleX, scaleY) × T(-pivotX, -pivotY)
+   * Composition order:
+   * `Translate(x, y) × Rotate(rotation) × Skew(skewX, skewY) × Scale(scaleX, scaleY) × Translate(-pivotX, -pivotY)`
    *
    * The pivot point (pivotX, pivotY) in local space always maps to (x, y) in parent space.
    */
@@ -180,8 +214,11 @@ export class Transform implements ITransform {
   }
 
   /**
-   * Update the world matrix given a parent's world matrix.
-   * worldMatrix = parentWorldMatrix × localMatrix
+   * Updates the world matrix given a parent's world matrix.
+   *
+   * Result: `worldMatrix = parentWorldMatrix × localMatrix`
+   *
+   * @param parentWorldMatrix - The cumulative transformation of the parent element.
    */
   updateWorldMatrix(parentWorldMatrix: MatrixArray): void {
     if (this._dirty) {

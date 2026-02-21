@@ -1,0 +1,26 @@
+# JSDoc Documentation Task
+
+- [ ] Planning and Layer Categorization [/]
+- [x] Layer 1: Math & Geometry
+    - [x] `src/math/*`
+    - [x] `src/geometry/*`
+- [x] Layer 2: Events & Core
+    - [x] `src/events/*`
+    - [x] [src/core/DirtyFlags.ts](file:///Users/alichamas/dev/arena-2d/src/core/DirtyFlags.ts)
+    - [x] [src/core/Element.ts](file:///Users/alichamas/dev/arena-2d/src/core/Element.ts)
+    - [x] [src/core/Container.ts](file:///Users/alichamas/dev/arena-2d/src/core/Container.ts)
+- [x] Layer 3: System Management
+    - [x] [src/core/Ticker.ts](file:///Users/alichamas/dev/arena-2d/src/core/Ticker.ts)
+    - [x] [src/core/Scene.ts](file:///Users/alichamas/dev/arena-2d/src/core/Scene.ts)
+    - [x] [src/core/Layer.ts](file:///Users/alichamas/dev/arena-2d/src/core/Layer.ts)
+    - [x] [src/core/View.ts](file:///Users/alichamas/dev/arena-2d/src/core/View.ts)
+- [x] Layer 4: Rendering & Layout (partial - key files documented)
+    - [x] `src/rendering/Arena2DContext.ts`
+    - [x] `src/layout/Style.ts`
+- [x] Layer 5: Interaction & UI Elements (key classes documented)
+    - [x] `src/interaction/DragManager.ts`
+    - [x] `src/interaction/SpatialHashGrid.ts`
+    - [x] `src/interaction/InteractionManager.ts`
+    - [x] `src/elements/ScrollContainer.ts`
+    - [x] `src/text/TextLayout.ts`
+- [ ] Final Review & TypeDoc Verification

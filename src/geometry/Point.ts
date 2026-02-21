@@ -1,6 +1,18 @@
 /**
  * Point geometry primitive.
- * A point is a single location in space with optional transforms.
+ *
+ * Represents a single point in space. Though a point has no area or perimeter,
+ * it can be transformed (translated, rotated, etc.) through the scene graph.
+ *
+ * @module Geometry
+ * @example
+ * ```typescript
+ * import { Point } from 'arena-2d';
+ *
+ * const pt = new Point(10, 10);
+ * pt.x = 100; // Position origin at 100
+ * console.log(pt.distanceTo(110, 10)); // Distance from local point to world point
+ * ```
  */
 
 import { Geometry } from './Geometry';
@@ -8,21 +20,31 @@ import type { IRect } from '../math/aabb';
 import type { IPoint } from './types';
 
 export class Point extends Geometry implements IPoint {
+  /** @inheritdoc */
   readonly type = 'point';
 
+  /** The X coordinate in local space. */
   px: number = 0;
+  /** The Y coordinate in local space. */
   py: number = 0;
 
+  /**
+   * Creates a new Point.
+   * @param px - Local X coordinate.
+   * @param py - Local Y coordinate.
+   */
   constructor(px: number = 0, py: number = 0) {
     super();
     this.px = px;
     this.py = py;
   }
 
+  /** @inheritdoc */
   protected getLocalBounds(): IRect {
     return { x: this.px, y: this.py, width: 0, height: 0 };
   }
 
+  /** @inheritdoc */
   distanceTo(x: number, y: number): number {
     const local = this.worldToLocal(x, y);
     const dx = local.x - this.px;
@@ -30,10 +52,12 @@ export class Point extends Geometry implements IPoint {
     return Math.sqrt(dx * dx + dy * dy);
   }
 
+  /** @inheritdoc */
   closestPointTo(x: number, y: number): { x: number; y: number } {
     return this.localToWorld(this.px, this.py);
   }
 
+  /** @inheritdoc */
   intersectsLine(x1: number, y1: number, x2: number, y2: number): Array<{ x: number; y: number }> {
     // A point can only intersect a line if it lies on the line
     const local1 = this.worldToLocal(x1, y1);
@@ -67,6 +91,7 @@ export class Point extends Geometry implements IPoint {
     return [];
   }
 
+  /** @inheritdoc */
   intersectsShape(shape: any): Array<{ x: number; y: number }> {
     // A point can only intersect a shape if it's contained within it
     const worldPt = this.localToWorld(this.px, this.py);
@@ -76,27 +101,33 @@ export class Point extends Geometry implements IPoint {
     return [];
   }
 
+  /** @inheritdoc */
   containsPoint(x: number, y: number): boolean {
     const local = this.worldToLocal(x, y);
     return Math.abs(local.x - this.px) < 1e-6 && Math.abs(local.y - this.py) < 1e-6;
   }
 
+  /** @inheritdoc */
   get area(): number {
     return 0;
   }
 
+  /** @inheritdoc */
   get perimeter(): number {
     return 0;
   }
 
+  /** @inheritdoc */
   pointAt(t: number): { x: number; y: number } {
     return this.localToWorld(this.px, this.py);
   }
 
+  /** @inheritdoc */
   tangentAt(t: number): { x: number; y: number } {
     return { x: 0, y: 0 };
   }
 
+  /** @inheritdoc */
   get centroid(): { x: number; y: number } {
     return this.localToWorld(this.px, this.py);
   }

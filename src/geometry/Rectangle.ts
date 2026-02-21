@@ -1,19 +1,47 @@
 /**
  * Rectangle geometry primitive.
+ *
+ * Represents an axis-aligned rectangle in local space, defined by a top-left
+ * corner `(rectX, rectY)` and dimensions `(width, height)`.
+ *
+ * @module Geometry
+ * @example
+ * ```typescript
+ * import { Rectangle } from 'arena-2d';
+ *
+ * const rect = new Rectangle(0, 0, 200, 100);
+ * rect.rotation = Math.PI / 4; // Rotate the rectangle
+ * console.log(rect.containsPoint(50, 50)); // Hit test in world space
+ * ```
  */
 
 import { Geometry } from './Geometry';
 import type { IRect } from '../math/aabb';
 import type { IRectangle } from './types';
 
+/**
+ * Concrete implementation of a rectangle.
+ */
 export class Rectangle extends Geometry implements IRectangle {
+  /** @inheritdoc */
   readonly type = 'rectangle';
 
+  /** The top-left X coordinate in local space. */
   rectX: number = 0;
+  /** The top-left Y coordinate in local space. */
   rectY: number = 0;
+  /** The width of the rectangle. */
   width: number = 1;
+  /** The height of the rectangle. */
   height: number = 1;
 
+  /**
+   * Creates a new Rectangle.
+   * @param rectX - Local X.
+   * @param rectY - Local Y.
+   * @param width - The width.
+   * @param height - The height.
+   */
   constructor(rectX: number = 0, rectY: number = 0, width: number = 1, height: number = 1) {
     super();
     this.rectX = rectX;
@@ -22,6 +50,7 @@ export class Rectangle extends Geometry implements IRectangle {
     this.height = Math.max(height, Number.EPSILON);
   }
 
+  /** @inheritdoc */
   protected getLocalBounds(): IRect {
     return {
       x: this.rectX,
@@ -31,6 +60,7 @@ export class Rectangle extends Geometry implements IRectangle {
     };
   }
 
+  /** @inheritdoc */
   distanceTo(x: number, y: number): number {
     const local = this.worldToLocal(x, y);
     const x1 = this.rectX;
@@ -43,6 +73,7 @@ export class Rectangle extends Geometry implements IRectangle {
     return Math.sqrt(dx * dx + dy * dy);
   }
 
+  /** @inheritdoc */
   closestPointTo(x: number, y: number): { x: number; y: number } {
     const local = this.worldToLocal(x, y);
     const x1 = this.rectX;
@@ -55,6 +86,7 @@ export class Rectangle extends Geometry implements IRectangle {
     return this.localToWorld(cx, cy);
   }
 
+  /** @inheritdoc */
   intersectsLine(x1: number, y1: number, x2: number, y2: number): Array<{ x: number; y: number }> {
     const local1 = this.worldToLocal(x1, y1);
     const local2 = this.worldToLocal(x2, y2);
@@ -87,6 +119,11 @@ export class Rectangle extends Geometry implements IRectangle {
     return unique.map(pt => this.localToWorld(pt.x, pt.y));
   }
 
+  /**
+   * Helper to check intersection between two line segments.
+   *
+   * @private
+   */
   private checkLineSegmentIntersection(
     p1: { x: number; y: number },
     p2: { x: number; y: number },
@@ -113,6 +150,7 @@ export class Rectangle extends Geometry implements IRectangle {
     }
   }
 
+  /** @inheritdoc */
   intersectsShape(shape: any): Array<{ x: number; y: number }> {
     // Simple approach: sample the shape and check containment
     const results: Array<{ x: number; y: number }> = [];
@@ -126,6 +164,7 @@ export class Rectangle extends Geometry implements IRectangle {
     return results;
   }
 
+  /** @inheritdoc */
   containsPoint(x: number, y: number): boolean {
     const local = this.worldToLocal(x, y);
     return (
@@ -136,18 +175,21 @@ export class Rectangle extends Geometry implements IRectangle {
     );
   }
 
+  /** @inheritdoc */
   get area(): number {
     const sx = Math.abs(this.scaleX);
     const sy = Math.abs(this.scaleY);
     return this.width * this.height * sx * sy;
   }
 
+  /** @inheritdoc */
   get perimeter(): number {
     const sx = Math.abs(this.scaleX);
     const sy = Math.abs(this.scaleY);
     return 2 * (this.width * sx + this.height * sy);
   }
 
+  /** @inheritdoc */
   pointAt(t: number): { x: number; y: number } {
     const perimeter = 2 * (this.width + this.height);
     const distance = (t % 1) * perimeter;
@@ -174,6 +216,7 @@ export class Rectangle extends Geometry implements IRectangle {
     return this.localToWorld(this.rectX, this.rectY + this.height - (distance - d - this.width));
   }
 
+  /** @inheritdoc */
   tangentAt(t: number): { x: number; y: number } {
     const perimeter = 2 * (this.width + this.height);
     const distance = (t % 1) * perimeter;
@@ -190,6 +233,7 @@ export class Rectangle extends Geometry implements IRectangle {
     return this.transformVector(0, -1);
   }
 
+  /** @inheritdoc */
   get centroid(): { x: number; y: number } {
     const cx = this.rectX + this.width / 2;
     const cy = this.rectY + this.height / 2;

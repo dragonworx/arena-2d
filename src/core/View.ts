@@ -11,8 +11,14 @@ import {
   type IInteractionManager,
   InteractionManager,
 } from "../interaction/InteractionManager";
+import {
+  type IRect,
+  computeAABB,
+  intersect,
+  rectIntersection,
+} from "../math/aabb";
 import { Arena2DContext } from "../rendering/Arena2DContext";
-import { Container, type IContainer } from "./Container";
+import type { Container, IContainer } from "./Container";
 import { DirtyFlags } from "./DirtyFlags";
 import type { IElement } from "./Element";
 import { type ILayer, Layer } from "./Layer";
@@ -96,6 +102,9 @@ export class View implements IView {
   private _dprMediaQuery: MediaQueryList | null = null;
   private _resizeObserver: ResizeObserver | null = null;
   private _isDestroyed = false;
+
+  // Frustum for the current frame (shared between render and hit buffer paths)
+  private _frustum: IRect | null = null;
 
   // Inertia state
   private _inertiaEnabled: boolean;
@@ -271,6 +280,15 @@ export class View implements IView {
 
   get projections(): IProjection[] {
     return this._projections;
+  }
+
+  /**
+   * The current view frustum in scene (world) space, computed each frame.
+   * Returns null if the view has no meaningful dimensions.
+   * @internal Used by Scene for hit buffer culling.
+   */
+  get frustum(): IRect | null {
+    return this._frustum;
   }
 
   // ── Layer Management ──
@@ -468,8 +486,21 @@ export class View implements IView {
       layer.render();
     }
 
+    // Compute view frustum in scene (world) space for culling.
+    // Skip frustum culling when the view has no meaningful dimensions
+    // (e.g. test environments with mock containers).
+    this._frustum =
+      this._width > 0 && this._height > 0
+        ? {
+            x: -this._panX / this._zoom,
+            y: -this._panY / this._zoom,
+            width: this._width / this._zoom,
+            height: this._height / this._zoom,
+          }
+        : null;
+
     // Paint elements to their layers in scene-graph order
-    this._paintRecursive(this.scene.root as IElement);
+    this._paintRecursive(this.scene.root as IElement, this._frustum);
 
     // Update hit buffer
     (this.scene as any)._updateHitBuffer(this);
@@ -514,8 +545,14 @@ export class View implements IView {
 
   /**
    * Recursively paint element and descendants to their assigned layers.
+   * Uses frustum culling to skip elements outside the visible area.
+   *
+   * @param element - The element to paint.
+   * @param frustum - The visible region in world (scene) space. Elements whose
+   *   world-space AABB does not intersect this rect are skipped. For clipped
+   *   containers the frustum is narrowed to the clip region intersection.
    */
-  private _paintRecursive(element: IElement): void {
+  private _paintRecursive(element: IElement, frustum: IRect | null): void {
     if (!element.visible || element.alpha <= 0) return;
     if (element.display === "hidden") return;
 
@@ -524,6 +561,30 @@ export class View implements IView {
 
     const isContainer = "children" in element;
     const container = isContainer ? (element as Container) : null;
+
+    // ── Frustum culling ──
+    // For clipped containers, compute the clip region AABB once and reuse it
+    // both for culling the container itself and for narrowing the child frustum.
+    let clipWorldAABB: IRect | null = null;
+
+    if (frustum) {
+      if (container?.clipContent) {
+        // Clipped container: cull if clip region is entirely outside frustum
+        clipWorldAABB = computeAABB(
+          { x: 0, y: 0, width: container.width, height: container.height },
+          container.worldMatrix,
+        );
+        if (!intersect(clipWorldAABB, frustum)) return;
+      } else if (!container) {
+        // Leaf element: cull if world AABB is entirely outside frustum
+        const bounds = element.localBounds;
+        if (bounds.width > 0 || bounds.height > 0) {
+          const worldAABB = computeAABB(bounds, element.worldMatrix);
+          if (!intersect(worldAABB, frustum)) return;
+        }
+      }
+      // Non-clipped containers: always recurse (children can extend beyond)
+    }
 
     // Handle cacheAsBitmap
     if (container && container.cacheAsBitmap) {
@@ -573,29 +634,39 @@ export class View implements IView {
     if (container) {
       if (container.clipContent) {
         layer.ctx.save();
-        const m = container.worldMatrix;
-        const dpr = this._dpr;
-        const z = this._zoom;
-        const px = this._panX;
-        const py = this._panY;
+        const cm = container.worldMatrix;
         layer.ctx.setTransform(
-          dpr * z * m[0],
-          dpr * z * m[1],
-          dpr * z * m[2],
-          dpr * z * m[3],
-          dpr * (z * m[4] + px),
-          dpr * (z * m[5] + py),
+          dpr * z * cm[0],
+          dpr * z * cm[1],
+          dpr * z * cm[2],
+          dpr * z * cm[3],
+          dpr * (z * cm[4] + px),
+          dpr * (z * cm[5] + py),
         );
         layer.ctx.beginPath();
         layer.ctx.rect(0, 0, container.width, container.height);
         layer.ctx.clip();
       }
 
+      // Narrow frustum for children of clipped containers
+      let childFrustum = frustum;
+      if (container.clipContent) {
+        if (!clipWorldAABB) {
+          clipWorldAABB = computeAABB(
+            { x: 0, y: 0, width: container.width, height: container.height },
+            container.worldMatrix,
+          );
+        }
+        childFrustum = frustum
+          ? rectIntersection(frustum, clipWorldAABB)
+          : clipWorldAABB;
+      }
+
       const sortedChildren = Array.from(container.children).sort(
         (a, b) => a.zIndex - b.zIndex,
       );
       for (const child of sortedChildren) {
-        this._paintRecursive(child);
+        this._paintRecursive(child, childFrustum);
       }
 
       if (container.clipContent) {
@@ -606,9 +677,18 @@ export class View implements IView {
 
   /**
    * Paint all interactive elements to the hit buffer using unique colors.
-   * Called by Scene._updateHitBuffer.
+   * Called by Scene._updateHitBuffer. Applies the same frustum culling as
+   * the render path — off-screen elements cannot be hit so are safely skipped.
+   *
+   * @param element - The element to paint.
+   * @param ctx - The hit buffer rendering context.
+   * @param frustum - The visible region in world space, or null to skip culling.
    */
-  _paintHitRecursive(element: IElement, ctx: Arena2DContext): void {
+  _paintHitRecursive(
+    element: IElement,
+    ctx: Arena2DContext,
+    frustum: IRect | null,
+  ): void {
     if (
       !element.visible ||
       element.alpha <= 0 ||
@@ -617,8 +697,35 @@ export class View implements IView {
       return;
     }
 
+    const isContainer = "children" in element;
+    const container = isContainer ? (element as IContainer) : null;
+
+    // ── Frustum culling (mirrors _paintRecursive logic) ──
+    let clipWorldAABB: IRect | null = null;
+
+    if (frustum) {
+      if (container && (container as Container).clipContent) {
+        clipWorldAABB = computeAABB(
+          {
+            x: 0,
+            y: 0,
+            width: (container as Container).width,
+            height: (container as Container).height,
+          },
+          element.worldMatrix,
+        );
+        if (!intersect(clipWorldAABB, frustum)) return;
+      } else if (!container) {
+        const bounds = element.localBounds;
+        if (bounds.width > 0 || bounds.height > 0) {
+          const worldAABB = computeAABB(bounds, element.worldMatrix);
+          if (!intersect(worldAABB, frustum)) return;
+        }
+      }
+    }
+
     if (element.interactive) {
-      const uid = (element as any).uid;
+      const uid = (element as unknown as { uid: number }).uid;
       const r = (uid & 0xff0000) >> 16;
       const g = (uid & 0x00ff00) >> 8;
       const b = uid & 0x0000ff;
@@ -645,19 +752,37 @@ export class View implements IView {
       raw.strokeStyle = color;
 
       if ("paint" in element) {
-        (element as any).paint(ctx);
+        (element as { paint: (ctx: Arena2DContext) => void }).paint(ctx);
       }
 
       raw.restore();
     }
 
-    if ("children" in element) {
-      const container = element as IContainer;
+    if (container) {
+      // Narrow frustum for clipped containers
+      let childFrustum = frustum;
+      if ((container as Container).clipContent) {
+        if (!clipWorldAABB) {
+          clipWorldAABB = computeAABB(
+            {
+              x: 0,
+              y: 0,
+              width: (container as Container).width,
+              height: (container as Container).height,
+            },
+            element.worldMatrix,
+          );
+        }
+        childFrustum = frustum
+          ? rectIntersection(frustum, clipWorldAABB)
+          : clipWorldAABB;
+      }
+
       const sorted = Array.from(container.children).sort(
         (a, b) => a.zIndex - b.zIndex,
       );
       for (const child of sorted) {
-        this._paintHitRecursive(child, ctx);
+        this._paintHitRecursive(child, ctx, childFrustum);
       }
     }
   }
@@ -702,7 +827,7 @@ export class View implements IView {
 
     (container as any)._cacheAsBitmap = originalCache;
 
-    container._setCacheResult(minX, minY);
+    container._setCacheResult(minX, minY, width, height);
   }
 
   /**

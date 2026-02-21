@@ -1,28 +1,59 @@
 /**
  * Polygon geometry primitive.
- * Can be open (polyline) or closed.
+ *
+ * Represents a sequence of points that can form an open polyline or a closed shape.
+ *
+ * @module Geometry
+ * @example
+ * ```typescript
+ * import { Polygon } from 'arena-2d';
+ *
+ * const poly = new Polygon([
+ *   { x: 0, y: 0 },
+ *   { x: 100, y: 0 },
+ *   { x: 50, y: 100 }
+ * ], true); // A closed triangle
+ * console.log(poly.area);
+ * ```
  */
 
 import { Geometry } from './Geometry';
 import type { IRect } from '../math/aabb';
 import type { IPolygon } from './types';
 
+/**
+ * Concrete implementation of a polygon or polyline.
+ */
 export class Polygon extends Geometry implements IPolygon {
+  /** @inheritdoc */
   readonly type = 'polygon';
 
+  /** The vertices of the polygon in local space. */
   points: Array<{ x: number; y: number }> = [];
+  /** Whether the polygon is closed (last point connects to first). */
   closed: boolean = true;
 
+  /**
+   * Creates a new Polygon.
+   * @param points - Initial list of vertices.
+   * @param closed - Whether the polygon is closed.
+   */
   constructor(points: Array<{ x: number; y: number }> = [], closed: boolean = true) {
     super();
     this.points = points.slice();
     this.closed = closed;
   }
 
+  /**
+   * Adds a point to the polygon.
+   * @param x - Local X.
+   * @param y - Local Y.
+   */
   addPoint(x: number, y: number): void {
     this.points.push({ x, y });
   }
 
+  /** @inheritdoc */
   protected getLocalBounds(): IRect {
     if (this.points.length === 0) {
       return { x: 0, y: 0, width: 0, height: 0 };
@@ -48,6 +79,7 @@ export class Polygon extends Geometry implements IPolygon {
     };
   }
 
+  /** @inheritdoc */
   distanceTo(x: number, y: number): number {
     if (this.points.length === 0) return 0;
 
@@ -77,6 +109,7 @@ export class Polygon extends Geometry implements IPolygon {
     return minDistance;
   }
 
+  /** @inheritdoc */
   closestPointTo(x: number, y: number): { x: number; y: number } {
     if (this.points.length === 0) {
       return this.localToWorld(0, 0);
@@ -113,6 +146,7 @@ export class Polygon extends Geometry implements IPolygon {
     return this.localToWorld(closestPoint.x, closestPoint.y);
   }
 
+  /** @inheritdoc */
   intersectsLine(x1: number, y1: number, x2: number, y2: number): Array<{ x: number; y: number }> {
     const local1 = this.worldToLocal(x1, y1);
     const local2 = this.worldToLocal(x2, y2);
@@ -137,6 +171,10 @@ export class Polygon extends Geometry implements IPolygon {
     return results;
   }
 
+  /**
+   * Helper for line segment intersection.
+   * @private
+   */
   private lineSegmentIntersection(
     x1: number, y1: number, x2: number, y2: number,
     x3: number, y3: number, x4: number, y4: number,
@@ -157,6 +195,7 @@ export class Polygon extends Geometry implements IPolygon {
     return null;
   }
 
+  /** @inheritdoc */
   intersectsShape(shape: any): Array<{ x: number; y: number }> {
     const results: Array<{ x: number; y: number }> = [];
     for (let i = 0; i <= 32; i++) {
@@ -169,6 +208,7 @@ export class Polygon extends Geometry implements IPolygon {
     return results;
   }
 
+  /** @inheritdoc */
   containsPoint(x: number, y: number): boolean {
     if (!this.closed || this.points.length < 3) return false;
 
@@ -193,6 +233,7 @@ export class Polygon extends Geometry implements IPolygon {
     return (crossings & 1) === 1;
   }
 
+  /** @inheritdoc */
   get area(): number {
     if (!this.closed || this.points.length < 3) return 0;
 
@@ -207,6 +248,7 @@ export class Polygon extends Geometry implements IPolygon {
     return Math.abs(area) * 0.5 * scale;
   }
 
+  /** @inheritdoc */
   get perimeter(): number {
     if (this.points.length === 0) return 0;
 
@@ -225,6 +267,7 @@ export class Polygon extends Geometry implements IPolygon {
     return perimeter * scale;
   }
 
+  /** @inheritdoc */
   pointAt(t: number): { x: number; y: number } {
     if (this.points.length === 0) {
       return this.localToWorld(0, 0);
@@ -257,6 +300,7 @@ export class Polygon extends Geometry implements IPolygon {
     return this.localToWorld(this.points[0].x, this.points[0].y);
   }
 
+  /** @inheritdoc */
   tangentAt(t: number): { x: number; y: number } {
     if (this.points.length < 2) return { x: 0, y: 0 };
 
@@ -284,6 +328,7 @@ export class Polygon extends Geometry implements IPolygon {
     return this.transformVector(p2.x - p1.x, p2.y - p1.y);
   }
 
+  /** @inheritdoc */
   get centroid(): { x: number; y: number } {
     if (this.points.length === 0) {
       return this.localToWorld(0, 0);

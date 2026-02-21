@@ -1,20 +1,25 @@
 export default function (Arena2D) {
-  const { Scene, View, Container, Element, Rectangle } = Arena2D;
+  const { Scene, View, Container, Element } = Arena2D;
+
+  const wrap = document.getElementById("l14-canvas-wrap");
+  const logContainer = document.getElementById("l14-debug-logs");
 
   let scene = null;
   let view = null;
-  const container = document.getElementById('scene-container');
-  const logContainer = document.getElementById('debug-logs');
+  /** @type {Element | null} */
+  let targetEl = null;
+  /** @type {Container | null} */
+  let stressGroup = null;
 
-  // ── Log Interceptor ──
+  // ── Log Interceptor ──────────────────────────────────────────
   const originalWarn = console.warn;
   console.warn = (...args) => {
     originalWarn.apply(console, args);
-    const msg = args.join(' ');
-    const entry = document.createElement('div');
-    entry.style.borderBottom = '1px solid #222';
-    entry.style.padding = '2px 0';
-    entry.style.color = msg.includes('Performance') ? '#ffcc00' : '#ff6666';
+    const msg = args.join(" ");
+    const entry = document.createElement("div");
+    entry.style.borderBottom = "1px solid #222";
+    entry.style.padding = "2px 0";
+    entry.style.color = msg.includes("Performance") ? "#ffcc00" : "#ff6666";
     entry.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
     logContainer.prepend(entry);
     if (logContainer.childNodes.length > 50) {
@@ -22,114 +27,164 @@ export default function (Arena2D) {
     }
   };
 
+  // ── Scene setup ──────────────────────────────────────────────
   const initScene = () => {
     if (scene) scene.destroy();
 
-    scene = new Scene(container.clientWidth, container.clientHeight);
-    view = new View(container, scene);
-    scene.root.id = "root";
+    scene = new Scene(wrap.clientWidth, wrap.clientHeight);
+    view = new View(wrap, scene);
+    view.resize(wrap.clientWidth, wrap.clientHeight);
+    scene.ticker.start();
 
-    // Create a stress-test group
-    const stressGroup = new Container("stress-group");
+    // ── Target element (error convention demo) ─────────────────
+    targetEl = new Element("error-target");
+    targetEl.x = 30;
+    targetEl.y = 30;
+    targetEl.width = 180;
+    targetEl.height = 120;
+    targetEl.paint = (ctx) => {
+      ctx.drawRoundedRect(0, 0, targetEl.width, targetEl.height, 8, "#2e5090", "#6ea8fe");
+      ctx.drawText("Error Target", targetEl.width / 2, 24, {
+        fontSize: 14, fontFamily: "sans-serif", fill: "#fff",
+        textAlign: "center", textBaseline: "middle",
+      });
+      const props = [
+        `alpha: ${targetEl.alpha.toFixed(2)}`,
+        `x: ${targetEl.x}`,
+        `scaleX: ${targetEl.scaleX.toFixed(4)}`,
+      ];
+      props.forEach((txt, i) => {
+        ctx.drawText(txt, targetEl.width / 2, 52 + i * 20, {
+          fontSize: 12, fontFamily: "monospace", fill: "#b8d4fe",
+          textAlign: "center", textBaseline: "middle",
+        });
+      });
+    };
+    scene.root.addChild(targetEl);
+
+    // ── Label for stress test area ─────────────────────────────
+    const label = new Element("stress-label");
+    label.x = 30;
+    label.y = 170;
+    label.width = 200;
+    label.height = 20;
+    label.paint = (ctx) => {
+      ctx.drawText("Stress Test Area", 0, 0, {
+        fontSize: 13, fontFamily: "sans-serif", fill: "#777",
+        textAlign: "left", textBaseline: "top",
+      });
+    };
+    scene.root.addChild(label);
+
+    // ── Stress test group ──────────────────────────────────────
+    stressGroup = new Container("stress-group");
+    stressGroup.x = 30;
+    stressGroup.y = 195;
     scene.root.addChild(stressGroup);
 
-    updateStressTest();
+    // Sync cache checkbox state
+    const cacheCheck = /** @type {HTMLInputElement} */ (document.getElementById("l14-cache-check"));
+    if (cacheCheck.checked && stressGroup) stressGroup.cacheAsBitmap = true;
+
+    syncStressCount();
   };
 
-  const updateStressTest = () => {
-    if (!scene) return;
-    const stressGroup = scene.getElementById("stress-group");
-    if (!stressGroup) return;
+  // ── Stress test helpers ──────────────────────────────────────
+  const STRESS_AREA_W = () => (scene ? scene.width - 60 : 500);
+  const STRESS_AREA_H = () => (scene ? scene.height - 220 : 280);
 
-    const count = parseInt(document.getElementById('count-slider').value);
-    document.getElementById('count-val').textContent = count;
+  const makeStressRect = (index) => {
+    const el = new Element(`stress-${index}`);
+    const w = 8 + Math.random() * 16;
+    const h = 8 + Math.random() * 16;
+    el.x = Math.random() * (STRESS_AREA_W() - w);
+    el.y = Math.random() * (STRESS_AREA_H() - h);
+    el.width = w;
+    el.height = h;
+    el.alpha = 0.4 + Math.random() * 0.6;
+    const hue = Math.random() * 360;
+    el.paint = (ctx) => {
+      ctx.drawRect(0, 0, el.width, el.height, `hsl(${hue}, 65%, 55%)`);
+    };
+    return el;
+  };
+
+  const syncStressCount = () => {
+    if (!stressGroup) return;
+    const count = parseInt(
+      /** @type {HTMLInputElement} */ (document.getElementById("l14-count-slider")).value,
+    );
+    document.getElementById("l14-count-val").textContent = String(count);
 
     while (stressGroup.children.length > count) {
       stressGroup.removeChild(stressGroup.children[stressGroup.children.length - 1]);
     }
-
     while (stressGroup.children.length < count) {
-      const rect = new Rectangle();
-      rect.width = 10 + Math.random() * 20;
-      rect.height = 10 + Math.random() * 20;
-      rect.x = Math.random() * (scene.width - 30);
-      rect.y = Math.random() * (scene.height - 30);
-      rect.alpha = 0.5 + Math.random() * 0.5;
-      rect.fill = `hsl(${Math.random() * 360}, 70%, 60%)`;
-      stressGroup.addChild(rect);
+      stressGroup.addChild(makeStressRect(stressGroup.children.length));
     }
   };
 
-  // ── Event Handlers ──
+  // ── Bind controls ────────────────────────────────────────────
 
-  document.getElementById('debug-on').onclick = () => {
-    Arena2D.Arena2D.debug = true;
-    document.getElementById('debug-on').classList.add('active');
-    document.getElementById('debug-off').classList.remove('active');
-    // Trigger a check
-    updateStressTest();
+  // Debug checkbox
+  /** @type {HTMLInputElement} */
+  const debugCheck = /** @type {HTMLInputElement} */ (document.getElementById("l14-debug-check"));
+  debugCheck.onchange = () => {
+    Arena2D.Arena2D.debug = debugCheck.checked;
+    syncStressCount();
   };
 
-  document.getElementById('debug-off').onclick = () => {
-    Arena2D.Arena2D.debug = false;
-    document.getElementById('debug-on').classList.remove('active');
-    document.getElementById('debug-off').classList.add('active');
+  // Error convention buttons
+  document.getElementById("l14-btn-nan").onclick = () => {
+    if (targetEl) targetEl.alpha = NaN;
   };
-
-  document.getElementById('count-slider').oninput = updateStressTest;
-
-  document.getElementById('cache-on').onclick = () => {
-    const stressGroup = scene.getElementById("stress-group");
-    if (stressGroup) stressGroup.cacheAsBitmap = true;
-    document.getElementById('cache-on').classList.add('active');
-    document.getElementById('cache-off').classList.remove('active');
+  document.getElementById("l14-btn-inf").onclick = () => {
+    if (targetEl) targetEl.x = Infinity;
   };
-
-  document.getElementById('cache-off').onclick = () => {
-    const stressGroup = scene.getElementById("stress-group");
-    if (stressGroup) stressGroup.cacheAsBitmap = false;
-    document.getElementById('cache-on').classList.remove('active');
-    document.getElementById('cache-off').classList.add('active');
+  document.getElementById("l14-btn-zero-scale").onclick = () => {
+    if (targetEl) targetEl.scaleX = 0;
   };
-
-  document.getElementById('btn-nan').onclick = () => {
-    if (scene.root.children[0]) {
-      scene.root.children[0].alpha = NaN;
+  document.getElementById("l14-btn-reset").onclick = () => {
+    if (targetEl) {
+      targetEl.alpha = 1;
+      targetEl.x = 30;
+      targetEl.scaleX = 1;
     }
   };
 
-  document.getElementById('btn-inf').onclick = () => {
-    if (scene.root.children[0]) {
-      scene.root.children[0].x = Infinity;
-    }
+  // Stress test controls
+  document.getElementById("l14-count-slider").oninput = syncStressCount;
+
+  /** @type {HTMLInputElement} */
+  const cacheCheck = /** @type {HTMLInputElement} */ (document.getElementById("l14-cache-check"));
+  cacheCheck.onchange = () => {
+    if (stressGroup) stressGroup.cacheAsBitmap = cacheCheck.checked;
   };
 
-  document.getElementById('btn-zero-scale').onclick = () => {
-    if (scene.root.children[0]) {
-      scene.root.children[0].scaleX = 0;
-    }
-  };
-
-  document.getElementById('btn-destroy').onclick = () => {
+  // Memory management
+  document.getElementById("l14-btn-destroy").onclick = () => {
     if (scene) {
       scene.destroy();
       scene = null;
       view = null;
+      targetEl = null;
+      stressGroup = null;
     }
   };
+  document.getElementById("l14-btn-reinit").onclick = initScene;
 
-  document.getElementById('btn-reinit').onclick = initScene;
-
-  document.getElementById('clear-logs').onclick = () => {
-    logContainer.innerHTML = '<div style="color: #666;">No logs yet...</div>';
+  // Clear logs
+  document.getElementById("l14-clear-logs").onclick = () => {
+    logContainer.innerHTML =
+      '<div style="color: #555;">Enable debug mode and trigger actions.</div>';
   };
 
-  // Initialize
+  // ── Boot ─────────────────────────────────────────────────────
+  Arena2D.Arena2D.debug = true;
   initScene();
 
-  // Clean up when panel is unloaded
   return () => {
     if (scene) scene.destroy();
-    console.warn = originalWarn; // Restore original warn
+    console.warn = originalWarn;
   };
 }

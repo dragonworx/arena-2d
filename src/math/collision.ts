@@ -1,19 +1,43 @@
 /**
- * Collision detection utilities.
+ * Advanced collision detection and spatial queries.
+ *
+ * Implements algorithms like Separating Axis Theorem (SAT) for convex polygons.
+ *
+ * @module Math
+ * @example
+ * ```typescript
+ * import { collision } from 'arena-2d';
+ *
+ * const polyA = [{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 10, y: 10 }, { x: 0, y: 10 }];
+ * const polyB = [{ x: 5, y: 5 }, { x: 15, y: 5 }, { x: 15, y: 15 }, { x: 5, y: 15 }];
+ *
+ * if (collision.doPolygonsIntersect(polyA, polyB)) {
+ *   console.log('Polygons overlap!');
+ * }
+ * ```
  */
 
 import type { IRect } from "./aabb";
 import { type MatrixArray, transformPoint } from "./matrix";
 
-/** A point in 2D space. */
+/**
+ * A simple 2D point interface.
+ */
 export interface IPoint {
+  /** The X coordinate. */
   x: number;
+  /** The Y coordinate. */
   y: number;
 }
 
 /**
- * Get the global quad coordinates (4 corners) of a local rectangle transformed by a world matrix.
- * Returns [tl, tr, br, bl]
+ * Gets the global quad coordinates (4 corners) of a local rectangle transformed by a world matrix.
+ *
+ * Useful for broad-phase or accurate overlap testing of transformed rectangles.
+ *
+ * @param localBounds - The rectangle in local coordinate space.
+ * @param worldMatrix - The transformation matrix to apply.
+ * @returns An array of 4 points in the order: [Top-Left, Top-Right, Bottom-Right, Bottom-Left].
  */
 export function getGlobalQuad(
   localBounds: IRect,
@@ -30,10 +54,13 @@ export function getGlobalQuad(
 }
 
 /**
- * Check if two convex polygons intersect using the Separating Axis Theorem (SAT).
- * @param polyA Array of points defining the first polygon (vertices in order).
- * @param polyB Array of points defining the second polygon (vertices in order).
- * @returns true if they intersect, false otherwise.
+ * Checks if two convex polygons intersect using the Separating Axis Theorem (SAT).
+ *
+ * The polygons are defined by an array of vertices in order (clockwise or counter-clockwise).
+ *
+ * @param polyA - Array of points defining the first polygon.
+ * @param polyB - Array of points defining the second polygon.
+ * @returns True if the polygons intersect, false otherwise.
  */
 export function doPolygonsIntersect(polyA: IPoint[], polyB: IPoint[]): boolean {
   const polygons = [polyA, polyB];
@@ -50,11 +77,6 @@ export function doPolygonsIntersect(polyA: IPoint[], polyB: IPoint[]): boolean {
 
       // Get the normal (perpendicular) vector to the edge
       const normal = { x: p2.y - p1.y, y: p1.x - p2.x };
-
-      // Optional: Normalize the normal? Not strictly necessary for overlap *check* (just projection),
-      // effectively we represent the axis direction. But magnitude differences affect projection values.
-      // Since we just compare min/max on the same axis, it cancels out.
-      // So no normalization needed for simple boolean intersection.
 
       // Project both polygons onto this normal axis
       const minA = getMinMaxProjection(polyA, normal);
@@ -75,6 +97,14 @@ export function doPolygonsIntersect(polyA: IPoint[], polyB: IPoint[]): boolean {
   return true;
 }
 
+/**
+ * Projects a polygon onto an axis and returns the min/max projection values.
+ *
+ * @internal
+ * @param polygon - The polygon to project.
+ * @param axis - The axis to project onto (normal vector).
+ * @returns The minimum and maximum projection values.
+ */
 function getMinMaxProjection(
   polygon: IPoint[],
   axis: IPoint,

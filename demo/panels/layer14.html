@@ -1,65 +1,80 @@
 <div class="main-header">
-  <h2>Layer 14 — Debug Mode & Stress test</h2>
-  <p>Verify robustness against invalid values, performance warnings, and memory management.</p>
+  <h2>Layer 14 — Debug & Error Handling</h2>
+  <p>Invalid values are safely corrected, debug mode surfaces warnings, and destroy() cleans up resources.</p>
 </div>
 
-<div class="demo-layout">
-  <div class="demo-canvas-container">
-    <div id="scene-container" style="width: 100%; height: 500px; background: #1a1a1a; border-radius: 8px; border: 1px solid #333;"></div>
+<style>
+  #layer-14 .l14-row { display: flex; gap: 16px; align-items: flex-start; }
+  #layer-14 .l14-canvas { flex: 1; min-width: 0; }
+  #layer-14 .l14-sidebar { width: 220px; flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; }
+  #layer-14 .l14-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
+  #layer-14 .l14-card h4 { font-size: 13px; font-weight: 600; margin: 0 0 6px; color: var(--text-primary); }
+  #layer-14 .l14-hint { font-size: 11px; color: var(--text-muted); margin: 4px 0 0; line-height: 1.4; }
+  #layer-14 .l14-check { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); cursor: pointer; }
+  #layer-14 .l14-check input { accent-color: #6ea8fe; cursor: pointer; }
+  #layer-14 .l14-btn { display: block; width: 100%; padding: 5px 8px; font-size: 11px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 4px; color: var(--text-secondary); cursor: pointer; text-align: center; }
+  #layer-14 .l14-btn:hover { background: var(--bg-hover); border-color: var(--text-muted); }
+  #layer-14 .l14-btn:active { transform: translateY(1px); }
+  #layer-14 .l14-btn-danger { border-color: #6b2b2b; color: #ff6b6b; }
+  #layer-14 .l14-btn-danger:hover { background: #2a1515; }
+  #layer-14 .l14-btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+  #layer-14 .l14-slider-row { display: flex; align-items: center; gap: 8px; }
+  #layer-14 .l14-slider-row input[type="range"] { flex: 1; }
+  #layer-14 .l14-slider-row span { font-size: 11px; color: var(--text-secondary); min-width: 32px; text-align: right; font-family: monospace; }
+  #layer-14 .l14-log { font-family: monospace; font-size: 10px; color: #aaa; height: 120px; overflow-y: auto; background: #000; padding: 6px; border-radius: 4px; }
+</style>
+
+<div class="l14-row">
+  <div class="l14-canvas">
+    <div id="l14-canvas-wrap" style="width: 100%; height: 480px; background: #1a1a1a; border-radius: 8px; border: 1px solid #333;"></div>
   </div>
 
-  <div class="demo-controls-sidebar">
-    <div class="card">
-      <h3>Global Settings</h3>
-      <div class="control-group">
-        <label>Debug Mode</label>
-        <div class="toggle-group">
-          <button id="debug-on" class="toggle-btn">ON</button>
-          <button id="debug-off" class="toggle-btn active">OFF</button>
-        </div>
+  <div class="l14-sidebar">
+    <div class="l14-card">
+      <h4>Debug Mode</h4>
+      <label class="l14-check">
+        <input type="checkbox" id="l14-debug-check" checked> Enable console warnings
+      </label>
+    </div>
+
+    <div class="l14-card">
+      <h4>Error Conventions</h4>
+      <p class="l14-hint">Apply invalid values to the blue target element and watch the engine correct them.</p>
+      <div class="l14-btn-grid" style="margin-top: 6px;">
+        <button id="l14-btn-nan" class="l14-btn">alpha = NaN</button>
+        <button id="l14-btn-inf" class="l14-btn">x = Infinity</button>
+        <button id="l14-btn-zero-scale" class="l14-btn">scale = 0</button>
+        <button id="l14-btn-reset" class="l14-btn">Reset</button>
       </div>
     </div>
 
-    <div class="card">
-      <h3>Stress Test</h3>
-      <div class="control-group">
-        <label>Element Count: <span id="count-val">0</span></label>
-        <input type="range" id="count-slider" min="0" max="2000" step="100" value="0">
+    <div class="l14-card">
+      <h4>Stress Test</h4>
+      <div class="l14-slider-row">
+        <input type="range" id="l14-count-slider" min="0" max="2000" step="50" value="100">
+        <span id="l14-count-val">100</span>
       </div>
-      <div class="control-group">
-        <label>Cache Group</label>
-        <div class="toggle-group">
-          <button id="cache-on" class="toggle-btn">ON</button>
-          <button id="cache-off" class="toggle-btn active">OFF</button>
-        </div>
-      </div>
-      <p class="hint">In Debug Mode, >500 elements without cache triggers a warning.</p>
+      <label class="l14-check" style="margin-top: 4px;">
+        <input type="checkbox" id="l14-cache-check"> Cache as bitmap
+      </label>
+      <p class="l14-hint">Debug + >500 elements without cache = performance warning.</p>
     </div>
 
-    <div class="card">
-      <h3>Error Conventions</h3>
-      <div class="button-grid">
-        <button id="btn-nan" class="btn">Set alpha = NaN</button>
-        <button id="btn-inf" class="btn">Set x = Infinity</button>
-        <button id="btn-zero-scale" class="btn">Set scale = 0</button>
+    <div class="l14-card">
+      <h4>Memory</h4>
+      <div class="l14-btn-grid">
+        <button id="l14-btn-destroy" class="l14-btn l14-btn-danger">Destroy Scene</button>
+        <button id="l14-btn-reinit" class="l14-btn">Re-init Scene</button>
       </div>
+      <p class="l14-hint">Debug ON + GC without destroy() = leak warning.</p>
     </div>
 
-    <div class="card">
-      <h3>Memory Management</h3>
-      <div class="button-grid">
-        <button id="btn-destroy" class="btn btn-danger">Destroy Scene</button>
-        <button id="btn-reinit" class="btn">Re-init Scene</button>
+    <div class="l14-card">
+      <h4>Debug Log</h4>
+      <div id="l14-debug-logs" class="l14-log">
+        <div style="color: #555;">Enable debug mode and trigger actions.</div>
       </div>
-      <p class="hint">Check console after GC if Scene was leaked (requires Debug=ON).</p>
-    </div>
-
-    <div class="card">
-      <h3>Debug Logs</h3>
-      <div id="debug-logs" style="font-family: monospace; font-size: 11px; color: #aaa; height: 150px; overflow-y: auto; background: #000; padding: 8px; border-radius: 4px;">
-        <div style="color: #666;">No logs yet...</div>
-      </div>
-      <button id="clear-logs" class="btn" style="margin-top: 8px; width: 100%;">Clear Logs</button>
+      <button id="l14-clear-logs" class="l14-btn" style="margin-top: 4px;">Clear</button>
     </div>
   </div>
 </div>

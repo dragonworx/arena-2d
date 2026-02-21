@@ -4,22 +4,43 @@
  * Matrices are stored as Float32Array(6) in column-major order: [a, b, c, d, tx, ty]
  * matching the HTML Canvas setTransform(a, b, c, d, e, f) parameter order.
  *
+ * ```
  * | a  c  tx |
  * | b  d  ty |
  * | 0  0   1 |
+ * ```
+ *
+ * @module Math
+ * @example
+ * ```typescript
+ * import { matrix } from 'arena-2d';
+ *
+ * const mat = matrix.identity();
+ * const translated = matrix.translate(10, 20);
+ * const combined = matrix.multiply(mat, translated);
+ * ```
  */
 
-/** A 2D affine transformation matrix stored as Float32Array(6). */
+/**
+ * A 2D affine transformation matrix stored as Float32Array(6).
+ * Follows the order: [a, b, c, d, tx, ty].
+ */
 export type MatrixArray = Float32Array;
 
-/** Create a new identity matrix. */
+/**
+ * Creates a new identity matrix.
+ * @returns A new MatrixArray initialized to identity [1, 0, 0, 1, 0, 0].
+ */
 export function identity(): MatrixArray {
   return new Float32Array([1, 0, 0, 1, 0, 0]);
 }
 
 /**
- * Multiply two matrices: out = a × b (left-multiply; a is left operand).
- * Returns a new MatrixArray.
+ * Multiplies two matrices: out = a × b (left-multiply; a is left operand).
+ *
+ * @param a - The first matrix (left operand).
+ * @param b - The second matrix (right operand).
+ * @returns A new MatrixArray representing the product.
  */
 export function multiply(a: MatrixArray, b: MatrixArray): MatrixArray {
   // | a0 a2 a4 |   | b0 b2 b4 |
@@ -35,30 +56,56 @@ export function multiply(a: MatrixArray, b: MatrixArray): MatrixArray {
   ]);
 }
 
-/** Create a translation matrix. */
+/**
+ * Creates a translation matrix.
+ *
+ * @param tx - Translation along the X axis.
+ * @param ty - Translation along the Y axis.
+ * @returns A new MatrixArray [1, 0, 0, 1, tx, ty].
+ */
 export function translate(tx: number, ty: number): MatrixArray {
   return new Float32Array([1, 0, 0, 1, tx, ty]);
 }
 
-/** Create a rotation matrix (angle in radians, clockwise). */
+/**
+ * Creates a rotation matrix.
+ *
+ * @param angle - The rotation angle in radians, clockwise.
+ * @returns A new MatrixArray representing the rotation.
+ */
 export function rotate(angle: number): MatrixArray {
   const cos = Math.cos(angle);
   const sin = Math.sin(angle);
   return new Float32Array([cos, sin, -sin, cos, 0, 0]);
 }
 
-/** Create a scale matrix. */
+/**
+ * Creates a scale matrix.
+ *
+ * @param sx - Scale factor along the X axis.
+ * @param sy - Scale factor along the Y axis.
+ * @returns A new MatrixArray [sx, 0, 0, sy, 0, 0].
+ */
 export function scale(sx: number, sy: number): MatrixArray {
   return new Float32Array([sx, 0, 0, sy, 0, 0]);
 }
 
-/** Create a skew matrix (angles in radians). */
+/**
+ * Creates a skew matrix.
+ *
+ * @param sx - Skew angle along the X axis in radians.
+ * @param sy - Skew angle along the Y axis in radians.
+ * @returns A new MatrixArray [1, tan(sy), tan(sx), 1, 0, 0].
+ */
 export function skew(sx: number, sy: number): MatrixArray {
   return new Float32Array([1, Math.tan(sy), Math.tan(sx), 1, 0, 0]);
 }
 
 /**
- * Invert a matrix. Returns a new MatrixArray, or null if the matrix is singular.
+ * Inverts a matrix.
+ *
+ * @param mat - The matrix to invert.
+ * @returns A new MatrixArray, or null if the matrix is singular (determinant is zero).
  */
 export function invert(mat: MatrixArray): MatrixArray | null {
   const [a, b, c, d, tx, ty] = mat;
@@ -78,8 +125,12 @@ export function invert(mat: MatrixArray): MatrixArray | null {
 }
 
 /**
- * Transform a point by a matrix.
- * Returns the transformed { x, y }.
+ * Transforms a point by a matrix.
+ *
+ * @param mat - The transformation matrix.
+ * @param x - The X coordinate of the point.
+ * @param y - The Y coordinate of the point.
+ * @returns The transformed { x, y } coordinates.
  */
 export function transformPoint(
   mat: MatrixArray,

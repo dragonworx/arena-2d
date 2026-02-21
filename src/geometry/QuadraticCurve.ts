@@ -1,22 +1,54 @@
 /**
  * Quadratic Bezier Curve geometry primitive.
- * Defined by a start point, control point, and end point.
+ *
+ * Represents a quadratic (2nd-degree) Bezier curve defined by a start point,
+ * control point, and end point. The curve passes through both endpoints and is
+ * influenced by the control point.
+ *
+ * @module Geometry
+ * @example
+ * ```typescript
+ * import { QuadraticCurve } from 'arena-2d';
+ *
+ * const curve = new QuadraticCurve(0, 0, 50, 100, 100, 0);
+ * const midpoint = curve.pointAt(0.5);
+ * console.log(curve.perimeter); // Arc length
+ * ```
  */
 
 import { Geometry } from './Geometry';
 import type { IRect } from '../math/aabb';
 import type { IQuadraticCurve } from './types';
 
+/**
+ * Concrete implementation of a quadratic Bezier curve.
+ */
 export class QuadraticCurve extends Geometry implements IQuadraticCurve {
+  /** @inheritdoc */
   readonly type = 'quadraticCurve';
 
+  /** Start point X coordinate. */
   x0: number = 0;
+  /** Start point Y coordinate. */
   y0: number = 0;
+  /** Control point X coordinate. */
   cpx: number = 0.5;
+  /** Control point Y coordinate. */
   cpy: number = 0.5;
+  /** End point X coordinate. */
   x1: number = 1;
+  /** End point Y coordinate. */
   y1: number = 0;
 
+  /**
+   * Creates a new QuadraticCurve.
+   * @param x0 - Start X.
+   * @param y0 - Start Y.
+   * @param cpx - Control point X.
+   * @param cpy - Control point Y.
+   * @param x1 - End X.
+   * @param y1 - End Y.
+   */
   constructor(x0: number = 0, y0: number = 0, cpx: number = 0.5, cpy: number = 0.5, x1: number = 1, y1: number = 0) {
     super();
     this.x0 = x0;
@@ -27,6 +59,7 @@ export class QuadraticCurve extends Geometry implements IQuadraticCurve {
     this.y1 = y1;
   }
 
+  /** @inheritdoc */
   protected getLocalBounds(): IRect {
     let minX = Math.min(this.x0, this.cpx, this.x1);
     let maxX = Math.max(this.x0, this.cpx, this.x1);
@@ -62,26 +95,43 @@ export class QuadraticCurve extends Geometry implements IQuadraticCurve {
     };
   }
 
+  /**
+   * Evaluates the X coordinate at parameter t.
+   * @private
+   */
   private getX(t: number): number {
     const mt = 1 - t;
     return mt * mt * this.x0 + 2 * mt * t * this.cpx + t * t * this.x1;
   }
 
+  /**
+   * Evaluates the Y coordinate at parameter t.
+   * @private
+   */
   private getY(t: number): number {
     const mt = 1 - t;
     return mt * mt * this.y0 + 2 * mt * t * this.cpy + t * t * this.y1;
   }
 
+  /**
+   * Evaluates the X derivative at parameter t.
+   * @private
+   */
   private getDerivativeX(t: number): number {
     const mt = 1 - t;
     return 2 * mt * (this.cpx - this.x0) + 2 * t * (this.x1 - this.cpx);
   }
 
+  /**
+   * Evaluates the Y derivative at parameter t.
+   * @private
+   */
   private getDerivativeY(t: number): number {
     const mt = 1 - t;
     return 2 * mt * (this.cpy - this.y0) + 2 * t * (this.y1 - this.cpy);
   }
 
+  /** @inheritdoc */
   distanceTo(x: number, y: number): number {
     const local = this.worldToLocal(x, y);
     let minDistance = Number.POSITIVE_INFINITY;
@@ -99,6 +149,7 @@ export class QuadraticCurve extends Geometry implements IQuadraticCurve {
     return minDistance;
   }
 
+  /** @inheritdoc */
   closestPointTo(x: number, y: number): { x: number; y: number } {
     const local = this.worldToLocal(x, y);
     let minDistance = Number.POSITIVE_INFINITY;
@@ -120,6 +171,7 @@ export class QuadraticCurve extends Geometry implements IQuadraticCurve {
     return this.localToWorld(this.getX(bestT), this.getY(bestT));
   }
 
+  /** @inheritdoc */
   intersectsLine(x1: number, y1: number, x2: number, y2: number): Array<{ x: number; y: number }> {
     const local1 = this.worldToLocal(x1, y1);
     const local2 = this.worldToLocal(x2, y2);
@@ -160,6 +212,7 @@ export class QuadraticCurve extends Geometry implements IQuadraticCurve {
     return results;
   }
 
+  /** @inheritdoc */
   intersectsShape(shape: any): Array<{ x: number; y: number }> {
     const results: Array<{ x: number; y: number }> = [];
     for (let i = 0; i <= 32; i++) {
@@ -172,15 +225,18 @@ export class QuadraticCurve extends Geometry implements IQuadraticCurve {
     return results;
   }
 
+  /** @inheritdoc */
   containsPoint(x: number, y: number): boolean {
     const closest = this.closestPointTo(x, y);
     return Math.abs(closest.x - x) < 1e-6 && Math.abs(closest.y - y) < 1e-6;
   }
 
+  /** @inheritdoc */
   get area(): number {
     return 0; // Curves have no area
   }
 
+  /** @inheritdoc */
   get perimeter(): number {
     let length = 0;
     let prevX = this.x0;
@@ -201,6 +257,7 @@ export class QuadraticCurve extends Geometry implements IQuadraticCurve {
     return length * scale;
   }
 
+  /** @inheritdoc */
   pointAt(t: number): { x: number; y: number } {
     const clamped = Math.max(0, Math.min(1, t));
     const x = this.getX(clamped);
@@ -208,6 +265,7 @@ export class QuadraticCurve extends Geometry implements IQuadraticCurve {
     return this.localToWorld(x, y);
   }
 
+  /** @inheritdoc */
   tangentAt(t: number): { x: number; y: number } {
     const clamped = Math.max(0, Math.min(1, t));
     const dx = this.getDerivativeX(clamped);
@@ -215,6 +273,7 @@ export class QuadraticCurve extends Geometry implements IQuadraticCurve {
     return this.transformVector(dx, dy);
   }
 
+  /** @inheritdoc */
   get centroid(): { x: number; y: number } {
     return this.localToWorld(this.getX(0.5), this.getY(0.5));
   }

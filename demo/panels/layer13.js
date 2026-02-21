@@ -31,48 +31,87 @@ export default async function (Arena2D) {
 
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
-      const x = c * (itemW + gap);
-      const y = r * (itemH + gap);
+      try {
+        const x = c * (itemW + gap);
+        const y = r * (itemH + gap);
 
-      const card = new Element(`card-${c}-${r}`);
-      card.x = x;
-      card.y = y;
-      card.width = itemW;
-      card.height = itemH;
+        const card = new Element(`card-${c}-${r}`);
+        card.x = x;
+        card.y = y;
+        card.width = itemW;
+        card.height = itemH;
 
-      // Draw background
-      card.paint = (ctx) => {
-        const isHover = card === view.interaction.hoverElement;
-        const color = isHover ? "#4a90d9" : "#2a2a3a";
-        ctx.drawRoundedRect(0, 0, card.width, card.height, 8, color, "#444");
+        // Track flash state for this card
+        let cardFlashAlpha = 0;
 
-        ctx.drawText(`${c},${r}`, card.width / 2, card.height / 2, {
-          fontSize: 14,
-          fontFamily: "sans-serif",
-          fill: "white",
-          textAlign: "center",
-          textBaseline: "middle"
+        // Draw background
+        card.paint = (ctx) => {
+          const isHover = card === view.interaction.hoverElement;
+          let color = isHover ? "#4a90d9" : "#2a2a3a";
+
+          // Mix in red flash if card was recently clicked (only if not during drag)
+          if (cardFlashAlpha > 0) {
+            const intensity = cardFlashAlpha;
+            const r1 = parseInt(color.slice(1, 3), 16);
+            const g1 = parseInt(color.slice(3, 5), 16);
+            const b1 = parseInt(color.slice(5, 7), 16);
+            const r2 = 255;
+            const g2 = 107;
+            const b2 = 107;
+            const r = Math.round(r1 + (r2 - r1) * intensity);
+            const g = Math.round(g1 + (g2 - g1) * intensity);
+            const b = Math.round(b1 + (b2 - b1) * intensity);
+            color = `rgb(${r},${g},${b})`;
+          }
+
+          ctx.drawRoundedRect(0, 0, card.width, card.height, 8, color, "#444");
+
+          ctx.drawText(`${c},${r}`, card.width / 2, card.height / 2, {
+            fontSize: 14,
+            fontFamily: "sans-serif",
+            fill: "white",
+            textAlign: "center",
+            textBaseline: "middle"
+          });
+        };
+
+        // Fade the flash effect each frame (preserve Element's update for transforms)
+        const originalUpdate = card.update.bind(card);
+        card.update = (dt) => {
+          originalUpdate(dt);
+          if (cardFlashAlpha > 0) {
+            cardFlashAlpha *= 0.9;
+          }
+        };
+
+        card.interactive = true;
+        // Listen ONLY to deferred click events, not the immediate pointerdown
+        card.on("deferred-click", () => {
+          cardFlashAlpha = 1.0;
+          // Fade back to normal after 2 seconds
+          setTimeout(() => {
+            cardFlashAlpha = 0;
+          }, 2000);
         });
-      };
 
-      card.interactive = true;
-      card.on("pointerdown", () => {
-        console.log(`Clicked card ${c},${r}`);
-      });
-
-      sc.addChild(card);
+        sc.addChild(card);
+      } catch (e) {
+        console.error(`Failed to create card ${c},${r}:`, e);
+      }
     }
   }
 
   // ── Controls ──
   const widthSlider = document.getElementById("l13-width");
   const heightSlider = document.getElementById("l13-height");
+  const thresholdSlider = document.getElementById("l13-threshold");
   const wVal = document.getElementById("l13-w-val");
   const hVal = document.getElementById("l13-h-val");
+  const thresholdVal = document.getElementById("l13-threshold-val");
   const scrollXCheck = document.getElementById("l13-scroll-x");
   const scrollYCheck = document.getElementById("l13-scroll-y");
   const inertiaCheck = document.getElementById("l13-inertia");
-  const barsCheck = document.getElementById("l13-bars");
+  const dragCheck = document.getElementById("l13-drag");
   const resetBtn = document.getElementById("l13-reset");
   const randomBtn = document.getElementById("l13-random");
 
@@ -82,13 +121,17 @@ export default async function (Arena2D) {
     wVal.textContent = sc.width;
     hVal.textContent = sc.height;
 
+    const threshold = Number(thresholdSlider.value);
+    sc.clickDeferralThreshold = threshold;
+    thresholdVal.textContent = threshold;
+
     sc.scrollEnabledX = scrollXCheck.checked;
     sc.scrollEnabledY = scrollYCheck.checked;
     sc.inertiaEnabled = inertiaCheck.checked;
-    sc.showScrollBars = barsCheck.checked;
+    sc.dragEnabled = dragCheck.checked;
   }
 
-  [widthSlider, heightSlider, scrollXCheck, scrollYCheck, inertiaCheck, barsCheck].forEach(el => {
+  [widthSlider, heightSlider, thresholdSlider, scrollXCheck, scrollYCheck, inertiaCheck, dragCheck].forEach(el => {
     el.addEventListener("input", update);
   });
 

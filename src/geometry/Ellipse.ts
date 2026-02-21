@@ -1,19 +1,45 @@
 /**
  * Ellipse geometry primitive.
+ *
+ * Represents an ellipse defined by a center point `(cx, cy)` and radii `(rx, ry)`.
+ *
+ * @module Geometry
+ * @example
+ * ```typescript
+ * import { Ellipse } from 'arena-2d';
+ *
+ * const ellipse = new Ellipse(100, 100, 80, 40);
+ * console.log(ellipse.perimeter); // Ramanujan's approximation
+ * ```
  */
 
 import { Geometry } from './Geometry';
 import type { IRect } from '../math/aabb';
 import type { IEllipse } from './types';
 
+/**
+ * Concrete implementation of an ellipse.
+ */
 export class Ellipse extends Geometry implements IEllipse {
+  /** @inheritdoc */
   readonly type = 'ellipse';
 
+  /** The center X coordinate in local space. */
   cx: number = 0;
+  /** The center Y coordinate in local space. */
   cy: number = 0;
+  /** The horizontal radius. */
   rx: number = 1;
+  /** The vertical radius. */
   ry: number = 1;
 
+  /**
+   * Creates a new Ellipse.
+   * @param cx - Local center X.
+   * @param cy - Local center Y.
+   * @param rx - Horizontal radius.
+   * @param ry - Vertical radius.
+   */
   constructor(cx: number = 0, cy: number = 0, rx: number = 1, ry: number = 1) {
     super();
     this.cx = cx;
@@ -22,6 +48,7 @@ export class Ellipse extends Geometry implements IEllipse {
     this.ry = Math.max(ry, Number.EPSILON);
   }
 
+  /** @inheritdoc */
   protected getLocalBounds(): IRect {
     return {
       x: this.cx - this.rx,
@@ -31,6 +58,7 @@ export class Ellipse extends Geometry implements IEllipse {
     };
   }
 
+  /** @inheritdoc */
   distanceTo(x: number, y: number): number {
     const local = this.worldToLocal(x, y);
     const px = local.x - this.cx;
@@ -58,6 +86,7 @@ export class Ellipse extends Geometry implements IEllipse {
     return Math.sqrt(dx * dx + dy * dy);
   }
 
+  /** @inheritdoc */
   closestPointTo(x: number, y: number): { x: number; y: number } {
     const local = this.worldToLocal(x, y);
     const px = local.x - this.cx;
@@ -83,6 +112,7 @@ export class Ellipse extends Geometry implements IEllipse {
     return this.localToWorld(ex, ey);
   }
 
+  /** @inheritdoc */
   intersectsLine(x1: number, y1: number, x2: number, y2: number): Array<{ x: number; y: number }> {
     const local1 = this.worldToLocal(x1, y1);
     const local2 = this.worldToLocal(x2, y2);
@@ -117,6 +147,7 @@ export class Ellipse extends Geometry implements IEllipse {
     return results;
   }
 
+  /** @inheritdoc */
   intersectsShape(shape: any): Array<{ x: number; y: number }> {
     const results: Array<{ x: number; y: number }> = [];
     for (let i = 0; i <= 32; i++) {
@@ -129,6 +160,7 @@ export class Ellipse extends Geometry implements IEllipse {
     return results;
   }
 
+  /** @inheritdoc */
   containsPoint(x: number, y: number): boolean {
     const local = this.worldToLocal(x, y);
     const px = (local.x - this.cx) / this.rx;
@@ -136,6 +168,7 @@ export class Ellipse extends Geometry implements IEllipse {
     return px * px + py * py <= 1;
   }
 
+  /** @inheritdoc */
   get area(): number {
     const sx = Math.abs(this.scaleX);
     const sy = Math.abs(this.scaleY);
@@ -144,6 +177,7 @@ export class Ellipse extends Geometry implements IEllipse {
     return Math.PI * rx * ry;
   }
 
+  /** @inheritdoc */
   get perimeter(): number {
     const sx = Math.abs(this.scaleX);
     const sy = Math.abs(this.scaleY);
@@ -155,6 +189,7 @@ export class Ellipse extends Geometry implements IEllipse {
     return Math.PI * (rx + ry) * (1 + (3 * h) / (10 + Math.sqrt(4 - 3 * h)));
   }
 
+  /** @inheritdoc */
   pointAt(t: number): { x: number; y: number } {
     const angle = (t % 1) * 2 * Math.PI;
     const x = this.cx + this.rx * Math.cos(angle);
@@ -162,6 +197,7 @@ export class Ellipse extends Geometry implements IEllipse {
     return this.localToWorld(x, y);
   }
 
+  /** @inheritdoc */
   tangentAt(t: number): { x: number; y: number } {
     const angle = (t % 1) * 2 * Math.PI;
     const dx = -this.rx * Math.sin(angle);
@@ -169,6 +205,7 @@ export class Ellipse extends Geometry implements IEllipse {
     return this.transformVector(dx, dy);
   }
 
+  /** @inheritdoc */
   get centroid(): { x: number; y: number } {
     return this.localToWorld(this.cx, this.cy);
   }

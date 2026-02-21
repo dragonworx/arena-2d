@@ -1,6 +1,23 @@
 /**
  * Path geometry primitive.
- * A composite shape made up of multiple path segments (line, curve, arc).
+ *
+ * Represents a composite shape made up of multiple path segments (lines, curves, arcs).
+ * Paths are constructed using a builder pattern with moveTo, lineTo, curve, and arc
+ * operations. Paths can be open or closed.
+ *
+ * @module Geometry
+ * @example
+ * ```typescript
+ * import { Path } from 'arena-2d';
+ *
+ * const path = new Path();
+ * path.addMoveTo(0, 0);
+ * path.addLineTo(100, 0);
+ * path.addBezierCurveTo(150, 50, 150, 150, 100, 200);
+ * path.addLineTo(0, 200);
+ * path.closePath();
+ * console.log(path.perimeter);
+ * ```
  */
 
 import { Geometry } from './Geometry';
@@ -11,12 +28,19 @@ import { QuadraticCurve } from './QuadraticCurve';
 import { BezierCurve } from './BezierCurve';
 import { Arc } from './Arc';
 
+/**
+ * Concrete implementation of a path geometry.
+ */
 export class Path extends Geometry implements IPath {
+  /** @inheritdoc */
   readonly type = 'path';
 
+  /** The segments comprising this path. */
   segments: PathSegment[] = [];
+  /** Cached perimeter value for performance. */
   private cachedPerimeter: number | null = null;
 
+  /** @inheritdoc */
   protected getLocalBounds(): IRect {
     if (this.segments.length === 0) {
       return { x: 0, y: 0, width: 0, height: 0 };
@@ -46,26 +70,31 @@ export class Path extends Geometry implements IPath {
     };
   }
 
+  /** @inheritdoc */
   addMoveTo(x: number, y: number): void {
     this.segments.push({ type: 'moveTo', x, y });
     this.cachedPerimeter = null;
   }
 
+  /** @inheritdoc */
   addLineTo(x: number, y: number): void {
     this.segments.push({ type: 'lineTo', x, y });
     this.cachedPerimeter = null;
   }
 
+  /** @inheritdoc */
   addQuadraticCurveTo(cpx: number, cpy: number, x: number, y: number): void {
     this.segments.push({ type: 'quadraticCurveTo', cpx, cpy, x, y });
     this.cachedPerimeter = null;
   }
 
+  /** @inheritdoc */
   addBezierCurveTo(cp1x: number, cp1y: number, cp2x: number, cp2y: number, x: number, y: number): void {
     this.segments.push({ type: 'bezierCurveTo', cp1x, cp1y, cp2x, cp2y, x, y });
     this.cachedPerimeter = null;
   }
 
+  /** @inheritdoc */
   addArc(cx: number, cy: number, radius: number, startAngle: number, endAngle: number, counterclockwise?: boolean): void {
     this.segments.push({
       type: 'arc',
@@ -79,16 +108,21 @@ export class Path extends Geometry implements IPath {
     this.cachedPerimeter = null;
   }
 
+  /** @inheritdoc */
   closePath(): void {
     this.segments.push({ type: 'closePath' });
     this.cachedPerimeter = null;
   }
 
+  /**
+   * Clears all segments from the path.
+   */
   clear(): void {
     this.segments = [];
     this.cachedPerimeter = null;
   }
 
+  /** @inheritdoc */
   distanceTo(x: number, y: number): number {
     const local = this.worldToLocal(x, y);
     let minDistance = Number.POSITIVE_INFINITY;
@@ -106,6 +140,7 @@ export class Path extends Geometry implements IPath {
     return minDistance;
   }
 
+  /** @inheritdoc */
   closestPointTo(x: number, y: number): { x: number; y: number } {
     const local = this.worldToLocal(x, y);
     let minDistance = Number.POSITIVE_INFINITY;
@@ -127,6 +162,7 @@ export class Path extends Geometry implements IPath {
     return this.pointAt(bestT);
   }
 
+  /** @inheritdoc */
   intersectsLine(x1: number, y1: number, x2: number, y2: number): Array<{ x: number; y: number }> {
     const results: Array<{ x: number; y: number }> = [];
     
@@ -192,6 +228,7 @@ export class Path extends Geometry implements IPath {
     return unique;
   }
 
+  /** @inheritdoc */
   intersectsShape(shape: any): Array<{ x: number; y: number }> {
     const results: Array<{ x: number; y: number }> = [];
     for (let i = 0; i <= 32; i++) {
@@ -204,15 +241,18 @@ export class Path extends Geometry implements IPath {
     return results;
   }
 
+  /** @inheritdoc */
   containsPoint(x: number, y: number): boolean {
     const closest = this.closestPointTo(x, y);
     return Math.abs(closest.x - x) < 1e-6 && Math.abs(closest.y - y) < 1e-6;
   }
 
+  /** @inheritdoc */
   get area(): number {
     return 0; // Paths have no area unless filled
   }
 
+  /** @inheritdoc */
   get perimeter(): number {
     if (this.cachedPerimeter !== null) {
       return this.cachedPerimeter;
@@ -246,6 +286,7 @@ export class Path extends Geometry implements IPath {
     return this.cachedPerimeter;
   }
 
+  /** @inheritdoc */
   pointAt(t: number): { x: number; y: number } {
     if (this.segments.length === 0) {
       return this.localToWorld(0, 0);
@@ -300,6 +341,7 @@ export class Path extends Geometry implements IPath {
     return this.localToWorld(x, y);
   }
 
+  /** @inheritdoc */
   tangentAt(t: number): { x: number; y: number } {
     const delta = 0.001;
     const p1 = this.pointAt(t - delta);
@@ -309,10 +351,15 @@ export class Path extends Geometry implements IPath {
     return this.transformVector(dx, dy);
   }
 
+  /** @inheritdoc */
   get centroid(): { x: number; y: number } {
     return this.pointAt(0.5);
   }
 
+  /**
+   * Estimates the length of a single path segment.
+   * @private
+   */
   private estimateSegmentLength(segment: PathSegment, curX: number, curY: number, startX: number, startY: number): number {
     if (segment.type === 'moveTo') return 0;
 
@@ -346,6 +393,10 @@ export class Path extends Geometry implements IPath {
     return length;
   }
 
+  /**
+   * Gets a point on a single path segment at parameter t.
+   * @private
+   */
   private pointOnSegment(segment: PathSegment, t: number, curX: number, curY: number, startX: number, startY: number): { x: number; y: number } {
     const clamped = Math.max(0, Math.min(1, t));
 

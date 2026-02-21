@@ -23,7 +23,7 @@ describe("ScrollContainer", () => {
         child.height = 50;
         sc.addChild(child);
         
-        sc.update(16);
+        sc.update(0.016);
         
         expect(sc.contentBounds.width).toBe(250);
         expect(sc.contentBounds.height).toBe(350);
@@ -39,7 +39,7 @@ describe("ScrollContainer", () => {
         child.height = 500;
         sc.addChild(child);
         
-        sc.update(16);
+        sc.update(0.016);
         
         sc.scrollX = 1000;
         expect(sc.scrollX).toBe(400);
@@ -62,11 +62,11 @@ describe("ScrollContainer", () => {
         child.height = 500;
         sc.addChild(child);
         
-        sc.update(16);
+        sc.update(0.016);
         expect(child.worldMatrix[4]).toBe(60);
         
         sc.scrollX = 20;
-        sc.update(16);
+        sc.update(0.016);
         expect(child.worldMatrix[4]).toBe(40);
     });
 
@@ -92,13 +92,13 @@ describe("ScrollContainer", () => {
         sc.addChild(spacer);
         sc.addChild(child);
         
-        sc.update(16);
+        sc.update(0.016);
         
         // Unscrolled: child at (150, 150)
         expect(sc.hitTest(155, 155)).toBe(child);
         
         sc.scrollX = 50; 
-        sc.update(16);
+        sc.update(0.016);
         
         // Scrolled: child at (100, 150). Point (155, 155) is in container background.
         expect(sc.hitTest(155, 155)).toBe(sc); 
@@ -116,20 +116,20 @@ describe("ScrollContainer", () => {
         child.width = 1000;
         child.height = 1000;
         sc.addChild(child);
-        sc.update(16);
+        sc.update(0.016);
 
         (sc as any)._velocityX = -10;
-        sc.update(16);
-        
+        sc.update(0.016);
+
         expect(sc.scrollX).toBeGreaterThan(0);
         const firstScroll = sc.scrollX;
-        
-        sc.update(16);
+
+        sc.update(0.016);
         expect(sc.scrollX).toBeGreaterThan(firstScroll);
-        
-        for(let i=0; i<100; i++) sc.update(16);
+
+        for(let i=0; i<100; i++) sc.update(0.016);
         const finalScroll = sc.scrollX;
-        sc.update(16);
+        sc.update(0.016);
         expect(sc.scrollX).toBeCloseTo(finalScroll, 1);
     });
 });

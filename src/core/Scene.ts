@@ -244,7 +244,7 @@ export class Scene implements IScene {
 
     ctx.clearRect(0, 0, this.hitBuffer.width, this.hitBuffer.height);
     const arenaCtx = new Arena2DContext(ctx);
-    view._paintHitRecursive(this.root as IElement, arenaCtx);
+    view._paintHitRecursive(this.root as IElement, arenaCtx, view.frustum);
   }
 
   /**

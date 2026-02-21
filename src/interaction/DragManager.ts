@@ -29,28 +29,45 @@ export interface IDragEvent {
   originalEvent: IPointerEvent;
 }
 
+/**
+ * Manages drag and drop interactions for elements.
+ * Detects draggable elements, tracks pointer movement, and emits drag events
+ * with proper target and drop target tracking.
+ */
 export class DragManager {
+  /** Reference to the interaction manager. */
   // biome-ignore lint/suspicious/noExplicitAny: avoid circular dependency in type for now
   private _interactionManager: any;
+  /** The element currently being dragged. */
   private _dragTarget: IElement | null = null;
+  /** Whether a drag operation is currently active. */
   private _isDragging = false;
+  /** X coordinate where the drag started. */
   private _dragStartX = 0;
+  /** Y coordinate where the drag started. */
   private _dragStartY = 0;
+  /** Last recorded scene X coordinate. */
   private _lastSceneX = 0;
+  /** Last recorded scene Y coordinate. */
   private _lastSceneY = 0;
+  /** The current drop target element. */
   private _dropTarget: IElement | null = null;
 
-  // Threshold to start dragging (pixels)
+  /** Minimum distance in pixels to initiate a drag. */
   private static readonly DRAG_THRESHOLD = 5;
 
-  // biome-ignore lint/suspicious/noExplicitAny: avoid circular dependency in type for now
+  /**
+   * Creates a new DragManager.
+   * @param interactionManager - The interaction manager instance.
+   */
   constructor(interactionManager: any) {
     this._interactionManager = interactionManager;
   }
 
   /**
-   * Called by InteractionManager when a pointer down occurs.
-   * Returns true if we successfully identified a potential drag target.
+   * Handles pointer down event, identifying potential drag target.
+   * @param event - The pointer event.
+   * @returns True if a draggable element was identified.
    */
   handlePointerDown(event: IPointerEvent): boolean {
     let current: IElement | null = event.target;
@@ -69,6 +86,10 @@ export class DragManager {
     return false;
   }
 
+  /**
+   * Handles pointer move event, tracking drag movement.
+   * @param event - The pointer event.
+   */
   handlePointerMove(event: IPointerEvent): void {
     if (!this._dragTarget) return;
 
@@ -85,6 +106,10 @@ export class DragManager {
     }
   }
 
+  /**
+   * Handles pointer up event, completing the drag operation.
+   * @param event - The pointer event.
+   */
   handlePointerUp(event: IPointerEvent): void {
     if (this._isDragging) {
       this._endDrag(event);
@@ -92,6 +117,10 @@ export class DragManager {
     this._cleanup();
   }
 
+  /**
+   * Initiates a drag operation.
+   * @private
+   */
   private _startDrag(event: IPointerEvent): void {
     if (!this._dragTarget) return;
 
@@ -101,6 +130,10 @@ export class DragManager {
     this._emit(this._dragTarget, "dragstart", event);
   }
 
+  /**
+   * Updates drag movement and checks for drop target.
+   * @private
+   */
   private _updateDrag(event: IPointerEvent): void {
     if (!this._dragTarget) return;
 
@@ -133,6 +166,10 @@ export class DragManager {
     this._checkDropTarget(event);
   }
 
+  /**
+   * Detects and updates the current drop target.
+   * @private
+   */
   private _checkDropTarget(event: IPointerEvent): void {
     if (!this._dragTarget) return;
 
@@ -234,6 +271,10 @@ export class DragManager {
     }
   }
 
+  /**
+   * Ends the drag operation and emits final events.
+   * @private
+   */
   private _endDrag(event: IPointerEvent): void {
     if (!this._dragTarget) return;
 
@@ -246,12 +287,26 @@ export class DragManager {
     }
   }
 
+  /**
+   * Cleans up drag state after operation completes.
+   * @private
+   */
   private _cleanup(): void {
     this._dragTarget = null;
     this._isDragging = false;
     this._dropTarget = null;
   }
 
+  /**
+   * Emits a drag event to the target element.
+   * @private
+   * @param target - The element to emit the event on.
+   * @param type - The event type (dragstart, dragmove, etc.).
+   * @param pointerEvent - The original pointer event.
+   * @param dx - Horizontal movement delta.
+   * @param dy - Vertical movement delta.
+   * @param relatedTarget - Optional related element (drop target or dragged item).
+   */
   private _emit(
     target: IElement,
     type: string,

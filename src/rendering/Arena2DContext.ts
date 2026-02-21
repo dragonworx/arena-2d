@@ -157,15 +157,32 @@ export function buildFontString(style: IRenderTextStyle): string {
 
 // ── Arena2DContext Class ──
 
+/**
+ * Concrete implementation of IArena2DContext.
+ */
 export class Arena2DContext implements IArena2DContext {
+  /** The underlying canvas rendering context. */
   readonly raw: CanvasContext;
 
+  /**
+   * Creates a new Arena2DContext.
+   * @param ctx - The canvas rendering context to wrap.
+   */
   constructor(ctx: CanvasContext) {
     this.raw = ctx;
   }
 
   // ── Shape Primitives (6.1) ──
 
+  /**
+   * Draws a rectangle with optional fill and stroke.
+   * @param x - The top-left X coordinate.
+   * @param y - The top-left Y coordinate.
+   * @param w - The width.
+   * @param h - The height.
+   * @param fill - Optional fill color or pattern.
+   * @param stroke - Optional stroke color or pattern.
+   */
   drawRect(
     x: number,
     y: number,
@@ -186,6 +203,16 @@ export class Arena2DContext implements IArena2DContext {
     }
   }
 
+  /**
+   * Draws a rectangle with rounded corners.
+   * @param x - The top-left X coordinate.
+   * @param y - The top-left Y coordinate.
+   * @param w - The width.
+   * @param h - The height.
+   * @param radius - Corner radius (single value or array of [tl, tr, br, bl]).
+   * @param fill - Optional fill color or pattern.
+   * @param stroke - Optional stroke color or pattern.
+   */
   drawRoundedRect(
     x: number,
     y: number,
@@ -208,6 +235,14 @@ export class Arena2DContext implements IArena2DContext {
     }
   }
 
+  /**
+   * Draws a circle.
+   * @param cx - Center X coordinate.
+   * @param cy - Center Y coordinate.
+   * @param r - Radius.
+   * @param fill - Optional fill color or pattern.
+   * @param stroke - Optional stroke color or pattern.
+   */
   drawCircle(
     cx: number,
     cy: number,
@@ -228,6 +263,15 @@ export class Arena2DContext implements IArena2DContext {
     }
   }
 
+  /**
+   * Draws an ellipse.
+   * @param cx - Center X coordinate.
+   * @param cy - Center Y coordinate.
+   * @param rx - Horizontal radius.
+   * @param ry - Vertical radius.
+   * @param fill - Optional fill color or pattern.
+   * @param stroke - Optional stroke color or pattern.
+   */
   drawEllipse(
     cx: number,
     cy: number,
@@ -249,6 +293,15 @@ export class Arena2DContext implements IArena2DContext {
     }
   }
 
+  /**
+   * Draws a line segment.
+   * @param x1 - Start X coordinate.
+   * @param y1 - Start Y coordinate.
+   * @param x2 - End X coordinate.
+   * @param y2 - End Y coordinate.
+   * @param stroke - Stroke color or pattern.
+   * @param lineWidth - Optional line width.
+   */
   drawLine(
     x1: number,
     y1: number,

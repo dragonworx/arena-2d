@@ -89,20 +89,47 @@ export interface IInteractionManager {
 
 // ── Pointer Event Implementation ──
 
+/**
+ * Concrete implementation of a pointer event in the canvas.
+ */
 class CanvasPointerEvent implements IPointerEvent {
+  /** Event type (pointerdown, pointermove, pointerup, wheel, etc.). */
   readonly type: string;
+  /** The element that initially triggered the event. */
   readonly target: IElement;
+  /** The element currently processing the event during propagation. */
   currentTarget: IElement;
+  /** Pointer X position in scene coordinates. */
   readonly sceneX: number;
+  /** Pointer Y position in scene coordinates. */
   readonly sceneY: number;
+  /** Pointer X position in local coordinates of the target. */
   readonly localX: number;
+  /** Pointer Y position in local coordinates of the target. */
   readonly localY: number;
+  /** Mouse button index (0=left, 1=middle, 2=right). */
   readonly button: number;
+  /** Horizontal scroll/movement delta. */
   readonly deltaX: number;
+  /** Vertical scroll/movement delta. */
   readonly deltaY: number;
+  /** Whether propagation has been stopped. */
   propagationStopped = false;
+  /** Whether default behavior has been prevented. */
   defaultPrevented = false;
 
+  /**
+   * Creates a new CanvasPointerEvent.
+   * @param type - Event type.
+   * @param target - Target element.
+   * @param sceneX - Scene X coordinate.
+   * @param sceneY - Scene Y coordinate.
+   * @param localX - Local X coordinate.
+   * @param localY - Local Y coordinate.
+   * @param button - Mouse button index.
+   * @param deltaX - Horizontal delta.
+   * @param deltaY - Vertical delta.
+   */
   constructor(
     type: string,
     target: IElement,
@@ -126,10 +153,16 @@ class CanvasPointerEvent implements IPointerEvent {
     this.deltaY = deltaY;
   }
 
+  /**
+   * Stops event propagation to parent elements.
+   */
   stopPropagation(): void {
     this.propagationStopped = true;
   }
 
+  /**
+   * Prevents the browser from performing its default action.
+   */
   preventDefault(): void {
     this.defaultPrevented = true;
   }
@@ -137,19 +170,39 @@ class CanvasPointerEvent implements IPointerEvent {
 
 // ── Keyboard Event Implementation ──
 
+/**
+ * Concrete implementation of a keyboard event in the canvas.
+ */
 class CanvasKeyboardEvent implements IKeyboardEvent {
+  /** Event type (keydown, keyup, etc.). */
   readonly type: string;
+  /** The element that initially triggered the event. */
   readonly target: IElement;
+  /** The element currently processing the event during propagation. */
   currentTarget: IElement;
+  /** The key pressed (e.g., "a", "Enter", "ArrowUp"). */
   readonly key: string;
+  /** The physical key code (e.g., "KeyA", "Enter", "ArrowUp"). */
   readonly code: string;
+  /** Whether Shift was pressed. */
   readonly shiftKey: boolean;
+  /** Whether Ctrl/Cmd was pressed. */
   readonly ctrlKey: boolean;
+  /** Whether Alt was pressed. */
   readonly altKey: boolean;
+  /** Whether Meta/Windows key was pressed. */
   readonly metaKey: boolean;
+  /** Whether propagation has been stopped. */
   propagationStopped = false;
+  /** Whether default behavior has been prevented. */
   defaultPrevented = false;
 
+  /**
+   * Creates a new CanvasKeyboardEvent.
+   * @param type - Event type.
+   * @param target - Target element.
+   * @param domEvent - The original DOM keyboard event.
+   */
   constructor(type: string, target: IElement, domEvent: KeyboardEvent) {
     this.type = type;
     this.target = target;
@@ -162,10 +215,16 @@ class CanvasKeyboardEvent implements IKeyboardEvent {
     this.metaKey = domEvent.metaKey;
   }
 
+  /**
+   * Stops event propagation to parent elements.
+   */
   stopPropagation(): void {
     this.propagationStopped = true;
   }
 
+  /**
+   * Prevents the browser from performing its default action.
+   */
   preventDefault(): void {
     this.defaultPrevented = true;
   }
@@ -187,30 +246,55 @@ interface IViewRef {
 
 // ── InteractionManager ──
 
+/**
+ * Concrete implementation of interaction management for a scene.
+ * Handles all pointer, keyboard, and focus events with spatial hashing for efficient hit testing.
+ */
 export class InteractionManager implements IInteractionManager {
+  /** Reference to the view this manager is attached to. */
   private _view: IViewRef;
+  /** Spatial hash grid for broad-phase hit testing. */
   private _spatialHash: SpatialHashGrid;
+  /** The element that currently has input focus. */
   private _focusedElement: IElement | null = null;
+  /** The element currently under the pointer. */
   private _hoveredElement: IElement | null = null;
+  /** The element on which pointerdown occurred. */
   private _pointerDownElement: IElement | null = null;
+  /** Map of elements to their spatial hash entries. */
   private _spatialEntries = new Map<IElement, ISpatialEntry>();
+  /** Set of elements that need spatial hash update. */
   private _spatialDirtyElements = new Set<IElement>();
+  /** Whether the entire spatial hash needs rebuilding. */
   private _spatialFullRebuild = true;
 
-  // Last known pointer position in scene space (used for per-frame hover refresh)
+  /** Last known pointer X in scene space. */
   private _lastPointerSceneX = 0;
+  /** Last known pointer Y in scene space. */
   private _lastPointerSceneY = 0;
+  /** Whether pointer position is currently known. */
   private _hasPointerPosition = false;
 
-  // Bound DOM handlers for cleanup
+  /** Bound DOM event handler for pointer down. */
   private _onPointerDown: (e: PointerEvent) => void;
+  /** Bound DOM event handler for pointer up. */
   private _onPointerUp: (e: PointerEvent) => void;
+  /** Bound DOM event handler for pointer move. */
   private _onPointerMove: (e: PointerEvent) => void;
+  /** Bound DOM event handler for wheel. */
   private _onWheel: (e: WheelEvent) => void;
+  /** Bound DOM event handler for key down. */
   private _onKeyDown: (e: KeyboardEvent) => void;
+  /** Bound DOM event handler for key up. */
   private _onKeyUp: (e: KeyboardEvent) => void;
+  /** Bound DOM event handler for double click. */
   private _onDoubleClick: (e: MouseEvent) => void;
 
+  /**
+   * Creates a new InteractionManager.
+   * @param view - The view to manage interactions for.
+   * @param cellSize - Size of spatial hash cells. Default 128.
+   */
   constructor(view: IViewRef, cellSize = 128) {
     this._view = view;
     this._spatialHash = new SpatialHashGrid(cellSize);

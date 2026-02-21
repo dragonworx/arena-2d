@@ -15,7 +15,12 @@ export interface ISpatialEntry {
 }
 
 /**
- * Encode a cell key from grid coordinates.
+ * Encodes a cell key from grid coordinates.
+ * Uses a shifted Cantor-pairing-like encoding to handle negative coordinates.
+ * @private
+ * @param cx - Cell X coordinate.
+ * @param cy - Cell Y coordinate.
+ * @returns The encoded cell key.
  */
 function cellKey(cx: number, cy: number): number {
   // Use a Cantor-pairing-like encoding that handles negative coordinates
@@ -25,17 +30,31 @@ function cellKey(cx: number, cy: number): number {
   return (a << 16) | (b & 0xffff);
 }
 
+/**
+ * Concrete implementation of a spatial hash grid for efficient spatial queries.
+ */
 export class SpatialHashGrid {
+  /** Size of each grid cell in world units. */
   private _cellSize: number;
+  /** Inverse of cell size for fast coordinate conversion. */
   private _inverseCellSize: number;
+  /** Map of cell keys to sets of entries in those cells. */
   private _cells = new Map<number, Set<ISpatialEntry>>();
+  /** Map tracking which cells contain each entry. */
   private _entryToCells = new Map<ISpatialEntry, number[]>();
 
+  /**
+   * Creates a new SpatialHashGrid.
+   * @param cellSize - Size of each grid cell in world units. Default 128.
+   */
   constructor(cellSize = 128) {
     this._cellSize = cellSize;
     this._inverseCellSize = 1 / cellSize;
   }
 
+  /**
+   * Gets the cell size of the grid.
+   */
   get cellSize(): number {
     return this._cellSize;
   }

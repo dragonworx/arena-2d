@@ -1,5 +1,19 @@
 /**
  * Circle geometry primitive.
+ *
+ * Represents a circle defined by a center point `(cx, cy)` and a `radius`.
+ *
+ * @module Geometry
+ * @example
+ * ```typescript
+ * import { Circle } from 'arena-2d';
+ *
+ * const circle = new Circle(100, 100, 50);
+ * console.log(circle.area); // Area of the circle
+ * if (circle.containsPoint(120, 120)) {
+ *   console.log('Point is inside!');
+ * }
+ * ```
  */
 
 import { Geometry } from './Geometry';
@@ -7,13 +21,26 @@ import type { IRect } from '../math/aabb';
 import type { ICircle } from './types';
 import { Vector } from './Vector';
 
+/**
+ * Concrete implementation of a circle.
+ */
 export class Circle extends Geometry implements ICircle {
+  /** @inheritdoc */
   readonly type = 'circle';
 
+  /** The center X coordinate in local space. */
   cx: number = 0;
+  /** The center Y coordinate in local space. */
   cy: number = 0;
+  /** The radius of the circle. */
   radius: number = 1;
 
+  /**
+   * Creates a new Circle.
+   * @param cx - Local center X.
+   * @param cy - Local center Y.
+   * @param radius - The radius.
+   */
   constructor(cx: number = 0, cy: number = 0, radius: number = 1) {
     super();
     this.cx = cx;
@@ -21,6 +48,7 @@ export class Circle extends Geometry implements ICircle {
     this.radius = Math.max(radius, Number.EPSILON);
   }
 
+  /** @inheritdoc */
   protected getLocalBounds(): IRect {
     return {
       x: this.cx - this.radius,
@@ -30,6 +58,7 @@ export class Circle extends Geometry implements ICircle {
     };
   }
 
+  /** @inheritdoc */
   distanceTo(x: number, y: number): number {
     const local = this.worldToLocal(x, y);
     const dx = local.x - this.cx;
@@ -38,6 +67,7 @@ export class Circle extends Geometry implements ICircle {
     return Math.max(0, distance - this.radius);
   }
 
+  /** @inheritdoc */
   closestPointTo(x: number, y: number): { x: number; y: number } {
     const local = this.worldToLocal(x, y);
     const dx = local.x - this.cx;
@@ -53,6 +83,7 @@ export class Circle extends Geometry implements ICircle {
     return this.localToWorld(this.cx + nx * this.radius, this.cy + ny * this.radius);
   }
 
+  /** @inheritdoc */
   intersectsLine(x1: number, y1: number, x2: number, y2: number): Array<{ x: number; y: number }> {
     const local1 = this.worldToLocal(x1, y1);
     const local2 = this.worldToLocal(x2, y2);
@@ -87,6 +118,7 @@ export class Circle extends Geometry implements ICircle {
     return results;
   }
 
+  /** @inheritdoc */
   intersectsShape(shape: any): Array<{ x: number; y: number }> {
     // For now, use a simple approach: find closest point and check distance
     // More sophisticated algorithms would check circle-to-shape intersection
@@ -108,6 +140,7 @@ export class Circle extends Geometry implements ICircle {
     return results;
   }
 
+  /** @inheritdoc */
   containsPoint(x: number, y: number): boolean {
     const local = this.worldToLocal(x, y);
     const dx = local.x - this.cx;
@@ -115,18 +148,21 @@ export class Circle extends Geometry implements ICircle {
     return dx * dx + dy * dy <= this.radius * this.radius;
   }
 
+  /** @inheritdoc */
   get area(): number {
     const scale = Math.sqrt(Math.abs(this.scaleX * this.scaleY));
     const r = this.radius * scale;
     return Math.PI * r * r;
   }
 
+  /** @inheritdoc */
   get perimeter(): number {
     const scale = Math.sqrt(Math.abs(this.scaleX * this.scaleY));
     const r = this.radius * scale;
     return 2 * Math.PI * r;
   }
 
+  /** @inheritdoc */
   pointAt(t: number): { x: number; y: number } {
     const angle = t * 2 * Math.PI;
     const lx = this.cx + Math.cos(angle) * this.radius;
@@ -134,6 +170,7 @@ export class Circle extends Geometry implements ICircle {
     return this.localToWorld(lx, ly);
   }
 
+  /** @inheritdoc */
   tangentAt(t: number): { x: number; y: number } {
     const angle = t * 2 * Math.PI;
     const dx = -Math.sin(angle);
@@ -141,6 +178,7 @@ export class Circle extends Geometry implements ICircle {
     return this.transformVector(dx, dy);
   }
 
+  /** @inheritdoc */
   get centroid(): { x: number; y: number } {
     return this.localToWorld(this.cx, this.cy);
   }

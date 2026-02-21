@@ -1,22 +1,49 @@
 /**
  * Bezier Curve geometry primitive.
- * Supports cubic and higher-order Bezier curves with 2 or more control points.
+ *
+ * Represents a Bezier curve of arbitrary degree (quadratic, cubic, quartic, etc.)
+ * defined by a series of control points. The curve passes through the first and
+ * last control points and is influenced by intermediate control points.
+ *
+ * @module Geometry
+ * @example
+ * ```typescript
+ * import { BezierCurve } from 'arena-2d';
+ *
+ * const curve = new BezierCurve([
+ *   { x: 0, y: 0 },
+ *   { x: 50, y: 100 },
+ *   { x: 150, y: 100 },
+ *   { x: 200, y: 0 }
+ * ]); // Cubic Bezier curve
+ * const pt = curve.pointAt(0.5);
+ * ```
  */
 
 import { Geometry } from './Geometry';
 import type { IRect } from '../math/aabb';
 import type { IBezierCurve } from './types';
 
+/**
+ * Concrete implementation of a Bezier curve.
+ */
 export class BezierCurve extends Geometry implements IBezierCurve {
+  /** @inheritdoc */
   readonly type = 'bezierCurve';
 
+  /** The control points defining the curve. */
   controlPoints: Array<{ x: number; y: number }> = [];
 
+  /**
+   * Creates a new BezierCurve.
+   * @param controlPoints - Array of control points (minimum 2 required).
+   */
   constructor(controlPoints: Array<{ x: number; y: number }> = []) {
     super();
     this.controlPoints = controlPoints.length >= 2 ? controlPoints.slice() : [{ x: 0, y: 0 }, { x: 1, y: 0 }];
   }
 
+  /** @inheritdoc */
   protected getLocalBounds(): IRect {
     if (this.controlPoints.length === 0) {
       return { x: 0, y: 0, width: 0, height: 0 };
@@ -46,7 +73,8 @@ export class BezierCurve extends Geometry implements IBezierCurve {
   }
 
   /**
-   * Evaluate the Bezier curve at parameter t using De Casteljau's algorithm.
+   * Evaluates the Bezier curve at parameter t using De Casteljau's algorithm.
+   * @private
    */
   private evaluate(t: number): { x: number; y: number } {
     if (this.controlPoints.length === 0) return { x: 0, y: 0 };
@@ -66,7 +94,8 @@ export class BezierCurve extends Geometry implements IBezierCurve {
   }
 
   /**
-   * Get the derivative of the Bezier curve at parameter t.
+   * Gets the derivative (tangent) of the Bezier curve at parameter t.
+   * @private
    */
   private derivative(t: number): { x: number; y: number } {
     if (this.controlPoints.length < 2) return { x: 0, y: 0 };
@@ -93,6 +122,7 @@ export class BezierCurve extends Geometry implements IBezierCurve {
     return points[0];
   }
 
+  /** @inheritdoc */
   distanceTo(x: number, y: number): number {
     const local = this.worldToLocal(x, y);
     let minDistance = Number.POSITIVE_INFINITY;
@@ -109,6 +139,7 @@ export class BezierCurve extends Geometry implements IBezierCurve {
     return minDistance;
   }
 
+  /** @inheritdoc */
   closestPointTo(x: number, y: number): { x: number; y: number } {
     const local = this.worldToLocal(x, y);
     let minDistance = Number.POSITIVE_INFINITY;
@@ -130,6 +161,7 @@ export class BezierCurve extends Geometry implements IBezierCurve {
     return this.localToWorld(pt.x, pt.y);
   }
 
+  /** @inheritdoc */
   intersectsLine(x1: number, y1: number, x2: number, y2: number): Array<{ x: number; y: number }> {
     const local1 = this.worldToLocal(x1, y1);
     const local2 = this.worldToLocal(x2, y2);
@@ -167,6 +199,7 @@ export class BezierCurve extends Geometry implements IBezierCurve {
     return results;
   }
 
+  /** @inheritdoc */
   intersectsShape(shape: any): Array<{ x: number; y: number }> {
     const results: Array<{ x: number; y: number }> = [];
     for (let i = 0; i <= 32; i++) {
@@ -179,15 +212,18 @@ export class BezierCurve extends Geometry implements IBezierCurve {
     return results;
   }
 
+  /** @inheritdoc */
   containsPoint(x: number, y: number): boolean {
     const closest = this.closestPointTo(x, y);
     return Math.abs(closest.x - x) < 1e-6 && Math.abs(closest.y - y) < 1e-6;
   }
 
+  /** @inheritdoc */
   get area(): number {
     return 0; // Curves have no area
   }
 
+  /** @inheritdoc */
   get perimeter(): number {
     let length = 0;
     let prevPt = this.evaluate(0);
@@ -205,18 +241,21 @@ export class BezierCurve extends Geometry implements IBezierCurve {
     return length * scale;
   }
 
+  /** @inheritdoc */
   pointAt(t: number): { x: number; y: number } {
     const clamped = Math.max(0, Math.min(1, t));
     const pt = this.evaluate(clamped);
     return this.localToWorld(pt.x, pt.y);
   }
 
+  /** @inheritdoc */
   tangentAt(t: number): { x: number; y: number } {
     const clamped = Math.max(0, Math.min(1, t));
     const deriv = this.derivative(clamped);
     return this.transformVector(deriv.x, deriv.y);
   }
 
+  /** @inheritdoc */
   get centroid(): { x: number; y: number } {
     const pt = this.evaluate(0.5);
     return this.localToWorld(pt.x, pt.y);

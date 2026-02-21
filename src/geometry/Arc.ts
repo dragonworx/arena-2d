@@ -1,22 +1,52 @@
 /**
  * Arc geometry primitive.
- * Part of a circle defined by center, radius, start angle, and end angle.
+ *
+ * Represents a circular arc defined by center, radius, and angle range.
+ * Arcs can be drawn clockwise or counter-clockwise.
+ *
+ * @module Geometry
+ * @example
+ * ```typescript
+ * import { Arc } from 'arena-2d';
+ *
+ * const arc = new Arc(0, 0, 50, 0, Math.PI / 2); // Quarter circle
+ * console.log(arc.perimeter); // Arc length + radii
+ * ```
  */
 
 import { Geometry } from './Geometry';
 import type { IRect } from '../math/aabb';
 import type { IArc } from './types';
 
+/**
+ * Concrete implementation of an arc geometry.
+ */
 export class Arc extends Geometry implements IArc {
+  /** @inheritdoc */
   readonly type = 'arc';
 
+  /** The center X coordinate in local space. */
   cx: number = 0;
+  /** The center Y coordinate in local space. */
   cy: number = 0;
+  /** The radius of the arc. */
   radius: number = 1;
+  /** The start angle in radians. */
   startAngle: number = 0;
+  /** The end angle in radians. */
   endAngle: number = Math.PI * 2;
+  /** Whether the arc is drawn counter-clockwise. */
   counterclockwise: boolean = false;
 
+  /**
+   * Creates a new Arc.
+   * @param cx - Local center X.
+   * @param cy - Local center Y.
+   * @param radius - The radius.
+   * @param startAngle - Start angle in radians.
+   * @param endAngle - End angle in radians.
+   * @param counterclockwise - Draw counter-clockwise if true.
+   */
   constructor(
     cx: number = 0,
     cy: number = 0,
@@ -34,6 +64,7 @@ export class Arc extends Geometry implements IArc {
     this.counterclockwise = counterclockwise;
   }
 
+  /** @inheritdoc */
   protected getLocalBounds(): IRect {
     // Approximate bounds by checking arc endpoints and extrema
     const startX = this.cx + Math.cos(this.startAngle) * this.radius;
@@ -66,6 +97,10 @@ export class Arc extends Geometry implements IArc {
     };
   }
 
+  /**
+   * Checks if an angle is within the arc's angle range.
+   * @private
+   */
   private angleInArc(angle: number): boolean {
     let a = angle % (2 * Math.PI);
     let start = this.startAngle % (2 * Math.PI);
@@ -86,6 +121,7 @@ export class Arc extends Geometry implements IArc {
     }
   }
 
+  /** @inheritdoc */
   distanceTo(x: number, y: number): number {
     const local = this.worldToLocal(x, y);
     const dx = local.x - this.cx;
@@ -109,6 +145,7 @@ export class Arc extends Geometry implements IArc {
     return Math.min(d1, d2);
   }
 
+  /** @inheritdoc */
   closestPointTo(x: number, y: number): { x: number; y: number } {
     const local = this.worldToLocal(x, y);
     const dx = local.x - this.cx;
@@ -134,6 +171,7 @@ export class Arc extends Geometry implements IArc {
     return d1 < d2 ? this.localToWorld(startX, startY) : this.localToWorld(endX, endY);
   }
 
+  /** @inheritdoc */
   intersectsLine(x1: number, y1: number, x2: number, y2: number): Array<{ x: number; y: number }> {
     const local1 = this.worldToLocal(x1, y1);
     const local2 = this.worldToLocal(x2, y2);
@@ -170,6 +208,7 @@ export class Arc extends Geometry implements IArc {
     return results;
   }
 
+  /** @inheritdoc */
   intersectsShape(shape: any): Array<{ x: number; y: number }> {
     const results: Array<{ x: number; y: number }> = [];
     for (let i = 0; i <= 32; i++) {
@@ -182,6 +221,7 @@ export class Arc extends Geometry implements IArc {
     return results;
   }
 
+  /** @inheritdoc */
   containsPoint(x: number, y: number): boolean {
     const local = this.worldToLocal(x, y);
     const dx = local.x - this.cx;
@@ -194,6 +234,7 @@ export class Arc extends Geometry implements IArc {
     return this.angleInArc(angle);
   }
 
+  /** @inheritdoc */
   get area(): number {
     // Area of circular sector
     let angle = this.endAngle - this.startAngle;
@@ -205,6 +246,7 @@ export class Arc extends Geometry implements IArc {
     return Math.abs(angle) * r * r * 0.5;
   }
 
+  /** @inheritdoc */
   get perimeter(): number {
     // Arc length + radii to endpoints
     let angle = this.endAngle - this.startAngle;
@@ -216,6 +258,7 @@ export class Arc extends Geometry implements IArc {
     return Math.abs(angle) * r + 2 * r;
   }
 
+  /** @inheritdoc */
   pointAt(t: number): { x: number; y: number } {
     let angle = this.startAngle + ((t % 1) * (this.endAngle - this.startAngle));
     if (this.counterclockwise) angle = this.startAngle - ((t % 1) * (this.startAngle - this.endAngle));
@@ -225,6 +268,7 @@ export class Arc extends Geometry implements IArc {
     return this.localToWorld(x, y);
   }
 
+  /** @inheritdoc */
   tangentAt(t: number): { x: number; y: number } {
     let angle = this.startAngle + ((t % 1) * (this.endAngle - this.startAngle));
     if (this.counterclockwise) angle = this.startAngle - ((t % 1) * (this.startAngle - this.endAngle));
@@ -234,6 +278,7 @@ export class Arc extends Geometry implements IArc {
     return this.transformVector(dx, dy);
   }
 
+  /** @inheritdoc */
   get centroid(): { x: number; y: number } {
     return this.localToWorld(this.cx, this.cy);
   }
