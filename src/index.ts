@@ -146,3 +146,27 @@ export { Image } from "./elements/Image";
 // --- Layer 13: Scroll Containers ---
 export type { IScrollContainer } from "./elements/ScrollContainer";
 export { ScrollContainer } from "./elements/ScrollContainer";
+
+// --- Animation: Tween System ---
+export type {
+  EasingFunction,
+  EasingName,
+  IKeyframe,
+  ITweenConfig,
+  TweenState,
+  ITween,
+  TweenProperties,
+  Interpolator,
+  IManagedTween,
+} from "./animation";
+export {
+  Easing,
+  resolveEasing,
+  createInterpolator,
+  parseHex,
+  parseRgb,
+  parseHsl,
+  hslToRgb,
+  TweenManager,
+  Tween,
+} from "./animation";
