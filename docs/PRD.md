@@ -36,6 +36,8 @@ Layer 0  Project Scaffold & Demo Site
   │
 Layer 1  Core Math & Transformation Engine
   │
+Layer 1.1 Geometry Primitives
+  │
 Layer 2  Event Emitter
   │
 Layer 3  Element Base & Dirty Flagging (VDOM Core)
@@ -158,6 +160,155 @@ export interface IRect {
 
 ### Demo Panel
 A live canvas showing a rectangle with draggable sliders for `x`, `y`, `rotation`, `scaleX`, `scaleY`, `pivotX`, `pivotY`. The rectangle's world-space AABB is drawn as a dashed overlay.
+
+---
+
+## Layer 1.1 — Geometry Primitives
+
+### Philosophy
+Fundamental geometric primitives that can exist both in isolation (for pure computational geometry) and as part of a scene graph (for rendering and interaction). All shapes support hierarchical transforms through the ITransform interface.
+
+### API Contract
+```typescript
+export interface IGeometry extends ITransform {
+  readonly type: string;
+
+  // Distance operations
+  distanceTo(x: number, y: number): number;
+  closestPointTo(x: number, y: number): { x: number; y: number };
+
+  // Intersection & containment
+  intersectsLine(x1: number, y1: number, x2: number, y2: number): Array<{ x: number; y: number }>;
+  intersectsShape(shape: IGeometry): Array<{ x: number; y: number }>;
+  containsPoint(x: number, y: number): boolean;
+
+  // Geometric properties
+  area: number;           // Readonly
+  perimeter: number;      // Readonly
+  boundingBox: IRect;     // Readonly
+  centroid: { x: number; y: number }; // Readonly
+
+  // Parametric interpolation
+  pointAt(t: number): { x: number; y: number }; // t in [0, 1]
+  tangentAt(t: number): { x: number; y: number }; // Normalized tangent
+
+  // Rendering (optional)
+  paint?(ctx: IArena2DContext): void;
+}
+
+export interface IPoint extends IGeometry {
+  // Point-specific: just a location
+}
+
+export interface IVector {
+  x: number;
+  y: number;
+  magnitude: number;
+  angle: number;         // Polar angle (radians)
+
+  add(other: IVector): IVector;
+  subtract(other: IVector): IVector;
+  dot(other: IVector): number;
+  cross(other: IVector): number;
+  normalize(): IVector;
+  rotate(radians: number): IVector;
+}
+
+export interface IRay extends IGeometry {
+  originX: number;
+  originY: number;
+  directionX: number;    // Normalized
+  directionY: number;
+}
+
+export interface ILine extends IGeometry {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+}
+
+export interface ICircle extends IGeometry {
+  cx: number;
+  cy: number;
+  radius: number;
+}
+
+export interface IEllipse extends IGeometry {
+  cx: number;
+  cy: number;
+  rx: number;            // Horizontal radius
+  ry: number;            // Vertical radius
+}
+
+export interface IRectangle extends IGeometry {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface IPolygon extends IGeometry {
+  points: Array<{ x: number; y: number }>;
+  closed: boolean;
+}
+
+export interface IArc extends IGeometry {
+  cx: number;
+  cy: number;
+  radius: number;
+  startAngle: number;
+  endAngle: number;
+  counterclockwise: boolean;
+}
+
+export interface IBezierCurve extends IGeometry {
+  points: Array<{ x: number; y: number }>;  // Control points (2 or more)
+}
+
+export interface IQuadraticCurve extends IGeometry {
+  x0: number;
+  y0: number;
+  cpx: number;           // Control point
+  cpy: number;
+  x1: number;
+  y1: number;
+}
+
+export interface IPath extends IGeometry {
+  segments: Array<{
+    type: 'move' | 'line' | 'quad' | 'bezier' | 'arc' | 'close';
+    data: unknown;
+  }>;
+}
+```
+
+### Deliverables
+
+| # | Item | Details |
+|---|---|---|
+| 1.1.1 | **Geometry base class** | `src/geometry/Geometry.ts` — Abstract base implementing `IGeometry`. Extends `ITransform` for nesting support. |
+| 1.1.2 | **Shape primitives** | `src/geometry/{Point, Vector, Ray, Line, Rectangle, Circle, Ellipse}.ts` — Basic shapes. |
+| 1.1.3 | **Complex primitives** | `src/geometry/{Polygon, Arc, BezierCurve, QuadraticCurve, Path}.ts`. |
+| 1.1.4 | **Parametric interpolation** | `pointAt(t)` and `tangentAt(t)` for all shapes. |
+| 1.1.5 | **Geometric operations** | Distance, closest point, intersections, containment. Account for nested transforms. |
+| 1.1.6 | **Geometric properties** | Area, perimeter, bounding box, centroid calculations. |
+| 1.1.7 | **Unit tests** | All primitives, all operations, nested transform scenarios, edge cases. |
+| 1.1.8 | **Demo panel** | Interactive visualization of all shapes with: ray/line intersection overlay, closest-point highlights, intersection detection with moving circle, area/perimeter display. |
+
+### Acceptance Criteria
+- All primitives can be constructed and nested independently.
+- Distance and closest-point calculations respect nested transforms (global space).
+- Intersection detection works between any two shapes and with lines/rays.
+- All geometric properties (area, perimeter, centroid) are calculated correctly.
+- Parametric interpolation (`pointAt`, `tangentAt`) produces smooth curves.
+
+### Demo Panel
+An interactive scene showing all 12 shape types. A ray draws from origin (0,0) through the pointer, highlighting intersected shapes. For each shape, display:
+- Closest point to pointer (highlighted circle)
+- Intersection points with the ray (highlighted dots)
+- Area and perimeter values
+A circle bounds the scene edges; highlight all shapes the circle intersects and mark intersection points.
 
 ---
 

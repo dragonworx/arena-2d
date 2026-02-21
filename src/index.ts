@@ -24,6 +24,37 @@ export { computeAABB } from "./math/aabb";
 export type { ITransform } from "./math/Transform";
 export { Transform } from "./math/Transform";
 
+// --- Layer 1.1: Geometry Primitives ---
+export type {
+  IGeometry,
+  IVector,
+  IPoint,
+  IRay,
+  ILine,
+  IRectangle,
+  ICircle,
+  IEllipse,
+  IPolygon,
+  IArc,
+  IBezierCurve,
+  IQuadraticCurve,
+  IPath,
+  PathSegment,
+} from "./geometry/types";
+export { Geometry } from "./geometry/Geometry";
+export { Vector } from "./geometry/Vector";
+export { Point } from "./geometry/Point";
+export { Ray } from "./geometry/Ray";
+export { Line } from "./geometry/Line";
+export { Rectangle } from "./geometry/Rectangle";
+export { Circle } from "./geometry/Circle";
+export { Ellipse } from "./geometry/Ellipse";
+export { Polygon } from "./geometry/Polygon";
+export { Arc } from "./geometry/Arc";
+export { QuadraticCurve } from "./geometry/QuadraticCurve";
+export { BezierCurve } from "./geometry/BezierCurve";
+export { Path } from "./geometry/Path";
+
 // --- Layer 2: Event Emitter ---
 export type { IEventEmitter } from "./events/EventEmitter";
 export { EventEmitter } from "./events/EventEmitter";

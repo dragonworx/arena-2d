@@ -7,11 +7,11 @@
 
 ## Current Phase
 
-Layer 15 — API Surface, Bundle & Documentation
+Layer 1.1 — Geometry Primitives
 
 ## Status
 
-🟢 SHIPPED (Layer 0 to 15 complete, 13 skipped)
+🔍 AWAITING REVIEW
 
 ---
 
@@ -64,6 +64,20 @@ Layer 15 — API Surface, Bundle & Documentation
 - [x] 1.4 Unit tests (identity, composition, inversion, pivoted rotation, AABB, edge cases)
 - [x] 1.5 Demo panel — rectangle with transform sliders and AABB overlay
 - Tests: 47/47 passing
+
+---
+
+### Layer 1.1 — Geometry 🟡
+- [x] 1.1.1 Create geometry primitives base class and interfaces
+- [x] 1.1.2 Implement Point, Vector (Cartesian & Polar), Ray, Line, Rectangle, Circle, Ellipse
+- [x] 1.1.3 Implement Polygon, Arc, Bezier Curve, Quadratic Curve, Path
+- [x] 1.1.4 Parametric point along shape interpolation for all shapes
+- [x] 1.1.5 Superclass support: nesting, transforms, distance, closest point, intersections
+- [x] 1.1.6 Geometric operations: area, perimeter, bounding box, centroid
+- [x] 1.1.7 Unit tests for all primitives and geometric operations
+- [x] 1.1.8 Demo panel — all shapes with interactive visualization
+- **Status:** 🔍 AWAITING REVIEW
+- Tests: 70/70 passing (new), 551/551 total passing
 
 ---
 

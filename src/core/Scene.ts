@@ -68,6 +68,7 @@ export class Scene implements IScene {
   private _elementIndex = new Map<string, IElement>();
   private _uidIndex = new Map<number, IElement>();
   private _dprMediaQuery: MediaQueryList | null = null;
+  private _resizeObserver: ResizeObserver | null = null;
   private _isDestroyed = false;
   private _hitBufferCtx: OffscreenCanvasRenderingContext2D | null = null;
   private _hitBufferDirty = true;
@@ -82,8 +83,9 @@ export class Scene implements IScene {
 
   constructor(container: HTMLElement, width: number, height: number) {
     this.container = container;
-    this._width = width;
-    this._height = height;
+    // Use the passed dimensions OR the container's actual layout dimensions
+    this._width = width || container.clientWidth || 0;
+    this._height = height || container.clientHeight || 0;
     this._dpr = window.devicePixelRatio || 1;
 
     // Ensure container is positioned (required for absolute-positioned layers)
@@ -91,9 +93,7 @@ export class Scene implements IScene {
       container.style.position = "relative";
     }
 
-    // Set container size
-    container.style.width = `${width}px`;
-    container.style.height = `${height}px`;
+    // Container size is controlled by external CSS
     container.style.overflow = "hidden";
 
     // Create hit buffer (offscreen canvas at scene resolution)
@@ -123,6 +123,21 @@ export class Scene implements IScene {
 
     // Listen for DPR changes
     this._setupDPRListener();
+
+    // Listen for container resize (if ResizeObserver is available, e.g. in browser)
+    if (typeof ResizeObserver !== "undefined") {
+      this._resizeObserver = new ResizeObserver((entries) => {
+        const entry = entries[0];
+        if (!entry) return;
+        const { width, height } = entry.contentRect;
+        const w = Math.round(width);
+        const h = Math.round(height);
+        if (w !== this._width || h !== this._height) {
+          this.resize(w, h);
+        }
+      });
+      this._resizeObserver.observe(this.container);
+    }
 
     // Register for GC tracking
     Scene._registry.register(this, this.root.id, this);
@@ -244,10 +259,6 @@ export class Scene implements IScene {
     this._width = width;
     this._height = height;
 
-    // Update container size
-    this.container.style.width = `${width}px`;
-    this.container.style.height = `${height}px`;
-
     // Resize all layers
     for (const layer of this._layers.values()) {
       layer.resize(width, height, this._dpr);
@@ -293,6 +304,10 @@ export class Scene implements IScene {
     // Clear element indices
     this._elementIndex.clear();
     this._uidIndex.clear();
+
+    // Disconnect ResizeObserver
+    this._resizeObserver?.disconnect();
+    this._resizeObserver = null;
 
     // Remove DPR listener
     if (this._dprMediaQuery) {
@@ -403,11 +418,29 @@ export class Scene implements IScene {
       const b = uid & 0x0000ff;
       const color = `rgb(${r},${g},${b})`;
 
-      ctx.beginHitElement(element, color);
+      // Apply DPR-scaled transform (same as _paintRecursive)
+      const raw = ctx.raw;
+      raw.save();
+      const m = element.worldMatrix;
+      const dpr = this._dpr;
+      raw.setTransform(
+        dpr * m[0],
+        dpr * m[1],
+        dpr * m[2],
+        dpr * m[3],
+        dpr * m[4],
+        dpr * m[5],
+      );
+      raw.globalAlpha = 1.0;
+      raw.globalCompositeOperation = "source-over";
+      raw.fillStyle = color;
+      raw.strokeStyle = color;
+
       if ("paint" in element) {
         (element as any).paint(ctx);
       }
-      ctx.endElement();
+
+      raw.restore();
     }
 
     if ("children" in element) {

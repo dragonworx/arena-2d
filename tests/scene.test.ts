@@ -393,8 +393,9 @@ describe("Scene — resize", () => {
 
     expect(scene.width).toBe(1024);
     expect(scene.height).toBe(768);
-    expect(container.style.width).toBe("1024px");
-    expect(container.style.height).toBe("768px");
+    // Container CSS size is now controlled by external CSS, not by Scene
+    expect(scene.hitBuffer.width).toBe(1024 * window.devicePixelRatio);
+    expect(scene.hitBuffer.height).toBe(768 * window.devicePixelRatio);
 
     scene.destroy();
     container.remove();
