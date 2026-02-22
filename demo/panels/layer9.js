@@ -454,11 +454,11 @@ export default async function (Arena2D) {
       const isHovered = interaction.hoveredElement === el;
 
       // Draw fill - use dynamic color from item
-      ctx.drawRect(0, 0, el.width, el.height, item.color);
+      ctx.drawRect(0, 0, el.width, el.height, { fillColor: item.color });
 
       // Hover highlight - SKIP FOR DROP ZONE
       if (isHovered && label !== "drop-zone") {
-        ctx.drawRect(0, 0, el.width, el.height, "rgba(255,255,255,0.15)");
+        ctx.drawRect(0, 0, el.width, el.height, { fillColor: "rgba(255,255,255,0.15)" });
       }
 
       // Focus ring

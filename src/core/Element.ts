@@ -97,6 +97,10 @@ export interface IElement {
   containsPoint(localX: number, localY: number): boolean;
   hitTest(globalX: number, globalY: number): IElement | null;
 
+  // Events
+  // biome-ignore lint/suspicious/noExplicitAny: event data varies by event type
+  emit(event: string, e: any): void;
+
   // Dirty system
   invalidate(flag: DirtyFlags): void;
 

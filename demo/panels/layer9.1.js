@@ -114,7 +114,7 @@ export default async function (Arena2D) {
     } else if (this.isHovered) {
       drawColor = tintColorMap.get(this.baseColor) || this.baseColor;
     }
-    ctx.drawRect(0, 0, this.width, this.height, drawColor);
+    ctx.drawRect(0, 0, this.width, this.height, { fillColor: drawColor });
   }
 
   function generateScene() {

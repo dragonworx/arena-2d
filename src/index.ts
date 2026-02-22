@@ -66,6 +66,7 @@ export type {
   ViewAlignment,
   LookAtOptions,
   ViewOptions,
+  PanTrigger,
 } from "./core/View";
 export { View } from "./core/View";
 

@@ -40,10 +40,36 @@ export interface LookAtOptions {
   animate?: boolean;
 }
 
+/**
+ * Callback that decides whether a pointer event should initiate a pan.
+ * Return `true` to start panning, `false` to ignore.
+ */
+export type PanTrigger = (e: PointerEvent) => boolean;
+
 export interface ViewOptions {
   projections?: IProjection[];
   enableMousePan?: boolean;
   enableMouseZoom?: boolean;
+  /**
+   * Custom predicate that decides which pointer events start a pan gesture.
+   * Receives the raw PointerEvent from `pointerdown` and should return `true`
+   * to begin panning.
+   *
+   * Default: `(e) => e.button === 0 && e.shiftKey` (left-click + Shift).
+   */
+  panTrigger?: PanTrigger;
+  /**
+   * Multiplier applied to wheel delta when panning (plain scroll).
+   * Lower values reduce pan speed. Default: `1`.
+   */
+  wheelPanScalar?: number;
+  /**
+   * Multiplier applied to wheel delta when zooming (Ctrl/Meta+scroll).
+   * Lower values reduce zoom sensitivity. Default: `1`.
+   */
+  wheelZoomScalar?: number;
+  constrainPan?: boolean;
+  constrainZoom?: boolean;
   inertia?: boolean;
   friction?: number;
   minVelocity?: number;
@@ -60,6 +86,8 @@ export interface IView {
   zoom: number;
   panX: number;
   panY: number;
+  constrainPan: boolean;
+  constrainZoom: boolean;
   readonly projections: IProjection[];
 
   // Layer management
@@ -119,16 +147,26 @@ export class View implements IView {
   // Mouse interaction
   private _enableMousePan: boolean;
   private _enableMouseZoom: boolean;
+  private _panTrigger: PanTrigger;
+  private _wheelPanScalar: number;
+  private _wheelZoomScalar: number;
+  private _constrainPan: boolean;
+  private _constrainZoom: boolean;
   private _isPanning = false;
   private _lastPointerX = 0;
   private _lastPointerY = 0;
   private _activeProjection: IProjection | null = null;
+  private _zoomModifierDown = false;
 
   // Bound DOM handlers
   private _onPointerDown: (e: PointerEvent) => void;
   private _onPointerMove: (e: PointerEvent) => void;
   private _onPointerUp: (e: PointerEvent) => void;
   private _onWheel: (e: WheelEvent) => void;
+  private _onKeyDown: (e: KeyboardEvent) => void;
+  private _onKeyUp: (e: KeyboardEvent) => void;
+  private _onWindowBlur: () => void;
+  private _onGesture: (e: Event) => void;
 
   constructor(
     container: HTMLElement,
@@ -146,6 +184,12 @@ export class View implements IView {
     // Options
     this._enableMousePan = options.enableMousePan ?? true;
     this._enableMouseZoom = options.enableMouseZoom ?? true;
+    this._panTrigger =
+      options.panTrigger ?? ((e: PointerEvent) => e.button === 0 && e.shiftKey);
+    this._wheelPanScalar = options.wheelPanScalar ?? 1;
+    this._wheelZoomScalar = options.wheelZoomScalar ?? 1;
+    this._constrainPan = options.constrainPan ?? false;
+    this._constrainZoom = options.constrainZoom ?? false;
     this._inertiaEnabled = options.inertia ?? false;
     this._friction = options.friction ?? 0.92;
     this._minVelocity = options.minVelocity ?? 0.5;
@@ -155,6 +199,8 @@ export class View implements IView {
       container.style.position = "relative";
     }
     container.style.overflow = "hidden";
+    container.style.touchAction = "none";
+    container.style.overscrollBehavior = "none";
 
     // Create default layer
     this._defaultLayer = new Layer("default", 0, this.container, this);
@@ -195,6 +241,27 @@ export class View implements IView {
     this._onPointerUp = this._handlePanEnd.bind(this);
     this._onWheel = this._handleWheel.bind(this);
 
+    // Track zoom modifier keys via keydown/keyup so we don't rely on
+    // WheelEvent.ctrlKey (browsers synthesise ctrlKey for trackpad pinch).
+    this._onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Control" || e.key === "Meta")
+        this._zoomModifierDown = true;
+    };
+    this._onKeyUp = (e: KeyboardEvent) => {
+      if (e.key === "Control" || e.key === "Meta")
+        this._zoomModifierDown = false;
+    };
+    this._onWindowBlur = () => {
+      this._zoomModifierDown = false;
+    };
+
+    // Suppress Safari gesturestart/gesturechange/gestureend to prevent
+    // native pinch-to-zoom from firing on the container.
+    this._onGesture = (e: Event) => e.preventDefault();
+    container.addEventListener("gesturestart", this._onGesture);
+    container.addEventListener("gesturechange", this._onGesture);
+    container.addEventListener("gestureend", this._onGesture);
+
     if (this._enableMousePan) {
       container.addEventListener("pointerdown", this._onPointerDown);
       container.addEventListener("pointermove", this._onPointerMove);
@@ -202,6 +269,9 @@ export class View implements IView {
     }
     if (this._enableMouseZoom) {
       container.addEventListener("wheel", this._onWheel, { passive: false });
+      window.addEventListener("keydown", this._onKeyDown);
+      window.addEventListener("keyup", this._onKeyUp);
+      window.addEventListener("blur", this._onWindowBlur);
     }
 
     // DPR listener
@@ -277,6 +347,22 @@ export class View implements IView {
 
   set panY(value: number) {
     this._panY = value;
+  }
+
+  get constrainPan(): boolean {
+    return this._constrainPan;
+  }
+
+  set constrainPan(value: boolean) {
+    this._constrainPan = value;
+  }
+
+  get constrainZoom(): boolean {
+    return this._constrainZoom;
+  }
+
+  set constrainZoom(value: boolean) {
+    this._constrainZoom = value;
   }
 
   get projections(): IProjection[] {
@@ -374,6 +460,7 @@ export class View implements IView {
 
       src.width = newW;
       src.height = newH;
+      this._clampSourceRect(src);
       return;
     }
 
@@ -525,6 +612,12 @@ export class View implements IView {
     this.container.removeEventListener("pointermove", this._onPointerMove);
     this.container.removeEventListener("pointerup", this._onPointerUp);
     this.container.removeEventListener("wheel", this._onWheel);
+    this.container.removeEventListener("gesturestart", this._onGesture);
+    this.container.removeEventListener("gesturechange", this._onGesture);
+    this.container.removeEventListener("gestureend", this._onGesture);
+    window.removeEventListener("keydown", this._onKeyDown);
+    window.removeEventListener("keyup", this._onKeyUp);
+    window.removeEventListener("blur", this._onWindowBlur);
 
     // Destroy all layers
     for (const layer of this._layers.values()) {
@@ -890,28 +983,65 @@ export class View implements IView {
     return null;
   }
 
+  // ── Source Rect Clamping ──
+
+  /**
+   * Clamp a projection's sourceRect so it stays within the scene bounds.
+   * - constrainZoom: cap sourceRect dimensions to scene dimensions.
+   * - constrainPan: clamp sourceRect position so no out-of-bounds region is visible.
+   */
+  private _clampSourceRect(src: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  }): void {
+    const sceneW = this.scene.width;
+    const sceneH = this.scene.height;
+
+    if (this._constrainZoom) {
+      if (src.width > sceneW) src.width = sceneW;
+      if (src.height > sceneH) src.height = sceneH;
+    }
+
+    if (this._constrainPan) {
+      if (src.width >= sceneW) {
+        src.x = (sceneW - src.width) / 2;
+      } else {
+        if (src.x < 0) src.x = 0;
+        if (src.x + src.width > sceneW) src.x = sceneW - src.width;
+      }
+
+      if (src.height >= sceneH) {
+        src.y = (sceneH - src.height) / 2;
+      } else {
+        if (src.y < 0) src.y = 0;
+        if (src.y + src.height > sceneH) src.y = sceneH - src.height;
+      }
+    }
+  }
+
   // ── Pan/Zoom Handlers ──
 
   private _handlePanStart(e: PointerEvent): void {
-    // Only start pan on middle-click
-    if (e.button === 1) {
-      const rect = this.container.getBoundingClientRect();
-      const viewX = e.clientX - rect.left;
-      const viewY = e.clientY - rect.top;
+    if (!this._panTrigger(e)) return;
 
-      // Find the projection under the cursor
-      this._activeProjection = this._hitTestProjection(viewX, viewY);
-      if (!this._activeProjection) return;
+    const rect = this.container.getBoundingClientRect();
+    const viewX = e.clientX - rect.left;
+    const viewY = e.clientY - rect.top;
 
-      this._isPanning = true;
-      this._lastPointerX = e.clientX;
-      this._lastPointerY = e.clientY;
-      this._velocityX = 0;
-      this._velocityY = 0;
-      this._inertiaActive = false;
-      this.container.style.cursor = "grabbing";
-      e.preventDefault();
-    }
+    // Find the projection under the cursor
+    this._activeProjection = this._hitTestProjection(viewX, viewY);
+    if (!this._activeProjection) return;
+
+    this._isPanning = true;
+    this._lastPointerX = e.clientX;
+    this._lastPointerY = e.clientY;
+    this._velocityX = 0;
+    this._velocityY = 0;
+    this._inertiaActive = false;
+    this.container.style.cursor = "grabbing";
+    e.preventDefault();
   }
 
   private _handlePanMove(e: PointerEvent): void {
@@ -929,6 +1059,8 @@ export class View implements IView {
     // (dragging right should reveal content to the left)
     proj.sourceRect.x -= dx * scaleX;
     proj.sourceRect.y -= dy * scaleY;
+
+    this._clampSourceRect(proj.sourceRect);
 
     this._lastPointerX = e.clientX;
     this._lastPointerY = e.clientY;
@@ -955,24 +1087,34 @@ export class View implements IView {
     const src = proj.sourceRect;
     const dst = proj.destRect;
 
-    // Map cursor position from destRect space to sourceRect (scene) space
-    const tX = (mouseX - dst.x) / dst.width; // 0..1 within destRect
-    const tY = (mouseY - dst.y) / dst.height;
-    const sceneX = src.x + tX * src.width;
-    const sceneY = src.y + tY * src.height;
+    if (this._zoomModifierDown || e.ctrlKey || e.metaKey) {
+      // ── Ctrl / Meta + wheel = zoom ──
+      const tX = (mouseX - dst.x) / dst.width;
+      const tY = (mouseY - dst.y) / dst.height;
+      const sceneX = src.x + tX * src.width;
+      const sceneY = src.y + tY * src.height;
 
-    // Apply zoom factor to the sourceRect dimensions
-    const zoomFactor = e.deltaY < 0 ? 1 / 1.1 : 1.1;
-    const newW = src.width * zoomFactor;
-    const newH = src.height * zoomFactor;
+      // Combine both axes into a single zoom delta and preserve magnitude
+      // for smooth trackpad zooming. Normalise by 100 to keep the exponent
+      // in a reasonable range for typical pixel-mode deltas.
+      const combined = (e.deltaX + e.deltaY) / 100;
+      const zoomFactor = Math.pow(1.1, combined * this._wheelZoomScalar);
+      const newW = src.width * zoomFactor;
+      const newH = src.height * zoomFactor;
 
-    // Reposition sourceRect so the scene point under the cursor stays fixed
-    // The cursor is at fraction (tX, tY) within the destRect,
-    // so the scene point must remain at (src.x + tX * newW) = sceneX
-    src.x = sceneX - tX * newW;
-    src.y = sceneY - tY * newH;
-    src.width = newW;
-    src.height = newH;
+      src.x = sceneX - tX * newW;
+      src.y = sceneY - tY * newH;
+      src.width = newW;
+      src.height = newH;
+    } else {
+      // ── Plain wheel = pan ──
+      const scaleX = src.width / dst.width;
+      const scaleY = src.height / dst.height;
+      src.x += e.deltaX * scaleX * this._wheelPanScalar;
+      src.y += e.deltaY * scaleY * this._wheelPanScalar;
+    }
+
+    this._clampSourceRect(src);
   }
 
   // ── Inertia ──

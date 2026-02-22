@@ -16,7 +16,7 @@ export default async function (Arena2D) {
 
   // Draw container background
   sc.paint = (ctx) => {
-    ctx.drawRoundedRect(0, 0, sc.width, sc.height, 4, "#1a1a2e", "#444");
+    ctx.drawRoundedRect(0, 0, sc.width, sc.height, 4, { fillColor: "#1a1a2e", strokeColor: "#444" });
   };
 
   scene.root.addChild(sc);
@@ -64,7 +64,7 @@ export default async function (Arena2D) {
             color = `rgb(${r},${g},${b})`;
           }
 
-          ctx.drawRoundedRect(0, 0, card.width, card.height, 8, color, "#444");
+          ctx.drawRoundedRect(0, 0, card.width, card.height, 8, { fillColor: color, strokeColor: "#444" });
 
           ctx.drawText(`${c},${r}`, card.width / 2, card.height / 2, {
             fontSize: 14,
