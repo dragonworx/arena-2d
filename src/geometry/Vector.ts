@@ -133,6 +133,30 @@ export class Vector implements IVector {
   }
 
   /**
+   * Scales this vector by a scalar value.
+   *
+   * @param scalar - The value to scale by.
+   * @returns A new scaled Vector.
+   */
+  scale(scalar: number): Vector {
+    return new Vector(this.x * scalar, this.y * scalar);
+  }
+
+  /**
+   * Reflects this vector across a surface normal.
+   *
+   * Given an incident vector `I` and a surface normal `N`,
+   * the reflection is: `R = I - 2 * dot(I, N) * N`
+   *
+   * @param normal - The surface normal to reflect across (should be normalized).
+   * @returns A new reflected Vector.
+   */
+  reflect(normal: IVector): Vector {
+    const d = 2 * this.dot(normal);
+    return new Vector(this.x - d * normal.x, this.y - d * normal.y);
+  }
+
+  /**
    * Creates a deep copy of this vector.
    *
    * @returns A new Vector instance.

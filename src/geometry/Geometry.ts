@@ -150,6 +150,54 @@ export abstract class Geometry extends Transform implements IGeometry {
   abstract tangentAt(t: number): { x: number; y: number };
 
   /**
+   * Returns an outward-facing normal vector at normalized parameter `t`.
+   * Computed by rotating the tangent 90° and ensuring it points away from
+   * the shape's centroid so that it consistently faces outward regardless
+   * of parameterization winding order.
+   *
+   * @param t - A value between 0 and 1.
+   * @returns The normal vector { x, y }.
+   */
+  normalAt(t: number): { x: number; y: number } {
+    const tan = this.tangentAt(t);
+    const nx = tan.y, ny = -tan.x;
+    // Ensure normal faces away from centroid (outward)
+    const pt = this.pointAt(t);
+    const c = this.centroid;
+    const toCentroidX = c.x - pt.x;
+    const toCentroidY = c.y - pt.y;
+    if (nx * toCentroidX + ny * toCentroidY > 0) {
+      return { x: -nx, y: -ny };
+    }
+    return { x: nx, y: ny };
+  }
+
+  /**
+   * Returns the outward-facing surface normal at the closest point to a
+   * world-space query point. Computed as `normalize(query - closestPoint)`,
+   * which is mathematically exact for smooth curves and gives natural
+   * interpolation at corners/discontinuities.
+   *
+   * Falls back to parametric `normalAt` if the query point is on or
+   * inside the shape (distance ≈ 0).
+   *
+   * @param x - The X coordinate of the query point in world space.
+   * @param y - The Y coordinate of the query point in world space.
+   * @returns The outward unit normal vector { x, y }.
+   */
+  closestNormalTo(x: number, y: number): { x: number; y: number } {
+    const closest = this.closestPointTo(x, y);
+    const dx = x - closest.x;
+    const dy = y - closest.y;
+    const len = Math.sqrt(dx * dx + dy * dy);
+    if (len < 1e-10) {
+      // Point is on/inside the shape — fall back to parametric normal
+      return this.normalAt(0);
+    }
+    return { x: dx / len, y: dy / len };
+  }
+
+  /**
    * Gets the Axis-Aligned Bounding Box (AABB) of this geometry in world space.
    * Computed by transforming the local bounds through the world matrix.
    */

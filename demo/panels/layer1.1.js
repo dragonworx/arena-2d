@@ -11,6 +11,8 @@ export default async function (Arena2D) {
     Polygon, Arc, QuadraticCurve, BezierCurve, Path
   } = Arena2D;
 
+
+
   const canvas = document.getElementById('l1.1-canvas');
   if (!canvas) return;
 
@@ -259,7 +261,7 @@ export default async function (Arena2D) {
       ctx.arc(closest.x, closest.y, 3, 0, Math.PI * 2);
       ctx.fill();
 
-      // Draw dotted line to pointer if within 20px
+      // Draw dotted line to pointer if within range
       if (dist < 80) {
         ctx.strokeStyle = '#ffff00';
         ctx.lineWidth = 1;
@@ -269,6 +271,22 @@ export default async function (Arena2D) {
         ctx.lineTo(mouseX, mouseY);
         ctx.stroke();
         ctx.setLineDash([]);
+
+        // Draw reflection vector (only when pointer is outside the shape)
+        if (dist > 0.1) {
+          const normal = shape.closestNormalTo(mouseX, mouseY);
+          const incident = new Vector(closest.x - mouseX, closest.y - mouseY).normalize();
+          const reflected = incident.reflect(normal);
+          const refLen = 60;
+          ctx.strokeStyle = '#00ffff';
+          ctx.lineWidth = 1;
+          ctx.setLineDash([2, 2]);
+          ctx.beginPath();
+          ctx.moveTo(closest.x, closest.y);
+          ctx.lineTo(closest.x + reflected.x * refLen, closest.y + reflected.y * refLen);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
       }
 
       // Draw parametric point (cyan dot) in world space

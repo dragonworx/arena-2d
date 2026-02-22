@@ -22,6 +22,7 @@ export default async function (Arena2D) {
     Path: PathGeometry,
     LineElement, EllipseElement, PolygonElement,
     ArcElement, QuadraticCurveElement, BezierCurveElement, PathElement,
+    Vector,
     identity,
   } = Arena2D;
 
@@ -272,6 +273,22 @@ export default async function (Arena2D) {
 
         raw.fillStyle = '#ffff00';
         raw.beginPath(); raw.arc(closest.x, closest.y, 5, 0, Math.PI * 2); raw.fill();
+
+        // Draw reflection vector
+        try {
+          const normal = obj.closestNormalTo(mouseX, mouseY);
+          const incident = new Vector(closest.x - mouseX, closest.y - mouseY).normalize();
+          const reflected = incident.reflect(normal);
+          const refLen = 60;
+          raw.strokeStyle = '#00ffff';
+          raw.lineWidth = 1;
+          raw.setLineDash([2, 2]);
+          raw.beginPath();
+          raw.moveTo(closest.x, closest.y);
+          raw.lineTo(closest.x + reflected.x * refLen, closest.y + reflected.y * refLen);
+          raw.stroke();
+          raw.setLineDash([]);
+        } catch (_) { /* skip if normalAt not available */ }
       }
     }
 

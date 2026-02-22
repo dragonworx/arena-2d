@@ -82,6 +82,25 @@ export interface IGeometry extends ITransform {
    */
   tangentAt(t: number): { x: number; y: number };
 
+  /**
+   * Returns an outward-facing normal vector at a normalized parameter `t`.
+   * Derived by rotating the tangent and ensuring it faces away from the centroid.
+   * @param t - A value between 0 and 1.
+   * @returns The normal vector { x, y }.
+   */
+  normalAt(t: number): { x: number; y: number };
+
+  /**
+   * Returns the outward-facing surface normal at the closest point to a
+   * world-space query point. More robust than `normalAt(t)` because it
+   * does not require finding a parametric `t` value, and naturally handles
+   * corners and discontinuities by interpolating between adjacent normals.
+   * @param x - The X coordinate of the query point in world space.
+   * @param y - The Y coordinate of the query point in world space.
+   * @returns The outward unit normal vector { x, y }.
+   */
+  closestNormalTo(x: number, y: number): { x: number; y: number };
+
   /** Optional children for composite geometries. */
   readonly children?: ReadonlyArray<IGeometry>;
 }
@@ -111,6 +130,10 @@ export interface IVector {
   normalize(): IVector;
   /** Returns a new vector rotated by the given radians. */
   rotate(radians: number): IVector;
+  /** Scales this vector by a scalar value. */
+  scale(scalar: number): IVector;
+  /** Reflects this vector across a surface normal. */
+  reflect(normal: IVector): IVector;
   /** Returns a deep copy of this vector. */
   clone(): IVector;
 }
