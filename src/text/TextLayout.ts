@@ -90,15 +90,21 @@ function measureWidth(text: string): number {
 /**
  * Compute per-character x-offsets (advancements) for a string.
  * Each entry is the left edge of the character relative to line start.
+ * Uses cumulative measurement of individual characters to avoid substring allocations.
  */
 function computeAdvancements(text: string): number[] {
   const ctx = getMeasureContext();
   const advancements: number[] = [];
-  let x = 0;
+  let cumulativeAdvance = 0;
+
+  // Measure individual characters and accumulate the advancement
+  // Avoids N growing-substring allocations
   for (let i = 0; i < text.length; i++) {
-    advancements.push(x);
-    x += ctx.measureText(text[i]).width;
+    advancements.push(cumulativeAdvance);
+    const charWidth = ctx.measureText(text[i]).width;
+    cumulativeAdvance += charWidth;
   }
+
   return advancements;
 }
 
@@ -112,7 +118,9 @@ interface LayoutCacheEntry {
 }
 
 const CACHE_SIZE = 32;
-const _cache: LayoutCacheEntry[] = [];
+const _cache: Array<LayoutCacheEntry | null> = new Array(CACHE_SIZE).fill(null);
+let _cacheIndex = 0;
+let _cacheCount = 0;
 
 function buildFontKey(style: ILayoutTextStyle): string {
   return `${style.fontWeight ?? "normal"}_${style.fontStyle ?? "normal"}_${style.fontSize}_${style.fontFamily}`;
@@ -123,8 +131,10 @@ function findCached(
   fontKey: string,
   availableWidth: number,
 ): ITextLayout | null {
-  for (const entry of _cache) {
+  for (let i = 0; i < _cache.length; i++) {
+    const entry = _cache[i];
     if (
+      entry &&
       entry.text === text &&
       entry.fontKey === fontKey &&
       entry.availableWidth === availableWidth
@@ -141,10 +151,12 @@ function addToCache(
   availableWidth: number,
   result: ITextLayout,
 ): void {
-  if (_cache.length >= CACHE_SIZE) {
-    _cache.shift();
+  // Use circular buffer: O(1) insertion instead of O(n) shift
+  _cache[_cacheIndex] = { text, fontKey, availableWidth, result };
+  _cacheIndex = (_cacheIndex + 1) % CACHE_SIZE;
+  if (_cacheCount < CACHE_SIZE) {
+    _cacheCount++;
   }
-  _cache.push({ text, fontKey, availableWidth, result });
 }
 
 // ── Word-Wrap Algorithm ──

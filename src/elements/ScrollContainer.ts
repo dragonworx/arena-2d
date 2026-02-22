@@ -24,7 +24,13 @@ import type { IElement } from "../core/Element";
 import { DirtyFlags } from "../core/DirtyFlags";
 import type { IArena2DContext } from "../rendering/Arena2DContext";
 import { type IRect, computeAABB } from "../math/aabb";
-import { type MatrixArray, multiply, translate, invert, transformPoint } from "../math/matrix";
+import {
+  type MatrixArray,
+  multiply,
+  translate,
+  invert,
+  transformPoint,
+} from "../math/matrix";
 import type { IPointerEvent } from "../interaction/InteractionManager";
 
 /**
@@ -95,6 +101,12 @@ export class ScrollContainer extends Container implements IScrollContainer {
   private _deferredClickTarget: IElement | null = null;
   /** The original pointer event to defer to children. */
   private _deferredPointerEvent: IPointerEvent | null = null;
+  /** Window pointermove listener reference for drag (stored to allow cleanup). */
+  private _windowDragOnMove: ((me: PointerEvent) => void) | null = null;
+  /** Window pointerup listener reference for drag (stored to allow cleanup). */
+  private _windowDragOnUp: (() => void) | null = null;
+  /** Dirty flag for content bounds (set when children change). */
+  private _contentBoundsDirty = true;
 
   /**
    * Creates a new ScrollContainer.
@@ -115,7 +127,9 @@ export class ScrollContainer extends Container implements IScrollContainer {
   /**
    * Gets the horizontal scroll position.
    */
-  get scrollX(): number { return this._scrollX; }
+  get scrollX(): number {
+    return this._scrollX;
+  }
 
   /**
    * Sets the horizontal scroll position. Value is clamped to valid range.
@@ -136,7 +150,9 @@ export class ScrollContainer extends Container implements IScrollContainer {
   /**
    * Gets the vertical scroll position.
    */
-  get scrollY(): number { return this._scrollY; }
+  get scrollY(): number {
+    return this._scrollY;
+  }
 
   /**
    * Sets the vertical scroll position. Value is clamped to valid range.
@@ -157,62 +173,86 @@ export class ScrollContainer extends Container implements IScrollContainer {
   /**
    * Gets whether horizontal scrolling is enabled.
    */
-  get scrollEnabledX(): boolean { return this._scrollEnabledX; }
+  get scrollEnabledX(): boolean {
+    return this._scrollEnabledX;
+  }
 
   /**
    * Sets whether horizontal scrolling is enabled.
    */
-  set scrollEnabledX(v: boolean) { this._scrollEnabledX = v; }
+  set scrollEnabledX(v: boolean) {
+    this._scrollEnabledX = v;
+  }
 
   /**
    * Gets whether vertical scrolling is enabled.
    */
-  get scrollEnabledY(): boolean { return this._scrollEnabledY; }
+  get scrollEnabledY(): boolean {
+    return this._scrollEnabledY;
+  }
 
   /**
    * Sets whether vertical scrolling is enabled.
    */
-  set scrollEnabledY(v: boolean) { this._scrollEnabledY = v; }
+  set scrollEnabledY(v: boolean) {
+    this._scrollEnabledY = v;
+  }
 
   /**
    * Gets whether inertial scrolling is enabled.
    */
-  get inertiaEnabled(): boolean { return this._inertiaEnabled; }
+  get inertiaEnabled(): boolean {
+    return this._inertiaEnabled;
+  }
 
   /**
    * Sets whether inertial scrolling is enabled.
    */
-  set inertiaEnabled(v: boolean) { this._inertiaEnabled = v; }
+  set inertiaEnabled(v: boolean) {
+    this._inertiaEnabled = v;
+  }
 
   /**
    * Gets whether dragging is enabled.
    */
-  get dragEnabled(): boolean { return this._dragEnabled; }
+  get dragEnabled(): boolean {
+    return this._dragEnabled;
+  }
 
   /**
    * Sets whether dragging is enabled.
    */
-  set dragEnabled(v: boolean) { this._dragEnabled = v; }
+  set dragEnabled(v: boolean) {
+    this._dragEnabled = v;
+  }
 
   /**
    * Gets the click deferral threshold in milliseconds.
    */
-  get clickDeferralThreshold(): number { return this._clickDeferralThreshold; }
+  get clickDeferralThreshold(): number {
+    return this._clickDeferralThreshold;
+  }
 
   /**
    * Sets the click deferral threshold in milliseconds.
    */
-  set clickDeferralThreshold(v: number) { this._clickDeferralThreshold = Math.max(0, v); }
+  set clickDeferralThreshold(v: number) {
+    this._clickDeferralThreshold = Math.max(0, v);
+  }
 
   /**
    * Gets the bounds of the scrollable content.
    */
-  get contentBounds(): IRect { return this._contentBounds; }
+  get contentBounds(): IRect {
+    return this._contentBounds;
+  }
 
   /**
    * @internal Gets whether a drag operation is currently active.
    */
-  get isDragActive(): boolean { return this._isDragActive; }
+  get isDragActive(): boolean {
+    return this._isDragActive;
+  }
 
   /**
    * Scrolls to the specified position.
@@ -235,6 +275,42 @@ export class ScrollContainer extends Container implements IScrollContainer {
   }
 
   /**
+   * Override to mark content bounds as dirty when children are added.
+   * @override
+   */
+  override addChild(child: IElement): void {
+    super.addChild(child);
+    this._contentBoundsDirty = true;
+  }
+
+  /**
+   * Override to mark content bounds as dirty when children are added at index.
+   * @override
+   */
+  override addChildAt(child: IElement, index: number): void {
+    super.addChildAt(child, index);
+    this._contentBoundsDirty = true;
+  }
+
+  /**
+   * Override to mark content bounds as dirty when children are removed.
+   * @override
+   */
+  override removeChild(child: IElement): void {
+    super.removeChild(child);
+    this._contentBoundsDirty = true;
+  }
+
+  /**
+   * Override to mark content bounds as dirty when all children are removed.
+   * @override
+   */
+  override removeAllChildren(): void {
+    super.removeAllChildren();
+    this._contentBoundsDirty = true;
+  }
+
+  /**
    * Gets the world matrix adjusted for scroll offset.
    * @override
    */
@@ -251,18 +327,24 @@ export class ScrollContainer extends Container implements IScrollContainer {
   override update(dt: number): void {
     super.update(dt);
 
-    // Update content bounds if children are dirty
-    this._updateContentBounds();
+    // Update content bounds only if children have changed
+    if (this._contentBoundsDirty) {
+      this._updateContentBounds();
+      this._contentBoundsDirty = false;
+    }
 
     // Inertia (dt is in seconds)
-    if (!this._isDragging && this._inertiaEnabled && (Math.abs(this._velocityX) > 0.1 || Math.abs(this._velocityY) > 0.1)) {
+    if (
+      !this._isDragging &&
+      this._inertiaEnabled &&
+      (Math.abs(this._velocityX) > 0.1 || Math.abs(this._velocityY) > 0.1)
+    ) {
       if (this._scrollEnabledX) this.scrollX -= this._velocityX;
       if (this._scrollEnabledY) this.scrollY -= this._velocityY;
       this._velocityX *= Math.pow(this._friction, dt * 60);
       this._velocityY *= Math.pow(this._friction, dt * 60);
     }
   }
-
 
   /**
    * Performs hit testing accounting for scroll offset.
@@ -277,7 +359,12 @@ export class ScrollContainer extends Container implements IScrollContainer {
     if (!inv) return null;
     const local = transformPoint(inv, globalX, globalY);
 
-    if (local.x < 0 || local.x > this.width || local.y < 0 || local.y > this.height) {
+    if (
+      local.x < 0 ||
+      local.x > this.width ||
+      local.y < 0 ||
+      local.y > this.height
+    ) {
       return null;
     }
 
@@ -308,7 +395,7 @@ export class ScrollContainer extends Container implements IScrollContainer {
       x: minX,
       y: minY,
       width: maxX - minX,
-      height: maxY - minY
+      height: maxY - minY,
     };
   }
 
@@ -335,7 +422,6 @@ export class ScrollContainer extends Container implements IScrollContainer {
     const maxScroll = Math.max(0, this._contentBounds.height - this.height);
     return Math.max(0, Math.min(y, maxScroll));
   }
-
 
   /**
    * Handles pointer down event for drag scrolling.
@@ -365,7 +451,10 @@ export class ScrollContainer extends Container implements IScrollContainer {
       this._clickDeferralTimer = window.setTimeout(() => {
         // Timer fired - defer the click to the child if drag didn't start
         if (this._deferredClickTarget && !this._isDragActive) {
-          this._deferredClickTarget.emit("deferred-click", this._deferredPointerEvent);
+          this._deferredClickTarget.emit(
+            "deferred-click",
+            this._deferredPointerEvent,
+          );
         }
         this._clickDeferralTimer = null;
       }, this._clickDeferralThreshold) as unknown as number;
@@ -383,6 +472,9 @@ export class ScrollContainer extends Container implements IScrollContainer {
     this._lastPointerY = e.sceneY;
     this._velocityX = 0;
     this._velocityY = 0;
+
+    // Clean up any existing window listeners from interrupted drag
+    this._cleanupWindowDragListeners();
 
     const onMove = (me: PointerEvent) => {
       if (!this._isDragging) return;
@@ -434,7 +526,10 @@ export class ScrollContainer extends Container implements IScrollContainer {
         window.clearTimeout(this._clickDeferralTimer);
         this._clickDeferralTimer = null;
         if (this._deferredClickTarget && this._deferredPointerEvent) {
-          this._deferredClickTarget.emit("deferred-click", this._deferredPointerEvent);
+          this._deferredClickTarget.emit(
+            "deferred-click",
+            this._deferredPointerEvent,
+          );
         }
       }
       // Only reset dragActive after timer check is complete
@@ -445,14 +540,20 @@ export class ScrollContainer extends Container implements IScrollContainer {
       if (view && view.container) {
         view.container.style.cursor = "grab";
       }
+      // Clean up references
+      this._windowDragOnMove = null;
+      this._windowDragOnUp = null;
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
     };
 
+    // Store references for cleanup in destroy()
+    this._windowDragOnMove = onMove;
+    this._windowDragOnUp = onUp;
+
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
   }
-
 
   /**
    * Handles mouse wheel scroll events.
@@ -495,4 +596,33 @@ export class ScrollContainer extends Container implements IScrollContainer {
     }
   }
 
+  /**
+   * Cleans up window event listeners if drag was interrupted.
+   * Prevents memory leaks when ScrollContainer is destroyed during an active drag.
+   * @private
+   */
+  private _cleanupWindowDragListeners(): void {
+    if (this._windowDragOnMove) {
+      window.removeEventListener("pointermove", this._windowDragOnMove);
+      this._windowDragOnMove = null;
+    }
+    if (this._windowDragOnUp) {
+      window.removeEventListener("pointerup", this._windowDragOnUp);
+      this._windowDragOnUp = null;
+    }
+  }
+
+  /**
+   * Cleanup when the ScrollContainer is destroyed.
+   * Ensures window event listeners are removed even if destroy() is called during an active drag.
+   * @override
+   */
+  override destroy(): void {
+    this._cleanupWindowDragListeners();
+    if (this._clickDeferralTimer !== null) {
+      clearTimeout(this._clickDeferralTimer);
+      this._clickDeferralTimer = null;
+    }
+    super.destroy();
+  }
 }

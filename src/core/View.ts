@@ -168,11 +168,14 @@ export class View implements IView {
   private _onWindowBlur: () => void;
   private _onGesture: (e: Event) => void;
 
-  constructor(
-    container: HTMLElement,
-    scene: Scene,
-    options: ViewOptions = {},
-  ) {
+  // Reusable Arena2DContext (avoids per-frame allocations)
+  private _arenaCtx: Arena2DContext | null = null;
+  // Cached canvas rect to avoid layout thrashing from getBoundingClientRect
+  private _cachedCanvasRect: DOMRect | null = null;
+  // Stored window resize handler for cleanup
+  private _onWindowResize: () => void;
+
+  constructor(container: HTMLElement, scene: Scene, options: ViewOptions = {}) {
     this.container = container;
     this.scene = scene;
 
@@ -293,6 +296,14 @@ export class View implements IView {
         }
       });
       this._resizeObserver.observe(this.container);
+    }
+
+    // Invalidate canvas rect cache on window resize (for getBoundingClientRect())
+    this._onWindowResize = () => {
+      this._cachedCanvasRect = null;
+    };
+    if (typeof window !== "undefined") {
+      window.addEventListener("resize", this._onWindowResize);
     }
 
     // Register with scene
@@ -521,7 +532,12 @@ export class View implements IView {
   // ── Coordinate Transforms ──
 
   screenToScene(screenX: number, screenY: number): { x: number; y: number } {
-    const rect = this.container.getBoundingClientRect();
+    // Use cached rect when available, get fresh one if needed (avoid on pointer events)
+    let rect = this._cachedCanvasRect;
+    if (!rect) {
+      rect = this.container.getBoundingClientRect();
+      this._cachedCanvasRect = rect;
+    }
     const viewX = screenX - rect.left;
     const viewY = screenY - rect.top;
     return {
@@ -531,7 +547,12 @@ export class View implements IView {
   }
 
   sceneToScreen(sceneX: number, sceneY: number): { x: number; y: number } {
-    const rect = this.container.getBoundingClientRect();
+    // Use cached rect when available, get fresh one if needed
+    let rect = this._cachedCanvasRect;
+    if (!rect) {
+      rect = this.container.getBoundingClientRect();
+      this._cachedCanvasRect = rect;
+    }
     return {
       x: sceneX * this._zoom + this._panX + rect.left,
       y: sceneY * this._zoom + this._panY + rect.top,
@@ -543,6 +564,9 @@ export class View implements IView {
   resize(width: number, height: number): void {
     this._width = width;
     this._height = height;
+
+    // Invalidate cached canvas rect since size changed
+    this._cachedCanvasRect = null;
 
     // Resize all layers
     for (const layer of this._layers.values()) {
@@ -618,6 +642,7 @@ export class View implements IView {
     window.removeEventListener("keydown", this._onKeyDown);
     window.removeEventListener("keyup", this._onKeyUp);
     window.removeEventListener("blur", this._onWindowBlur);
+    window.removeEventListener("resize", this._onWindowResize);
 
     // Destroy all layers
     for (const layer of this._layers.values()) {
@@ -641,10 +666,19 @@ export class View implements IView {
    * Determines if an element should be culled based on frustum and container clipping.
    * @private
    */
-  private _shouldCull(element: IElement, container: IContainer | null, frustum: IRect): boolean {
+  private _shouldCull(
+    element: IElement,
+    container: IContainer | null,
+    frustum: IRect,
+  ): boolean {
     if (container && (container as Container).clipContent) {
       const clipWorldAABB = computeAABB(
-        { x: 0, y: 0, width: (container as Container).width, height: (container as Container).height },
+        {
+          x: 0,
+          y: 0,
+          width: (container as Container).width,
+          height: (container as Container).height,
+        },
         (container as Container).worldMatrix,
       );
       return !intersect(clipWorldAABB, frustum);
@@ -656,14 +690,6 @@ export class View implements IView {
       }
     }
     return false;
-  }
-
-  /**
-   * Returns sorted children by zIndex.
-   * @private
-   */
-  private _sortedChildren(container: IContainer): IElement[] {
-    return Array.from(container.children).sort((a, b) => a.zIndex - b.zIndex);
   }
 
   /**
@@ -721,7 +747,13 @@ export class View implements IView {
       }
     }
 
-    const ctx = new Arena2DContext(layer.ctx);
+    // Reuse or create Arena2DContext
+    if (!this._arenaCtx) {
+      this._arenaCtx = new Arena2DContext(layer.ctx);
+    } else {
+      this._arenaCtx.setContext(layer.ctx);
+    }
+    const ctx = this._arenaCtx;
 
     layer.ctx.save();
 
@@ -776,8 +808,7 @@ export class View implements IView {
           : clipWorldAABB;
       }
 
-      const sortedChildren = this._sortedChildren(container);
-      for (const child of sortedChildren) {
+      for (const child of container.children) {
         this._paintRecursive(child, childFrustum);
       }
 
@@ -864,8 +895,7 @@ export class View implements IView {
           : clipWorldAABB;
       }
 
-      const sorted = this._sortedChildren(container);
-      for (const child of sorted) {
+      for (const child of container.children) {
         this._paintHitRecursive(child, ctx, childFrustum);
       }
     }
@@ -902,7 +932,13 @@ export class View implements IView {
     const cacheCtx = container._getCacheContext(width * dpr, height * dpr);
     cacheCtx.clearRect(0, 0, width * dpr, height * dpr);
 
-    const arenaCtx = new Arena2DContext(cacheCtx);
+    // Reuse or create Arena2DContext
+    if (!this._arenaCtx) {
+      this._arenaCtx = new Arena2DContext(cacheCtx);
+    } else {
+      this._arenaCtx.setContext(cacheCtx);
+    }
+    const arenaCtx = this._arenaCtx;
 
     const originalCache = container.cacheAsBitmap;
     (container as any)._cacheAsBitmap = false;
@@ -926,9 +962,8 @@ export class View implements IView {
   ): void {
     if ("children" in element) {
       const container = element as IContainer;
-      const sorted = this._sortedChildren(container);
 
-      for (const child of sorted) {
+      for (const child of container.children) {
         if (!child.visible || child.alpha <= 0) continue;
 
         const raw = ctx.raw;
@@ -964,10 +999,7 @@ export class View implements IView {
    * Find the topmost projection whose destRect contains the given view-local point.
    * Iterates in reverse order so the highest-index (topmost) projection wins.
    */
-  private _hitTestProjection(
-    viewX: number,
-    viewY: number,
-  ): IProjection | null {
+  private _hitTestProjection(viewX: number, viewY: number): IProjection | null {
     for (let i = this._projections.length - 1; i >= 0; i--) {
       const p = this._projections[i];
       const d = p.destRect;
@@ -1026,7 +1058,11 @@ export class View implements IView {
   private _handlePanStart(e: PointerEvent): void {
     if (!this._panTrigger(e)) return;
 
-    const rect = this.container.getBoundingClientRect();
+    let rect = this._cachedCanvasRect;
+    if (!rect) {
+      rect = this.container.getBoundingClientRect();
+      this._cachedCanvasRect = rect;
+    }
     const viewX = e.clientX - rect.left;
     const viewY = e.clientY - rect.top;
 
@@ -1076,7 +1112,11 @@ export class View implements IView {
   private _handleWheel(e: WheelEvent): void {
     e.preventDefault();
 
-    const rect = this.container.getBoundingClientRect();
+    let rect = this._cachedCanvasRect;
+    if (!rect) {
+      rect = this.container.getBoundingClientRect();
+      this._cachedCanvasRect = rect;
+    }
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
 

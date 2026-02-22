@@ -24,7 +24,14 @@
 import type { ITicker } from "../core/Ticker";
 import { EventEmitter } from "../events/EventEmitter";
 import { resolveEasing } from "./Easing";
-import { type Interpolator, createInterpolator } from "./Interpolation";
+import {
+  type Interpolator,
+  createInterpolator,
+  fastColorInterpolator,
+  parseColor,
+  createPooledArrayInterpolator,
+  createPooledObjectInterpolator,
+} from "./Interpolation";
 import { type IManagedTween, TweenManager } from "./TweenManager";
 import type {
   EasingFunction,
@@ -45,6 +52,16 @@ interface ResolvedSegment {
   startTime: number;
   easing: EasingFunction;
   interpolator: Interpolator;
+  /** Pre-parsed from value for colors (null if not a color) */
+  parsedFromValue?: unknown;
+  /** Pre-parsed to value for colors (null if not a color) */
+  parsedToValue?: unknown;
+  /** Pre-allocated result array for array interpolation */
+  resultArray?: number[];
+  /** Pre-allocated result object for object interpolation */
+  resultObject?: Record<string, number>;
+  /** Cached keys for object interpolation */
+  resultKeys?: string[];
 }
 
 interface ResolvedProperty {
@@ -207,11 +224,14 @@ export class Tween extends EventEmitter implements ITween, IManagedTween {
 
     this._applyProperties(progress * this._totalDuration);
 
-    this.emit("update", {
-      target: this._target,
-      elapsed: this._elapsed,
-      progress: this.progress,
-    });
+    // Only create and emit event object if there are listeners
+    if (this.listenerCount("update") > 0) {
+      this.emit("update", {
+        target: this._target,
+        elapsed: this._elapsed,
+        progress: this.progress,
+      });
+    }
 
     // Check completion
     if (this._elapsed >= this._totalDuration) {
@@ -274,7 +294,47 @@ export class Tween extends EventEmitter implements ITween, IManagedTween {
           fromValue = this._target[key];
         }
 
-        const interpolator = createInterpolator(kf.toValue);
+        // Detect value type and create appropriate interpolator with pooling
+        let interpolator = createInterpolator(kf.toValue);
+        let parsedFromValue: unknown;
+        let parsedToValue: unknown;
+        let resultArray: number[] | undefined;
+        let resultObject: Record<string, number> | undefined;
+        let resultKeys: string[] | undefined;
+
+        if (typeof kf.toValue === "string" && typeof fromValue === "string") {
+          // Color property - pre-parse for efficiency
+          const fromParsed = parseColor(fromValue);
+          const toParsed = parseColor(kf.toValue);
+          if (fromParsed && toParsed) {
+            interpolator = fastColorInterpolator;
+            parsedFromValue = fromParsed;
+            parsedToValue = toParsed;
+          }
+        } else if (Array.isArray(kf.toValue) && Array.isArray(fromValue)) {
+          // Array property - pre-allocate result array
+          const len = Math.max((fromValue as number[]).length, (kf.toValue as number[]).length);
+          resultArray = new Array(len);
+          interpolator = createPooledArrayInterpolator(resultArray, len);
+        } else if (
+          typeof kf.toValue === "object" &&
+          kf.toValue !== null &&
+          !Array.isArray(kf.toValue) &&
+          typeof fromValue === "object" &&
+          fromValue !== null &&
+          !Array.isArray(fromValue)
+        ) {
+          // Object property - pre-allocate result object and cache keys
+          resultObject = {};
+          const toKeys = Object.keys(kf.toValue as Record<string, number>);
+          const fromKeys = Object.keys(fromValue as Record<string, number>);
+          resultKeys = Array.from(new Set([...toKeys, ...fromKeys]));
+          for (const key of resultKeys) {
+            resultObject[key] = 0;
+          }
+          interpolator = createPooledObjectInterpolator(resultObject, resultKeys);
+        }
+
         const easing = resolveEasing(kf.easing ?? this._defaultEasing);
 
         segments.push({
@@ -284,6 +344,11 @@ export class Tween extends EventEmitter implements ITween, IManagedTween {
           startTime: cumulativeTime,
           easing,
           interpolator,
+          parsedFromValue,
+          parsedToValue,
+          resultArray,
+          resultObject,
+          resultKeys,
         });
 
         cumulativeTime += kf.duration;
@@ -334,8 +399,10 @@ export class Tween extends EventEmitter implements ITween, IManagedTween {
       // Apply easing
       const easedT = seg.easing(localT);
 
-      // Interpolate and assign
-      this._target[key] = seg.interpolator(seg.fromValue, seg.toValue, easedT);
+      // Interpolate and assign (use pre-parsed values for colors if available)
+      const from = seg.parsedFromValue !== undefined ? seg.parsedFromValue : seg.fromValue;
+      const to = seg.parsedToValue !== undefined ? seg.parsedToValue : seg.toValue;
+      this._target[key] = seg.interpolator(from, to, easedT);
     }
   }
 }

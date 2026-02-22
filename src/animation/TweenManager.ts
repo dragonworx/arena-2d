@@ -60,9 +60,14 @@ export class TweenManager extends Element {
     return defaultTicker;
   }
 
-  /** Register a tween for per-frame updates. */
+  /** Register a tween for per-frame updates. Starts ticker if idle and this is the first tween. */
   add(tween: IManagedTween): void {
+    const wasEmpty = this._tweens.size === 0;
     this._tweens.add(tween);
+    // Start ticker on first tween if it was stopped
+    if (wasEmpty && !this.ticker.running) {
+      this.ticker.start();
+    }
   }
 
   /** Unregister a tween. */
@@ -70,7 +75,7 @@ export class TweenManager extends Element {
     this._tweens.delete(tween);
   }
 
-  /** Called by the Ticker each frame. Dispatches dt to all active tweens. */
+  /** Called by the Ticker each frame. Dispatches dt to all active tweens. Stops ticker if idle. */
   override update(dt: number): void {
     super.update(dt);
     for (const tween of this._tweens) {
@@ -78,6 +83,10 @@ export class TweenManager extends Element {
       if (!active) {
         this._tweens.delete(tween);
       }
+    }
+    // Stop ticker if no active tweens
+    if (this._tweens.size === 0 && this.ticker.running) {
+      this.ticker.stop();
     }
   }
 

@@ -291,6 +291,12 @@ export class InteractionManager implements IInteractionManager {
   private _onKeyUp: (e: KeyboardEvent) => void;
   /** Bound DOM event handler for double click. */
   private _onDoubleClick: (e: MouseEvent) => void;
+  /** Cached tab order (invalidated when scene structure changes). */
+  private _tabOrder: IElement[] | null = null;
+  /** Reusable hit test results array (pooled to avoid per-event allocations). */
+  private _hitTestResultPool: IElement[] = [];
+  /** Reusable hit test AABB results array (pooled to avoid per-call allocations). */
+  private _hitTestAABBResultPool: IElement[] = [];
 
   /**
    * Creates a new InteractionManager.
@@ -409,6 +415,8 @@ export class InteractionManager implements IInteractionManager {
    */
   markSpatialFullRebuild(): void {
     this._spatialFullRebuild = true;
+    // Invalidate tab order since scene structure is changing
+    this._invalidateTabOrder();
   }
 
   /**
@@ -484,7 +492,10 @@ export class InteractionManager implements IInteractionManager {
    * Checks if an element is a descendant of an ancestor.
    * @private
    */
-  private _isDescendantOf(element: IElement, ancestor: IElement | null | undefined): boolean {
+  private _isDescendantOf(
+    element: IElement,
+    ancestor: IElement | null | undefined,
+  ): boolean {
     if (!ancestor) return false;
     let current: IElement | null = element;
     while (current) {
@@ -562,6 +573,11 @@ export class InteractionManager implements IInteractionManager {
 
     // Remove from dirty set to avoid processing a destroyed element next frame
     this._spatialDirtyElements.delete(element);
+
+    // Invalidate tab order if element is focusable
+    if (element.focusable) {
+      this._invalidateTabOrder();
+    }
   }
 
   // ── Hit-Testing ──
@@ -579,10 +595,13 @@ export class InteractionManager implements IInteractionManager {
   ): IElement | null {
     // Broad phase: query spatial hash
     const candidates = this._spatialHash.query(sceneX, sceneY);
-    if (candidates.length === 0) return null;
+    if (candidates.length === 0) {
+      return null;
+    }
 
-    // Get the actual elements from entries
-    const elements: IElement[] = [];
+    // Get the actual elements from entries (reuse pooled array)
+    const elements = this._hitTestResultPool;
+    elements.length = 0; // Clear for reuse
     for (const entry of candidates) {
       const el = (entry as ISpatialEntry & { element: IElement }).element;
       if (el?.interactive && el.visible) {
@@ -610,7 +629,10 @@ export class InteractionManager implements IInteractionManager {
         const hitEl = scene._getElementByUID(hitUid);
         if (hitEl) {
           // Double check filtering/exclusion
-          if (!this._isDescendantOf(hitEl, exclude) && (!filter || filter(hitEl))) {
+          if (
+            !this._isDescendantOf(hitEl, exclude) &&
+            (!filter || filter(hitEl))
+          ) {
             return hitEl;
           }
         }
@@ -619,9 +641,17 @@ export class InteractionManager implements IInteractionManager {
 
     // ── Fallback: Matrix Pass (AABB/Quad) ──
     // (Existing logic remains as fallback for legacy or non-painted interactive elements)
-    
-    // Check from top (last) to bottom (first) — top-most first
-    for (let i = elements.length - 1; i >= 0; i--) {
+
+    // Sort by global z-order (topmost first) for correct hit detection
+    elements.sort((a, b) => {
+      const za = this._getGlobalZOrder(a);
+      const zb = this._getGlobalZOrder(b);
+      if (za !== zb) return zb - za;
+      return (b as InteractiveElement).uid - (a as InteractiveElement).uid;
+    });
+
+    // Check from top (highest z-order) to bottom
+    for (let i = 0; i < elements.length; i++) {
       const el = elements[i];
 
       // Skip zero-size elements
@@ -668,8 +698,9 @@ export class InteractionManager implements IInteractionManager {
     const candidates = this._spatialHash.queryAABB(sceneAABB);
     if (candidates.length === 0) return null;
 
-    // Get the actual elements from entries
-    const elements: IElement[] = [];
+    // Get the actual elements from entries (reuse pooled array)
+    const elements = this._hitTestAABBResultPool;
+    elements.length = 0; // Clear for reuse
     for (const entry of candidates) {
       const el = (entry as ISpatialEntry & { element: IElement }).element;
 
@@ -1027,9 +1058,20 @@ export class InteractionManager implements IInteractionManager {
    * Only elements with focusable=true participate.
    */
   private _buildTabOrder(): IElement[] {
+    if (this._tabOrder) return this._tabOrder;
+
     const order: IElement[] = [];
     this._collectFocusable(this._view.scene.root as IElement, order);
+    this._tabOrder = order;
     return order;
+  }
+
+  /**
+   * Invalidate the cached tab order when scene structure changes.
+   * @private
+   */
+  private _invalidateTabOrder(): void {
+    this._tabOrder = null;
   }
 
   private _collectFocusable(element: IElement, result: IElement[]): void {
@@ -1057,6 +1099,7 @@ export class InteractionManager implements IInteractionManager {
     container.removeEventListener("wheel", this._onWheel);
     container.removeEventListener("keydown", this._onKeyDown);
     container.removeEventListener("keyup", this._onKeyUp);
+    container.removeEventListener("dblclick", this._onDoubleClick);
 
     this._spatialHash.clear();
     this._spatialEntries.clear();

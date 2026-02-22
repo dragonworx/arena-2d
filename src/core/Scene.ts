@@ -50,7 +50,9 @@ export class Scene implements IScene {
   private _isDestroyed = false;
   private _hitBufferCtx: OffscreenCanvasRenderingContext2D | null = null;
   private _hitBufferDirty = true;
+  private _cachedHitBufferData: Uint8ClampedArray | null = null;
   private _views = new Set<View>();
+  private _arenaCtx: Arena2DContext | null = null;
 
   private static _registry = new FinalizationRegistry((id: string) => {
     if (Arena2D.debug) {
@@ -228,6 +230,7 @@ export class Scene implements IScene {
    */
   invalidateHitBuffer(): void {
     this._hitBufferDirty = true;
+    this._cachedHitBufferData = null;
   }
 
   /**
@@ -237,7 +240,9 @@ export class Scene implements IScene {
    */
   markSpatialDirty(element: IElement): void {
     for (const view of this._views) {
-      (view.interaction as { markSpatialDirty?: (el: IElement) => void }).markSpatialDirty?.(element);
+      (
+        view.interaction as { markSpatialDirty?: (el: IElement) => void }
+      ).markSpatialDirty?.(element);
     }
   }
 
@@ -254,8 +259,25 @@ export class Scene implements IScene {
     if (!ctx) return;
 
     ctx.clearRect(0, 0, this.hitBuffer.width, this.hitBuffer.height);
-    const arenaCtx = new Arena2DContext(ctx);
+
+    // Reuse or create Arena2DContext
+    if (!this._arenaCtx) {
+      this._arenaCtx = new Arena2DContext(ctx);
+    } else {
+      this._arenaCtx.setContext(ctx);
+    }
+    const arenaCtx = this._arenaCtx;
     view._paintHitRecursive(this.root as IElement, arenaCtx, view.frustum);
+
+    // Cache the hit buffer pixel data for fast sampling
+    if (typeof ctx.getImageData === "function") {
+      this._cachedHitBufferData = ctx.getImageData(
+        0,
+        0,
+        this.hitBuffer.width,
+        this.hitBuffer.height,
+      ).data;
+    }
   }
 
   /**
@@ -263,8 +285,8 @@ export class Scene implements IScene {
    * Returns the element UID at that pixel, or 0 if none.
    */
   _sampleHitBuffer(sx: number, sy: number): number {
-    const ctx = this._hitBufferCtx;
-    if (!ctx) return 0;
+    const data = this._cachedHitBufferData;
+    if (!data) return 0;
 
     const px = Math.floor(sx);
     const py = Math.floor(sy);
@@ -278,10 +300,11 @@ export class Scene implements IScene {
       return 0;
     }
 
-    const data = ctx.getImageData(px, py, 1, 1).data;
-    if (data[3] < this._alphaThreshold) return 0;
+    const offset = (py * this.hitBuffer.width + px) * 4;
+    if (data[offset + 3] < this._alphaThreshold) return 0;
 
-    const uid = (data[0] << 16) | (data[1] << 8) | data[2];
+    const uid =
+      (data[offset] << 16) | (data[offset + 1] << 8) | data[offset + 2];
     return uid;
   }
 

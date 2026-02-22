@@ -21,6 +21,8 @@ import {
   skew,
   transformPoint,
   translate,
+  acquireMatrix,
+  releaseMatrix,
 } from "../math/matrix";
 import { Arena2D } from "../Arena2D";
 import { DirtyFlags } from "./DirtyFlags";
@@ -513,13 +515,38 @@ export class Element extends EventEmitter implements IElement {
    * Composition: T(x, y) × R(rotation) × Sk(skewX, skewY) × S(scaleX, scaleY) × T(-pivotX, -pivotY)
    */
   updateLocalMatrix(): void {
-    const t1 = translate(this._x, this._y);
-    const r = rotate(this._rotation);
-    const sk = skew(this._skewX, this._skewY);
-    const s = scale(this._scaleX, this._scaleY);
-    const t2 = translate(-this._pivotX, -this._pivotY);
+    // Acquire temporary matrices from pool
+    const t1 = acquireMatrix();
+    const r = acquireMatrix();
+    const sk = acquireMatrix();
+    const s = acquireMatrix();
+    const t2 = acquireMatrix();
 
-    this.localMatrix = multiply(multiply(multiply(multiply(t1, r), sk), s), t2);
+    translate(this._x, this._y, t1);
+    rotate(this._rotation, r);
+    skew(this._skewX, this._skewY, sk);
+    scale(this._scaleX, this._scaleY, s);
+    translate(-this._pivotX, -this._pivotY, t2);
+
+    // Acquire temporary result matrices for intermediate multiplications
+    const temp1 = acquireMatrix();
+    const temp2 = acquireMatrix();
+    const temp3 = acquireMatrix();
+
+    multiply(t1, r, temp1);
+    multiply(temp1, sk, temp2);
+    multiply(temp2, s, temp3);
+    multiply(temp3, t2, this.localMatrix);
+
+    // Release all temporary matrices back to pool
+    releaseMatrix(t1);
+    releaseMatrix(r);
+    releaseMatrix(sk);
+    releaseMatrix(s);
+    releaseMatrix(t2);
+    releaseMatrix(temp1);
+    releaseMatrix(temp2);
+    releaseMatrix(temp3);
   }
 
   // ── Frame loop ──
@@ -535,14 +562,20 @@ export class Element extends EventEmitter implements IElement {
 
       // Compute worldMatrix = parent.worldMatrix × localMatrix
       if (this.parent && "worldMatrix" in this.parent) {
-        this.worldMatrix = multiply(
+        multiply(
           (this.parent as IElement).getWorldMatrixForChildren(),
           this.localMatrix,
+          this.worldMatrix,
         );
       } else {
         // Root element or no parent — worldMatrix = localMatrix
-        // Copy into a new Float32Array so they are independent
-        this.worldMatrix = new Float32Array(this.localMatrix);
+        // Copy into existing worldMatrix field so they are independent
+        this.worldMatrix[0] = this.localMatrix[0];
+        this.worldMatrix[1] = this.localMatrix[1];
+        this.worldMatrix[2] = this.localMatrix[2];
+        this.worldMatrix[3] = this.localMatrix[3];
+        this.worldMatrix[4] = this.localMatrix[4];
+        this.worldMatrix[5] = this.localMatrix[5];
       }
 
       // Clear transform flag

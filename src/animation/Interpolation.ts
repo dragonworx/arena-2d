@@ -119,7 +119,7 @@ function rgbToHex(r: number, g: number, b: number): string {
 }
 
 /** Try to parse a string as a color, returning RGB or null. */
-function parseColor(value: string): RGB | null {
+export function parseColor(value: string): RGB | null {
   const hex = parseHex(value);
   if (hex) return hex;
 
@@ -139,11 +139,18 @@ function lerpNumber(a: number, b: number, t: number): number {
 }
 
 // ── Color Interpolator (always outputs hex) ──
+// Note: Fast color interpolator with pre-parsed RGB is exported as fastColorInterpolator.
+// Inline color interpolator for unparsed string colors is created in createInterpolator().
 
-const colorInterpolator: Interpolator = (from, to, t) => {
-  const fromRgb = parseColor(from as string);
-  const toRgb = parseColor(to as string);
-  if (!fromRgb || !toRgb) return to;
+// ── Pre-parsed Color Interpolator (for pre-parsed RGB values) ──
+
+/**
+ * Fast color interpolator that works with pre-parsed RGB values.
+ * Assumes from and to are already parsed RGB objects.
+ */
+export const fastColorInterpolator: Interpolator = (from, to, t) => {
+  const fromRgb = from as RGB;
+  const toRgb = to as RGB;
   return rgbToHex(
     lerpNumber(fromRgb.r, toRgb.r, t),
     lerpNumber(fromRgb.g, toRgb.g, t),
@@ -156,43 +163,92 @@ const colorInterpolator: Interpolator = (from, to, t) => {
 const numberInterpolator: Interpolator = (from, to, t) =>
   lerpNumber(from as number, to as number, t);
 
-// ── Array Interpolator ──
+// ── Pre-allocated Array Interpolator (reuses result array) ──
 
-const arrayInterpolator: Interpolator = (from, to, t) => {
-  const a = from as number[];
-  const b = to as number[];
-  const len = Math.max(a.length, b.length);
-  const result: number[] = new Array(len);
-  for (let i = 0; i < len; i++) {
-    result[i] = lerpNumber(a[i] ?? 0, b[i] ?? 0, t);
-  }
-  return result;
-};
+/**
+ * Fast array interpolator that reuses a pre-allocated result array.
+ * Eliminates per-frame array allocations for array tweens.
+ */
+export function createPooledArrayInterpolator(
+  resultArray: number[],
+  length: number,
+): Interpolator {
+  return (from, to, t) => {
+    const a = from as number[];
+    const b = to as number[];
+    for (let i = 0; i < length; i++) {
+      resultArray[i] = lerpNumber(a[i] ?? 0, b[i] ?? 0, t);
+    }
+    return resultArray;
+  };
+}
 
-// ── Object Interpolator ──
+// ── Pre-allocated Object Interpolator (reuses result object) ──
 
-const objectInterpolator: Interpolator = (from, to, t) => {
-  const a = from as Record<string, number>;
-  const b = to as Record<string, number>;
-  const result: Record<string, number> = {};
-  const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
-  for (const key of keys) {
-    result[key] = lerpNumber(a[key] ?? 0, b[key] ?? 0, t);
-  }
-  return result;
-};
+/**
+ * Fast object interpolator that reuses a pre-allocated result object.
+ * Eliminates per-frame object/Set allocations for object tweens.
+ */
+export function createPooledObjectInterpolator(
+  resultObject: Record<string, number>,
+  keys: string[],
+): Interpolator {
+  return (from, to, t) => {
+    const a = from as Record<string, number>;
+    const b = to as Record<string, number>;
+    for (const key of keys) {
+      resultObject[key] = lerpNumber(a[key] ?? 0, b[key] ?? 0, t);
+    }
+    return resultObject;
+  };
+}
 
 /** Detect the value type and return the appropriate cached interpolator. */
 export function createInterpolator(sampleValue: unknown): Interpolator {
   if (typeof sampleValue === "number") return numberInterpolator;
   if (typeof sampleValue === "string") {
-    if (parseColor(sampleValue)) return colorInterpolator;
+    if (parseColor(sampleValue)) {
+      // Inline color interpolator for unparsed string colors
+      return (from, to, t) => {
+        const fromRgb = parseColor(from as string);
+        const toRgb = parseColor(to as string);
+        if (!fromRgb || !toRgb) return to;
+        return rgbToHex(
+          lerpNumber(fromRgb.r, toRgb.r, t),
+          lerpNumber(fromRgb.g, toRgb.g, t),
+          lerpNumber(fromRgb.b, toRgb.b, t),
+        );
+      };
+    }
     // Fall back to returning the target value at t >= 1
     return (_from, to, t) => (t >= 1 ? to : _from);
   }
-  if (Array.isArray(sampleValue)) return arrayInterpolator;
-  if (typeof sampleValue === "object" && sampleValue !== null)
-    return objectInterpolator;
+  if (Array.isArray(sampleValue)) {
+    // Inline array interpolator for non-pooled arrays
+    return (from, to, t) => {
+      const a = from as number[];
+      const b = to as number[];
+      const len = Math.max(a.length, b.length);
+      const result: number[] = new Array(len);
+      for (let i = 0; i < len; i++) {
+        result[i] = lerpNumber(a[i] ?? 0, b[i] ?? 0, t);
+      }
+      return result;
+    };
+  }
+  if (typeof sampleValue === "object" && sampleValue !== null) {
+    // Inline object interpolator for non-pooled objects
+    return (from, to, t) => {
+      const a = from as Record<string, number>;
+      const b = to as Record<string, number>;
+      const result: Record<string, number> = {};
+      const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+      for (const key of keys) {
+        result[key] = lerpNumber(a[key] ?? 0, b[key] ?? 0, t);
+      }
+      return result;
+    };
+  }
   // Fallback: snap at end
   return (_from, to, t) => (t >= 1 ? to : _from);
 }

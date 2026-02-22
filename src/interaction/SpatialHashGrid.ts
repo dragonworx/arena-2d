@@ -42,6 +42,10 @@ export class SpatialHashGrid {
   private _cells = new Map<number, Set<ISpatialEntry>>();
   /** Map tracking which cells contain each entry. */
   private _entryToCells = new Map<ISpatialEntry, number[]>();
+  /** Reusable result array for AABB queries. */
+  private _queryAABBResult: ISpatialEntry[] = [];
+  /** Reusable Set for deduplication in AABB queries to avoid allocation. */
+  private _seenSet = new Set<ISpatialEntry>();
 
   /**
    * Creates a new SpatialHashGrid.
@@ -141,7 +145,7 @@ export class SpatialHashGrid {
     const key = cellKey(cx, cy);
 
     const cell = this._cells.get(key);
-    if (!cell) return this._queryResult.length = 0, this._queryResult;
+    if (!cell) return (this._queryResult.length = 0), this._queryResult;
 
     // Reuse array to avoid allocation on every pointer event
     const result = this._queryResult;
@@ -164,7 +168,11 @@ export class SpatialHashGrid {
       height,
     );
 
-    const result = new Set<ISpatialEntry>();
+    // Reuse result array and Set instead of allocating new ones
+    const result = this._queryAABBResult;
+    result.length = 0;
+    const seen = this._seenSet;
+    seen.clear();
 
     for (let cx = minCX; cx <= maxCX; cx++) {
       for (let cy = minCY; cy <= maxCY; cy++) {
@@ -172,13 +180,16 @@ export class SpatialHashGrid {
         const cell = this._cells.get(key);
         if (cell) {
           for (const entry of cell) {
-            result.add(entry);
+            if (!seen.has(entry)) {
+              seen.add(entry);
+              result.push(entry);
+            }
           }
         }
       }
     }
 
-    return Array.from(result);
+    return result;
   }
 
   /**

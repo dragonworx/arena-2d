@@ -1,0 +1,1705 @@
+diff --git a/demo/panels/layer9.1.js b/demo/panels/layer9.1.js
+index 470e439..fff3d56 100644
+--- a/demo/panels/layer9.1.js
++++ b/demo/panels/layer9.1.js
+@@ -19,10 +19,17 @@ export default async function (Arena2D) {
+   view.resize(width, height);
+   scene.ticker.start();
+ 
++  let _debugCounter = 0;
+   container.addEventListener("pointermove", (e) => {
+     const rect = container.getBoundingClientRect();
+     pointerPos.x = e.clientX - rect.left;
+     pointerPos.y = e.clientY - rect.top;
++    if (++_debugCounter % 60 === 0) {
++      const sceneCoords = view.screenToScene(e.clientX, e.clientY);
++      const hit = view.interaction.hitTest(sceneCoords.x, sceneCoords.y);
++      const hovered = view.interaction.hoveredElement;
++      console.log(`[DBG] ptr=(${pointerPos.x.toFixed(0)},${pointerPos.y.toFixed(0)}) scene=(${sceneCoords.x.toFixed(0)},${sceneCoords.y.toFixed(0)}) hit=${hit?.id || 'null'} hover=${hovered?.id || 'null'} children=${scene.root.children.length}`);
++    }
+   });
+ 
+   const updater = new Element("updater");
+diff --git a/src/animation/Interpolation.ts b/src/animation/Interpolation.ts
+index 9598e7c..b9617b4 100644
+--- a/src/animation/Interpolation.ts
++++ b/src/animation/Interpolation.ts
+@@ -119,7 +119,7 @@ function rgbToHex(r: number, g: number, b: number): string {
+ }
+ 
+ /** Try to parse a string as a color, returning RGB or null. */
+-function parseColor(value: string): RGB | null {
++export function parseColor(value: string): RGB | null {
+   const hex = parseHex(value);
+   if (hex) return hex;
+ 
+@@ -139,11 +139,18 @@ function lerpNumber(a: number, b: number, t: number): number {
+ }
+ 
+ // ── Color Interpolator (always outputs hex) ──
++// Note: Fast color interpolator with pre-parsed RGB is exported as fastColorInterpolator.
++// Inline color interpolator for unparsed string colors is created in createInterpolator().
+ 
+-const colorInterpolator: Interpolator = (from, to, t) => {
+-  const fromRgb = parseColor(from as string);
+-  const toRgb = parseColor(to as string);
+-  if (!fromRgb || !toRgb) return to;
++// ── Pre-parsed Color Interpolator (for pre-parsed RGB values) ──
++
++/**
++ * Fast color interpolator that works with pre-parsed RGB values.
++ * Assumes from and to are already parsed RGB objects.
++ */
++export const fastColorInterpolator: Interpolator = (from, to, t) => {
++  const fromRgb = from as RGB;
++  const toRgb = to as RGB;
+   return rgbToHex(
+     lerpNumber(fromRgb.r, toRgb.r, t),
+     lerpNumber(fromRgb.g, toRgb.g, t),
+@@ -156,43 +163,92 @@ const colorInterpolator: Interpolator = (from, to, t) => {
+ const numberInterpolator: Interpolator = (from, to, t) =>
+   lerpNumber(from as number, to as number, t);
+ 
+-// ── Array Interpolator ──
++// ── Pre-allocated Array Interpolator (reuses result array) ──
+ 
+-const arrayInterpolator: Interpolator = (from, to, t) => {
+-  const a = from as number[];
+-  const b = to as number[];
+-  const len = Math.max(a.length, b.length);
+-  const result: number[] = new Array(len);
+-  for (let i = 0; i < len; i++) {
+-    result[i] = lerpNumber(a[i] ?? 0, b[i] ?? 0, t);
+-  }
+-  return result;
+-};
++/**
++ * Fast array interpolator that reuses a pre-allocated result array.
++ * Eliminates per-frame array allocations for array tweens.
++ */
++export function createPooledArrayInterpolator(
++  resultArray: number[],
++  length: number,
++): Interpolator {
++  return (from, to, t) => {
++    const a = from as number[];
++    const b = to as number[];
++    for (let i = 0; i < length; i++) {
++      resultArray[i] = lerpNumber(a[i] ?? 0, b[i] ?? 0, t);
++    }
++    return resultArray;
++  };
++}
+ 
+-// ── Object Interpolator ──
++// ── Pre-allocated Object Interpolator (reuses result object) ──
+ 
+-const objectInterpolator: Interpolator = (from, to, t) => {
+-  const a = from as Record<string, number>;
+-  const b = to as Record<string, number>;
+-  const result: Record<string, number> = {};
+-  const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+-  for (const key of keys) {
+-    result[key] = lerpNumber(a[key] ?? 0, b[key] ?? 0, t);
+-  }
+-  return result;
+-};
++/**
++ * Fast object interpolator that reuses a pre-allocated result object.
++ * Eliminates per-frame object/Set allocations for object tweens.
++ */
++export function createPooledObjectInterpolator(
++  resultObject: Record<string, number>,
++  keys: string[],
++): Interpolator {
++  return (from, to, t) => {
++    const a = from as Record<string, number>;
++    const b = to as Record<string, number>;
++    for (const key of keys) {
++      resultObject[key] = lerpNumber(a[key] ?? 0, b[key] ?? 0, t);
++    }
++    return resultObject;
++  };
++}
+ 
+ /** Detect the value type and return the appropriate cached interpolator. */
+ export function createInterpolator(sampleValue: unknown): Interpolator {
+   if (typeof sampleValue === "number") return numberInterpolator;
+   if (typeof sampleValue === "string") {
+-    if (parseColor(sampleValue)) return colorInterpolator;
++    if (parseColor(sampleValue)) {
++      // Inline color interpolator for unparsed string colors
++      return (from, to, t) => {
++        const fromRgb = parseColor(from as string);
++        const toRgb = parseColor(to as string);
++        if (!fromRgb || !toRgb) return to;
++        return rgbToHex(
++          lerpNumber(fromRgb.r, toRgb.r, t),
++          lerpNumber(fromRgb.g, toRgb.g, t),
++          lerpNumber(fromRgb.b, toRgb.b, t),
++        );
++      };
++    }
+     // Fall back to returning the target value at t >= 1
+     return (_from, to, t) => (t >= 1 ? to : _from);
+   }
+-  if (Array.isArray(sampleValue)) return arrayInterpolator;
+-  if (typeof sampleValue === "object" && sampleValue !== null)
+-    return objectInterpolator;
++  if (Array.isArray(sampleValue)) {
++    // Inline array interpolator for non-pooled arrays
++    return (from, to, t) => {
++      const a = from as number[];
++      const b = to as number[];
++      const len = Math.max(a.length, b.length);
++      const result: number[] = new Array(len);
++      for (let i = 0; i < len; i++) {
++        result[i] = lerpNumber(a[i] ?? 0, b[i] ?? 0, t);
++      }
++      return result;
++    };
++  }
++  if (typeof sampleValue === "object" && sampleValue !== null) {
++    // Inline object interpolator for non-pooled objects
++    return (from, to, t) => {
++      const a = from as Record<string, number>;
++      const b = to as Record<string, number>;
++      const result: Record<string, number> = {};
++      const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
++      for (const key of keys) {
++        result[key] = lerpNumber(a[key] ?? 0, b[key] ?? 0, t);
++      }
++      return result;
++    };
++  }
+   // Fallback: snap at end
+   return (_from, to, t) => (t >= 1 ? to : _from);
+ }
+diff --git a/src/animation/Tween.ts b/src/animation/Tween.ts
+index 4379370..5777c84 100644
+--- a/src/animation/Tween.ts
++++ b/src/animation/Tween.ts
+@@ -24,7 +24,14 @@
+ import type { ITicker } from "../core/Ticker";
+ import { EventEmitter } from "../events/EventEmitter";
+ import { resolveEasing } from "./Easing";
+-import { type Interpolator, createInterpolator } from "./Interpolation";
++import {
++  type Interpolator,
++  createInterpolator,
++  fastColorInterpolator,
++  parseColor,
++  createPooledArrayInterpolator,
++  createPooledObjectInterpolator,
++} from "./Interpolation";
+ import { type IManagedTween, TweenManager } from "./TweenManager";
+ import type {
+   EasingFunction,
+@@ -45,6 +52,16 @@ interface ResolvedSegment {
+   startTime: number;
+   easing: EasingFunction;
+   interpolator: Interpolator;
++  /** Pre-parsed from value for colors (null if not a color) */
++  parsedFromValue?: unknown;
++  /** Pre-parsed to value for colors (null if not a color) */
++  parsedToValue?: unknown;
++  /** Pre-allocated result array for array interpolation */
++  resultArray?: number[];
++  /** Pre-allocated result object for object interpolation */
++  resultObject?: Record<string, number>;
++  /** Cached keys for object interpolation */
++  resultKeys?: string[];
+ }
+ 
+ interface ResolvedProperty {
+@@ -207,11 +224,14 @@ export class Tween extends EventEmitter implements ITween, IManagedTween {
+ 
+     this._applyProperties(progress * this._totalDuration);
+ 
+-    this.emit("update", {
+-      target: this._target,
+-      elapsed: this._elapsed,
+-      progress: this.progress,
+-    });
++    // Only create and emit event object if there are listeners
++    if (this.listenerCount("update") > 0) {
++      this.emit("update", {
++        target: this._target,
++        elapsed: this._elapsed,
++        progress: this.progress,
++      });
++    }
+ 
+     // Check completion
+     if (this._elapsed >= this._totalDuration) {
+@@ -274,7 +294,47 @@ export class Tween extends EventEmitter implements ITween, IManagedTween {
+           fromValue = this._target[key];
+         }
+ 
+-        const interpolator = createInterpolator(kf.toValue);
++        // Detect value type and create appropriate interpolator with pooling
++        let interpolator = createInterpolator(kf.toValue);
++        let parsedFromValue: unknown;
++        let parsedToValue: unknown;
++        let resultArray: number[] | undefined;
++        let resultObject: Record<string, number> | undefined;
++        let resultKeys: string[] | undefined;
++
++        if (typeof kf.toValue === "string" && typeof fromValue === "string") {
++          // Color property - pre-parse for efficiency
++          const fromParsed = parseColor(fromValue);
++          const toParsed = parseColor(kf.toValue);
++          if (fromParsed && toParsed) {
++            interpolator = fastColorInterpolator;
++            parsedFromValue = fromParsed;
++            parsedToValue = toParsed;
++          }
++        } else if (Array.isArray(kf.toValue) && Array.isArray(fromValue)) {
++          // Array property - pre-allocate result array
++          const len = Math.max((fromValue as number[]).length, (kf.toValue as number[]).length);
++          resultArray = new Array(len);
++          interpolator = createPooledArrayInterpolator(resultArray, len);
++        } else if (
++          typeof kf.toValue === "object" &&
++          kf.toValue !== null &&
++          !Array.isArray(kf.toValue) &&
++          typeof fromValue === "object" &&
++          fromValue !== null &&
++          !Array.isArray(fromValue)
++        ) {
++          // Object property - pre-allocate result object and cache keys
++          resultObject = {};
++          const toKeys = Object.keys(kf.toValue as Record<string, number>);
++          const fromKeys = Object.keys(fromValue as Record<string, number>);
++          resultKeys = Array.from(new Set([...toKeys, ...fromKeys]));
++          for (const key of resultKeys) {
++            resultObject[key] = 0;
++          }
++          interpolator = createPooledObjectInterpolator(resultObject, resultKeys);
++        }
++
+         const easing = resolveEasing(kf.easing ?? this._defaultEasing);
+ 
+         segments.push({
+@@ -284,6 +344,11 @@ export class Tween extends EventEmitter implements ITween, IManagedTween {
+           startTime: cumulativeTime,
+           easing,
+           interpolator,
++          parsedFromValue,
++          parsedToValue,
++          resultArray,
++          resultObject,
++          resultKeys,
+         });
+ 
+         cumulativeTime += kf.duration;
+@@ -334,8 +399,10 @@ export class Tween extends EventEmitter implements ITween, IManagedTween {
+       // Apply easing
+       const easedT = seg.easing(localT);
+ 
+-      // Interpolate and assign
+-      this._target[key] = seg.interpolator(seg.fromValue, seg.toValue, easedT);
++      // Interpolate and assign (use pre-parsed values for colors if available)
++      const from = seg.parsedFromValue !== undefined ? seg.parsedFromValue : seg.fromValue;
++      const to = seg.parsedToValue !== undefined ? seg.parsedToValue : seg.toValue;
++      this._target[key] = seg.interpolator(from, to, easedT);
+     }
+   }
+ }
+diff --git a/src/animation/TweenManager.ts b/src/animation/TweenManager.ts
+index 6652588..cf09d18 100644
+--- a/src/animation/TweenManager.ts
++++ b/src/animation/TweenManager.ts
+@@ -60,9 +60,14 @@ export class TweenManager extends Element {
+     return defaultTicker;
+   }
+ 
+-  /** Register a tween for per-frame updates. */
++  /** Register a tween for per-frame updates. Starts ticker if idle and this is the first tween. */
+   add(tween: IManagedTween): void {
++    const wasEmpty = this._tweens.size === 0;
+     this._tweens.add(tween);
++    // Start ticker on first tween if it was stopped
++    if (wasEmpty && !this.ticker.running) {
++      this.ticker.start();
++    }
+   }
+ 
+   /** Unregister a tween. */
+@@ -70,7 +75,7 @@ export class TweenManager extends Element {
+     this._tweens.delete(tween);
+   }
+ 
+-  /** Called by the Ticker each frame. Dispatches dt to all active tweens. */
++  /** Called by the Ticker each frame. Dispatches dt to all active tweens. Stops ticker if idle. */
+   override update(dt: number): void {
+     super.update(dt);
+     for (const tween of this._tweens) {
+@@ -79,6 +84,10 @@ export class TweenManager extends Element {
+         this._tweens.delete(tween);
+       }
+     }
++    // Stop ticker if no active tweens
++    if (this._tweens.size === 0 && this.ticker.running) {
++      this.ticker.stop();
++    }
+   }
+ 
+   /** Number of active tweens. */
+diff --git a/src/core/Element.ts b/src/core/Element.ts
+index 5ec8c09..3a2e73e 100644
+--- a/src/core/Element.ts
++++ b/src/core/Element.ts
+@@ -21,6 +21,8 @@ import {
+   skew,
+   transformPoint,
+   translate,
++  acquireMatrix,
++  releaseMatrix,
+ } from "../math/matrix";
+ import { Arena2D } from "../Arena2D";
+ import { DirtyFlags } from "./DirtyFlags";
+@@ -513,13 +515,38 @@ export class Element extends EventEmitter implements IElement {
+    * Composition: T(x, y) × R(rotation) × Sk(skewX, skewY) × S(scaleX, scaleY) × T(-pivotX, -pivotY)
+    */
+   updateLocalMatrix(): void {
+-    const t1 = translate(this._x, this._y);
+-    const r = rotate(this._rotation);
+-    const sk = skew(this._skewX, this._skewY);
+-    const s = scale(this._scaleX, this._scaleY);
+-    const t2 = translate(-this._pivotX, -this._pivotY);
+-
+-    this.localMatrix = multiply(multiply(multiply(multiply(t1, r), sk), s), t2);
++    // Acquire temporary matrices from pool
++    const t1 = acquireMatrix();
++    const r = acquireMatrix();
++    const sk = acquireMatrix();
++    const s = acquireMatrix();
++    const t2 = acquireMatrix();
++
++    translate(this._x, this._y, t1);
++    rotate(this._rotation, r);
++    skew(this._skewX, this._skewY, sk);
++    scale(this._scaleX, this._scaleY, s);
++    translate(-this._pivotX, -this._pivotY, t2);
++
++    // Acquire temporary result matrices for intermediate multiplications
++    const temp1 = acquireMatrix();
++    const temp2 = acquireMatrix();
++    const temp3 = acquireMatrix();
++
++    multiply(t1, r, temp1);
++    multiply(temp1, sk, temp2);
++    multiply(temp2, s, temp3);
++    multiply(temp3, t2, this.localMatrix);
++
++    // Release all temporary matrices back to pool
++    releaseMatrix(t1);
++    releaseMatrix(r);
++    releaseMatrix(sk);
++    releaseMatrix(s);
++    releaseMatrix(t2);
++    releaseMatrix(temp1);
++    releaseMatrix(temp2);
++    releaseMatrix(temp3);
+   }
+ 
+   // ── Frame loop ──
+@@ -535,14 +562,20 @@ export class Element extends EventEmitter implements IElement {
+ 
+       // Compute worldMatrix = parent.worldMatrix × localMatrix
+       if (this.parent && "worldMatrix" in this.parent) {
+-        this.worldMatrix = multiply(
++        multiply(
+           (this.parent as IElement).getWorldMatrixForChildren(),
+           this.localMatrix,
++          this.worldMatrix,
+         );
+       } else {
+         // Root element or no parent — worldMatrix = localMatrix
+-        // Copy into a new Float32Array so they are independent
+-        this.worldMatrix = new Float32Array(this.localMatrix);
++        // Copy into existing worldMatrix field so they are independent
++        this.worldMatrix[0] = this.localMatrix[0];
++        this.worldMatrix[1] = this.localMatrix[1];
++        this.worldMatrix[2] = this.localMatrix[2];
++        this.worldMatrix[3] = this.localMatrix[3];
++        this.worldMatrix[4] = this.localMatrix[4];
++        this.worldMatrix[5] = this.localMatrix[5];
+       }
+ 
+       // Clear transform flag
+diff --git a/src/core/Scene.ts b/src/core/Scene.ts
+index 7ca4d6e..8984a38 100644
+--- a/src/core/Scene.ts
++++ b/src/core/Scene.ts
+@@ -50,7 +50,9 @@ export class Scene implements IScene {
+   private _isDestroyed = false;
+   private _hitBufferCtx: OffscreenCanvasRenderingContext2D | null = null;
+   private _hitBufferDirty = true;
++  private _cachedHitBufferData: Uint8ClampedArray | null = null;
+   private _views = new Set<View>();
++  private _arenaCtx: Arena2DContext | null = null;
+ 
+   private static _registry = new FinalizationRegistry((id: string) => {
+     if (Arena2D.debug) {
+@@ -228,6 +230,7 @@ export class Scene implements IScene {
+    */
+   invalidateHitBuffer(): void {
+     this._hitBufferDirty = true;
++    this._cachedHitBufferData = null;
+   }
+ 
+   /**
+@@ -237,7 +240,9 @@ export class Scene implements IScene {
+    */
+   markSpatialDirty(element: IElement): void {
+     for (const view of this._views) {
+-      (view.interaction as { markSpatialDirty?: (el: IElement) => void }).markSpatialDirty?.(element);
++      (
++        view.interaction as { markSpatialDirty?: (el: IElement) => void }
++      ).markSpatialDirty?.(element);
+     }
+   }
+ 
+@@ -254,8 +259,25 @@ export class Scene implements IScene {
+     if (!ctx) return;
+ 
+     ctx.clearRect(0, 0, this.hitBuffer.width, this.hitBuffer.height);
+-    const arenaCtx = new Arena2DContext(ctx);
++
++    // Reuse or create Arena2DContext
++    if (!this._arenaCtx) {
++      this._arenaCtx = new Arena2DContext(ctx);
++    } else {
++      this._arenaCtx.setContext(ctx);
++    }
++    const arenaCtx = this._arenaCtx;
+     view._paintHitRecursive(this.root as IElement, arenaCtx, view.frustum);
++
++    // Cache the hit buffer pixel data for fast sampling
++    if (typeof ctx.getImageData === "function") {
++      this._cachedHitBufferData = ctx.getImageData(
++        0,
++        0,
++        this.hitBuffer.width,
++        this.hitBuffer.height,
++      ).data;
++    }
+   }
+ 
+   /**
+@@ -263,8 +285,8 @@ export class Scene implements IScene {
+    * Returns the element UID at that pixel, or 0 if none.
+    */
+   _sampleHitBuffer(sx: number, sy: number): number {
+-    const ctx = this._hitBufferCtx;
+-    if (!ctx) return 0;
++    const data = this._cachedHitBufferData;
++    if (!data) return 0;
+ 
+     const px = Math.floor(sx);
+     const py = Math.floor(sy);
+@@ -278,10 +300,11 @@ export class Scene implements IScene {
+       return 0;
+     }
+ 
+-    const data = ctx.getImageData(px, py, 1, 1).data;
+-    if (data[3] < this._alphaThreshold) return 0;
++    const offset = (py * this.hitBuffer.width + px) * 4;
++    if (data[offset + 3] < this._alphaThreshold) return 0;
+ 
+-    const uid = (data[0] << 16) | (data[1] << 8) | data[2];
++    const uid =
++      (data[offset] << 16) | (data[offset + 1] << 8) | data[offset + 2];
+     return uid;
+   }
+ 
+diff --git a/src/core/Ticker.ts b/src/core/Ticker.ts
+index c2d5fd2..033c599 100644
+--- a/src/core/Ticker.ts
++++ b/src/core/Ticker.ts
+@@ -50,6 +50,7 @@ export class Ticker implements ITicker {
+   private _running = false;
+   private _elements: Set<IElement> = new Set();
+   private _renderCallback: (() => void) | null = null;
++  private _rafCallback = (t: number) => this._tick(t);
+ 
+   /**
+    * Accumulated time since last tick in ms.
+@@ -186,7 +187,7 @@ export class Ticker implements ITicker {
+ 
+   private _requestFrame(): void {
+     if (typeof requestAnimationFrame !== "undefined") {
+-      this._rafId = requestAnimationFrame((t) => this._tick(t));
++      this._rafId = requestAnimationFrame(this._rafCallback);
+     }
+   }
+ }
+diff --git a/src/core/View.ts b/src/core/View.ts
+index 201cdb5..96e9087 100644
+--- a/src/core/View.ts
++++ b/src/core/View.ts
+@@ -168,11 +168,14 @@ export class View implements IView {
+   private _onWindowBlur: () => void;
+   private _onGesture: (e: Event) => void;
+ 
+-  constructor(
+-    container: HTMLElement,
+-    scene: Scene,
+-    options: ViewOptions = {},
+-  ) {
++  // Reusable Arena2DContext (avoids per-frame allocations)
++  private _arenaCtx: Arena2DContext | null = null;
++  // Cached canvas rect to avoid layout thrashing from getBoundingClientRect
++  private _cachedCanvasRect: DOMRect | null = null;
++  // Stored window resize handler for cleanup
++  private _onWindowResize: () => void;
++
++  constructor(container: HTMLElement, scene: Scene, options: ViewOptions = {}) {
+     this.container = container;
+     this.scene = scene;
+ 
+@@ -295,6 +298,14 @@ export class View implements IView {
+       this._resizeObserver.observe(this.container);
+     }
+ 
++    // Invalidate canvas rect cache on window resize (for getBoundingClientRect())
++    this._onWindowResize = () => {
++      this._cachedCanvasRect = null;
++    };
++    if (typeof window !== "undefined") {
++      window.addEventListener("resize", this._onWindowResize);
++    }
++
+     // Register with scene
+     (scene as any)._registerView(this);
+   }
+@@ -521,7 +532,12 @@ export class View implements IView {
+   // ── Coordinate Transforms ──
+ 
+   screenToScene(screenX: number, screenY: number): { x: number; y: number } {
+-    const rect = this.container.getBoundingClientRect();
++    // Use cached rect when available, get fresh one if needed (avoid on pointer events)
++    let rect = this._cachedCanvasRect;
++    if (!rect) {
++      rect = this.container.getBoundingClientRect();
++      this._cachedCanvasRect = rect;
++    }
+     const viewX = screenX - rect.left;
+     const viewY = screenY - rect.top;
+     return {
+@@ -531,7 +547,12 @@ export class View implements IView {
+   }
+ 
+   sceneToScreen(sceneX: number, sceneY: number): { x: number; y: number } {
+-    const rect = this.container.getBoundingClientRect();
++    // Use cached rect when available, get fresh one if needed
++    let rect = this._cachedCanvasRect;
++    if (!rect) {
++      rect = this.container.getBoundingClientRect();
++      this._cachedCanvasRect = rect;
++    }
+     return {
+       x: sceneX * this._zoom + this._panX + rect.left,
+       y: sceneY * this._zoom + this._panY + rect.top,
+@@ -544,6 +565,9 @@ export class View implements IView {
+     this._width = width;
+     this._height = height;
+ 
++    // Invalidate cached canvas rect since size changed
++    this._cachedCanvasRect = null;
++
+     // Resize all layers
+     for (const layer of this._layers.values()) {
+       layer.resize(width, height, this._dpr);
+@@ -618,6 +642,7 @@ export class View implements IView {
+     window.removeEventListener("keydown", this._onKeyDown);
+     window.removeEventListener("keyup", this._onKeyUp);
+     window.removeEventListener("blur", this._onWindowBlur);
++    window.removeEventListener("resize", this._onWindowResize);
+ 
+     // Destroy all layers
+     for (const layer of this._layers.values()) {
+@@ -641,10 +666,19 @@ export class View implements IView {
+    * Determines if an element should be culled based on frustum and container clipping.
+    * @private
+    */
+-  private _shouldCull(element: IElement, container: IContainer | null, frustum: IRect): boolean {
++  private _shouldCull(
++    element: IElement,
++    container: IContainer | null,
++    frustum: IRect,
++  ): boolean {
+     if (container && (container as Container).clipContent) {
+       const clipWorldAABB = computeAABB(
+-        { x: 0, y: 0, width: (container as Container).width, height: (container as Container).height },
++        {
++          x: 0,
++          y: 0,
++          width: (container as Container).width,
++          height: (container as Container).height,
++        },
+         (container as Container).worldMatrix,
+       );
+       return !intersect(clipWorldAABB, frustum);
+@@ -658,14 +692,6 @@ export class View implements IView {
+     return false;
+   }
+ 
+-  /**
+-   * Returns sorted children by zIndex.
+-   * @private
+-   */
+-  private _sortedChildren(container: IContainer): IElement[] {
+-    return Array.from(container.children).sort((a, b) => a.zIndex - b.zIndex);
+-  }
+-
+   /**
+    * Applies world transform to a canvas context with pan/zoom scaling.
+    * @private
+@@ -721,7 +747,13 @@ export class View implements IView {
+       }
+     }
+ 
+-    const ctx = new Arena2DContext(layer.ctx);
++    // Reuse or create Arena2DContext
++    if (!this._arenaCtx) {
++      this._arenaCtx = new Arena2DContext(layer.ctx);
++    } else {
++      this._arenaCtx.setContext(layer.ctx);
++    }
++    const ctx = this._arenaCtx;
+ 
+     layer.ctx.save();
+ 
+@@ -776,8 +808,7 @@ export class View implements IView {
+           : clipWorldAABB;
+       }
+ 
+-      const sortedChildren = this._sortedChildren(container);
+-      for (const child of sortedChildren) {
++      for (const child of container.children) {
+         this._paintRecursive(child, childFrustum);
+       }
+ 
+@@ -864,8 +895,7 @@ export class View implements IView {
+           : clipWorldAABB;
+       }
+ 
+-      const sorted = this._sortedChildren(container);
+-      for (const child of sorted) {
++      for (const child of container.children) {
+         this._paintHitRecursive(child, ctx, childFrustum);
+       }
+     }
+@@ -902,7 +932,13 @@ export class View implements IView {
+     const cacheCtx = container._getCacheContext(width * dpr, height * dpr);
+     cacheCtx.clearRect(0, 0, width * dpr, height * dpr);
+ 
+-    const arenaCtx = new Arena2DContext(cacheCtx);
++    // Reuse or create Arena2DContext
++    if (!this._arenaCtx) {
++      this._arenaCtx = new Arena2DContext(cacheCtx);
++    } else {
++      this._arenaCtx.setContext(cacheCtx);
++    }
++    const arenaCtx = this._arenaCtx;
+ 
+     const originalCache = container.cacheAsBitmap;
+     (container as any)._cacheAsBitmap = false;
+@@ -926,9 +962,8 @@ export class View implements IView {
+   ): void {
+     if ("children" in element) {
+       const container = element as IContainer;
+-      const sorted = this._sortedChildren(container);
+ 
+-      for (const child of sorted) {
++      for (const child of container.children) {
+         if (!child.visible || child.alpha <= 0) continue;
+ 
+         const raw = ctx.raw;
+@@ -964,10 +999,7 @@ export class View implements IView {
+    * Find the topmost projection whose destRect contains the given view-local point.
+    * Iterates in reverse order so the highest-index (topmost) projection wins.
+    */
+-  private _hitTestProjection(
+-    viewX: number,
+-    viewY: number,
+-  ): IProjection | null {
++  private _hitTestProjection(viewX: number, viewY: number): IProjection | null {
+     for (let i = this._projections.length - 1; i >= 0; i--) {
+       const p = this._projections[i];
+       const d = p.destRect;
+@@ -1026,7 +1058,11 @@ export class View implements IView {
+   private _handlePanStart(e: PointerEvent): void {
+     if (!this._panTrigger(e)) return;
+ 
+-    const rect = this.container.getBoundingClientRect();
++    let rect = this._cachedCanvasRect;
++    if (!rect) {
++      rect = this.container.getBoundingClientRect();
++      this._cachedCanvasRect = rect;
++    }
+     const viewX = e.clientX - rect.left;
+     const viewY = e.clientY - rect.top;
+ 
+@@ -1076,7 +1112,11 @@ export class View implements IView {
+   private _handleWheel(e: WheelEvent): void {
+     e.preventDefault();
+ 
+-    const rect = this.container.getBoundingClientRect();
++    let rect = this._cachedCanvasRect;
++    if (!rect) {
++      rect = this.container.getBoundingClientRect();
++      this._cachedCanvasRect = rect;
++    }
+     const mouseX = e.clientX - rect.left;
+     const mouseY = e.clientY - rect.top;
+ 
+diff --git a/src/elements/ScrollContainer.ts b/src/elements/ScrollContainer.ts
+index adf153f..50246f3 100644
+--- a/src/elements/ScrollContainer.ts
++++ b/src/elements/ScrollContainer.ts
+@@ -24,7 +24,13 @@ import type { IElement } from "../core/Element";
+ import { DirtyFlags } from "../core/DirtyFlags";
+ import type { IArena2DContext } from "../rendering/Arena2DContext";
+ import { type IRect, computeAABB } from "../math/aabb";
+-import { type MatrixArray, multiply, translate, invert, transformPoint } from "../math/matrix";
++import {
++  type MatrixArray,
++  multiply,
++  translate,
++  invert,
++  transformPoint,
++} from "../math/matrix";
+ import type { IPointerEvent } from "../interaction/InteractionManager";
+ 
+ /**
+@@ -95,6 +101,12 @@ export class ScrollContainer extends Container implements IScrollContainer {
+   private _deferredClickTarget: IElement | null = null;
+   /** The original pointer event to defer to children. */
+   private _deferredPointerEvent: IPointerEvent | null = null;
++  /** Window pointermove listener reference for drag (stored to allow cleanup). */
++  private _windowDragOnMove: ((me: PointerEvent) => void) | null = null;
++  /** Window pointerup listener reference for drag (stored to allow cleanup). */
++  private _windowDragOnUp: (() => void) | null = null;
++  /** Dirty flag for content bounds (set when children change). */
++  private _contentBoundsDirty = true;
+ 
+   /**
+    * Creates a new ScrollContainer.
+@@ -115,7 +127,9 @@ export class ScrollContainer extends Container implements IScrollContainer {
+   /**
+    * Gets the horizontal scroll position.
+    */
+-  get scrollX(): number { return this._scrollX; }
++  get scrollX(): number {
++    return this._scrollX;
++  }
+ 
+   /**
+    * Sets the horizontal scroll position. Value is clamped to valid range.
+@@ -136,7 +150,9 @@ export class ScrollContainer extends Container implements IScrollContainer {
+   /**
+    * Gets the vertical scroll position.
+    */
+-  get scrollY(): number { return this._scrollY; }
++  get scrollY(): number {
++    return this._scrollY;
++  }
+ 
+   /**
+    * Sets the vertical scroll position. Value is clamped to valid range.
+@@ -157,62 +173,86 @@ export class ScrollContainer extends Container implements IScrollContainer {
+   /**
+    * Gets whether horizontal scrolling is enabled.
+    */
+-  get scrollEnabledX(): boolean { return this._scrollEnabledX; }
++  get scrollEnabledX(): boolean {
++    return this._scrollEnabledX;
++  }
+ 
+   /**
+    * Sets whether horizontal scrolling is enabled.
+    */
+-  set scrollEnabledX(v: boolean) { this._scrollEnabledX = v; }
++  set scrollEnabledX(v: boolean) {
++    this._scrollEnabledX = v;
++  }
+ 
+   /**
+    * Gets whether vertical scrolling is enabled.
+    */
+-  get scrollEnabledY(): boolean { return this._scrollEnabledY; }
++  get scrollEnabledY(): boolean {
++    return this._scrollEnabledY;
++  }
+ 
+   /**
+    * Sets whether vertical scrolling is enabled.
+    */
+-  set scrollEnabledY(v: boolean) { this._scrollEnabledY = v; }
++  set scrollEnabledY(v: boolean) {
++    this._scrollEnabledY = v;
++  }
+ 
+   /**
+    * Gets whether inertial scrolling is enabled.
+    */
+-  get inertiaEnabled(): boolean { return this._inertiaEnabled; }
++  get inertiaEnabled(): boolean {
++    return this._inertiaEnabled;
++  }
+ 
+   /**
+    * Sets whether inertial scrolling is enabled.
+    */
+-  set inertiaEnabled(v: boolean) { this._inertiaEnabled = v; }
++  set inertiaEnabled(v: boolean) {
++    this._inertiaEnabled = v;
++  }
+ 
+   /**
+    * Gets whether dragging is enabled.
+    */
+-  get dragEnabled(): boolean { return this._dragEnabled; }
++  get dragEnabled(): boolean {
++    return this._dragEnabled;
++  }
+ 
+   /**
+    * Sets whether dragging is enabled.
+    */
+-  set dragEnabled(v: boolean) { this._dragEnabled = v; }
++  set dragEnabled(v: boolean) {
++    this._dragEnabled = v;
++  }
+ 
+   /**
+    * Gets the click deferral threshold in milliseconds.
+    */
+-  get clickDeferralThreshold(): number { return this._clickDeferralThreshold; }
++  get clickDeferralThreshold(): number {
++    return this._clickDeferralThreshold;
++  }
+ 
+   /**
+    * Sets the click deferral threshold in milliseconds.
+    */
+-  set clickDeferralThreshold(v: number) { this._clickDeferralThreshold = Math.max(0, v); }
++  set clickDeferralThreshold(v: number) {
++    this._clickDeferralThreshold = Math.max(0, v);
++  }
+ 
+   /**
+    * Gets the bounds of the scrollable content.
+    */
+-  get contentBounds(): IRect { return this._contentBounds; }
++  get contentBounds(): IRect {
++    return this._contentBounds;
++  }
+ 
+   /**
+    * @internal Gets whether a drag operation is currently active.
+    */
+-  get isDragActive(): boolean { return this._isDragActive; }
++  get isDragActive(): boolean {
++    return this._isDragActive;
++  }
+ 
+   /**
+    * Scrolls to the specified position.
+@@ -234,6 +274,42 @@ export class ScrollContainer extends Container implements IScrollContainer {
+     this.scrollY += dy;
+   }
+ 
++  /**
++   * Override to mark content bounds as dirty when children are added.
++   * @override
++   */
++  override addChild(child: IElement): void {
++    super.addChild(child);
++    this._contentBoundsDirty = true;
++  }
++
++  /**
++   * Override to mark content bounds as dirty when children are added at index.
++   * @override
++   */
++  override addChildAt(child: IElement, index: number): void {
++    super.addChildAt(child, index);
++    this._contentBoundsDirty = true;
++  }
++
++  /**
++   * Override to mark content bounds as dirty when children are removed.
++   * @override
++   */
++  override removeChild(child: IElement): void {
++    super.removeChild(child);
++    this._contentBoundsDirty = true;
++  }
++
++  /**
++   * Override to mark content bounds as dirty when all children are removed.
++   * @override
++   */
++  override removeAllChildren(): void {
++    super.removeAllChildren();
++    this._contentBoundsDirty = true;
++  }
++
+   /**
+    * Gets the world matrix adjusted for scroll offset.
+    * @override
+@@ -251,11 +327,18 @@ export class ScrollContainer extends Container implements IScrollContainer {
+   override update(dt: number): void {
+     super.update(dt);
+ 
+-    // Update content bounds if children are dirty
+-    this._updateContentBounds();
++    // Update content bounds only if children have changed
++    if (this._contentBoundsDirty) {
++      this._updateContentBounds();
++      this._contentBoundsDirty = false;
++    }
+ 
+     // Inertia (dt is in seconds)
+-    if (!this._isDragging && this._inertiaEnabled && (Math.abs(this._velocityX) > 0.1 || Math.abs(this._velocityY) > 0.1)) {
++    if (
++      !this._isDragging &&
++      this._inertiaEnabled &&
++      (Math.abs(this._velocityX) > 0.1 || Math.abs(this._velocityY) > 0.1)
++    ) {
+       if (this._scrollEnabledX) this.scrollX -= this._velocityX;
+       if (this._scrollEnabledY) this.scrollY -= this._velocityY;
+       this._velocityX *= Math.pow(this._friction, dt * 60);
+@@ -263,7 +346,6 @@ export class ScrollContainer extends Container implements IScrollContainer {
+     }
+   }
+ 
+-
+   /**
+    * Performs hit testing accounting for scroll offset.
+    * Since children's worldMatrix includes the scroll, hit testing works normally.
+@@ -277,7 +359,12 @@ export class ScrollContainer extends Container implements IScrollContainer {
+     if (!inv) return null;
+     const local = transformPoint(inv, globalX, globalY);
+ 
+-    if (local.x < 0 || local.x > this.width || local.y < 0 || local.y > this.height) {
++    if (
++      local.x < 0 ||
++      local.x > this.width ||
++      local.y < 0 ||
++      local.y > this.height
++    ) {
+       return null;
+     }
+ 
+@@ -308,7 +395,7 @@ export class ScrollContainer extends Container implements IScrollContainer {
+       x: minX,
+       y: minY,
+       width: maxX - minX,
+-      height: maxY - minY
++      height: maxY - minY,
+     };
+   }
+ 
+@@ -336,7 +423,6 @@ export class ScrollContainer extends Container implements IScrollContainer {
+     return Math.max(0, Math.min(y, maxScroll));
+   }
+ 
+-
+   /**
+    * Handles pointer down event for drag scrolling.
+    * Detects drag initiation with a threshold to distinguish from simple clicks.
+@@ -365,7 +451,10 @@ export class ScrollContainer extends Container implements IScrollContainer {
+       this._clickDeferralTimer = window.setTimeout(() => {
+         // Timer fired - defer the click to the child if drag didn't start
+         if (this._deferredClickTarget && !this._isDragActive) {
+-          this._deferredClickTarget.emit("deferred-click", this._deferredPointerEvent);
++          this._deferredClickTarget.emit(
++            "deferred-click",
++            this._deferredPointerEvent,
++          );
+         }
+         this._clickDeferralTimer = null;
+       }, this._clickDeferralThreshold) as unknown as number;
+@@ -384,6 +473,9 @@ export class ScrollContainer extends Container implements IScrollContainer {
+     this._velocityX = 0;
+     this._velocityY = 0;
+ 
++    // Clean up any existing window listeners from interrupted drag
++    this._cleanupWindowDragListeners();
++
+     const onMove = (me: PointerEvent) => {
+       if (!this._isDragging) return;
+ 
+@@ -434,7 +526,10 @@ export class ScrollContainer extends Container implements IScrollContainer {
+         window.clearTimeout(this._clickDeferralTimer);
+         this._clickDeferralTimer = null;
+         if (this._deferredClickTarget && this._deferredPointerEvent) {
+-          this._deferredClickTarget.emit("deferred-click", this._deferredPointerEvent);
++          this._deferredClickTarget.emit(
++            "deferred-click",
++            this._deferredPointerEvent,
++          );
+         }
+       }
+       // Only reset dragActive after timer check is complete
+@@ -445,15 +540,21 @@ export class ScrollContainer extends Container implements IScrollContainer {
+       if (view && view.container) {
+         view.container.style.cursor = "grab";
+       }
++      // Clean up references
++      this._windowDragOnMove = null;
++      this._windowDragOnUp = null;
+       window.removeEventListener("pointermove", onMove);
+       window.removeEventListener("pointerup", onUp);
+     };
+ 
++    // Store references for cleanup in destroy()
++    this._windowDragOnMove = onMove;
++    this._windowDragOnUp = onUp;
++
+     window.addEventListener("pointermove", onMove);
+     window.addEventListener("pointerup", onUp);
+   }
+ 
+-
+   /**
+    * Handles mouse wheel scroll events.
+    * @private
+@@ -495,4 +596,33 @@ export class ScrollContainer extends Container implements IScrollContainer {
+     }
+   }
+ 
++  /**
++   * Cleans up window event listeners if drag was interrupted.
++   * Prevents memory leaks when ScrollContainer is destroyed during an active drag.
++   * @private
++   */
++  private _cleanupWindowDragListeners(): void {
++    if (this._windowDragOnMove) {
++      window.removeEventListener("pointermove", this._windowDragOnMove);
++      this._windowDragOnMove = null;
++    }
++    if (this._windowDragOnUp) {
++      window.removeEventListener("pointerup", this._windowDragOnUp);
++      this._windowDragOnUp = null;
++    }
++  }
++
++  /**
++   * Cleanup when the ScrollContainer is destroyed.
++   * Ensures window event listeners are removed even if destroy() is called during an active drag.
++   * @override
++   */
++  override destroy(): void {
++    this._cleanupWindowDragListeners();
++    if (this._clickDeferralTimer !== null) {
++      clearTimeout(this._clickDeferralTimer);
++      this._clickDeferralTimer = null;
++    }
++    super.destroy();
++  }
+ }
+diff --git a/src/events/EventEmitter.ts b/src/events/EventEmitter.ts
+index 016aa58..852debc 100644
+--- a/src/events/EventEmitter.ts
++++ b/src/events/EventEmitter.ts
+@@ -55,13 +55,16 @@ export interface IEventEmitter {
+ export class EventEmitter implements IEventEmitter {
+   /** Map of event names to their registered handlers. */
+   // biome-ignore lint/suspicious/noExplicitAny: Payload is generic
+-  private _events: Map<string, Array<(e: any) => void>> = new Map();
++  private _events: Map<string, Array<((e: any) => void) | null>> = new Map();
++  /** Track null entries count for periodic compaction */
++  private _nullCounts: Map<string, number> = new Map();
+ 
+   /** @inheritdoc */
+   // biome-ignore lint/suspicious/noExplicitAny: Payload is generic
+   on(event: string, handler: (e: any) => void): void {
+     if (!this._events.has(event)) {
+       this._events.set(event, []);
++      this._nullCounts.set(event, 0);
+     }
+     this._events.get(event)?.push(handler);
+   }
+@@ -74,9 +77,24 @@ export class EventEmitter implements IEventEmitter {
+     const index = handlers.indexOf(handler);
+ 
+     if (index !== -1) {
+-      handlers.splice(index, 1);
+-      if (handlers.length === 0) {
+-        this._events.delete(event);
++      // Mark as null instead of splicing to allow safe iteration
++      handlers[index] = null;
++      const nullCount = (this._nullCounts.get(event) || 0) + 1;
++      this._nullCounts.set(event, nullCount);
++
++      // Compact array if too many nulls (more than half the array)
++      if (nullCount > handlers.length / 2) {
++        const compacted = handlers.filter((h) => h !== null);
++        if (compacted.length === 0) {
++          this._events.delete(event);
++          this._nullCounts.delete(event);
++        } else {
++          handlers.length = 0;
++          for (const h of compacted) {
++            handlers.push(h);
++          }
++          this._nullCounts.set(event, 0);
++        }
+       }
+     }
+   }
+@@ -98,15 +116,20 @@ export class EventEmitter implements IEventEmitter {
+     const handlers = this._events.get(event);
+     if (!handlers) return;
+ 
+-    // Create a copy to ensure safety
+-    for (const handler of [...handlers]) {
+-      handler(e);
++    // Capture the current length to avoid calling handlers added during emit
++    const len = handlers.length;
++    for (let i = 0; i < len; i++) {
++      const handler = handlers[i];
++      if (handler) {
++        handler(e);
++      }
+     }
+   }
+ 
+   /** @inheritdoc */
+   removeAllListeners(): void {
+     this._events.clear();
++    this._nullCounts.clear();
+   }
+ 
+   /**
+diff --git a/src/interaction/InteractionManager.ts b/src/interaction/InteractionManager.ts
+index 8785349..3e7f97d 100644
+--- a/src/interaction/InteractionManager.ts
++++ b/src/interaction/InteractionManager.ts
+@@ -291,6 +291,12 @@ export class InteractionManager implements IInteractionManager {
+   private _onKeyUp: (e: KeyboardEvent) => void;
+   /** Bound DOM event handler for double click. */
+   private _onDoubleClick: (e: MouseEvent) => void;
++  /** Cached tab order (invalidated when scene structure changes). */
++  private _tabOrder: IElement[] | null = null;
++  /** Reusable hit test results array (pooled to avoid per-event allocations). */
++  private _hitTestResultPool: IElement[] = [];
++  /** Reusable hit test AABB results array (pooled to avoid per-call allocations). */
++  private _hitTestAABBResultPool: IElement[] = [];
+ 
+   /**
+    * Creates a new InteractionManager.
+@@ -409,6 +415,8 @@ export class InteractionManager implements IInteractionManager {
+    */
+   markSpatialFullRebuild(): void {
+     this._spatialFullRebuild = true;
++    // Invalidate tab order since scene structure is changing
++    this._invalidateTabOrder();
+   }
+ 
+   /**
+@@ -484,7 +492,10 @@ export class InteractionManager implements IInteractionManager {
+    * Checks if an element is a descendant of an ancestor.
+    * @private
+    */
+-  private _isDescendantOf(element: IElement, ancestor: IElement | null | undefined): boolean {
++  private _isDescendantOf(
++    element: IElement,
++    ancestor: IElement | null | undefined,
++  ): boolean {
+     if (!ancestor) return false;
+     let current: IElement | null = element;
+     while (current) {
+@@ -562,6 +573,11 @@ export class InteractionManager implements IInteractionManager {
+ 
+     // Remove from dirty set to avoid processing a destroyed element next frame
+     this._spatialDirtyElements.delete(element);
++
++    // Invalidate tab order if element is focusable
++    if (element.focusable) {
++      this._invalidateTabOrder();
++    }
+   }
+ 
+   // ── Hit-Testing ──
+@@ -579,10 +595,13 @@ export class InteractionManager implements IInteractionManager {
+   ): IElement | null {
+     // Broad phase: query spatial hash
+     const candidates = this._spatialHash.query(sceneX, sceneY);
+-    if (candidates.length === 0) return null;
++    if (candidates.length === 0) {
++      return null;
++    }
+ 
+-    // Get the actual elements from entries
+-    const elements: IElement[] = [];
++    // Get the actual elements from entries (reuse pooled array)
++    const elements = this._hitTestResultPool;
++    elements.length = 0; // Clear for reuse
+     for (const entry of candidates) {
+       const el = (entry as ISpatialEntry & { element: IElement }).element;
+       if (el?.interactive && el.visible) {
+@@ -610,7 +629,10 @@ export class InteractionManager implements IInteractionManager {
+         const hitEl = scene._getElementByUID(hitUid);
+         if (hitEl) {
+           // Double check filtering/exclusion
+-          if (!this._isDescendantOf(hitEl, exclude) && (!filter || filter(hitEl))) {
++          if (
++            !this._isDescendantOf(hitEl, exclude) &&
++            (!filter || filter(hitEl))
++          ) {
+             return hitEl;
+           }
+         }
+@@ -619,9 +641,14 @@ export class InteractionManager implements IInteractionManager {
+ 
+     // ── Fallback: Matrix Pass (AABB/Quad) ──
+     // (Existing logic remains as fallback for legacy or non-painted interactive elements)
+-    
+-    // Check from top (last) to bottom (first) — top-most first
+-    for (let i = elements.length - 1; i >= 0; i--) {
++
++    // Sort by global z-order (topmost first) for correct hit detection
++    elements.sort(
++      (a, b) => this._getGlobalZOrder(b) - this._getGlobalZOrder(a),
++    );
++
++    // Check from top (highest z-order) to bottom
++    for (let i = 0; i < elements.length; i++) {
+       const el = elements[i];
+ 
+       // Skip zero-size elements
+@@ -668,8 +695,9 @@ export class InteractionManager implements IInteractionManager {
+     const candidates = this._spatialHash.queryAABB(sceneAABB);
+     if (candidates.length === 0) return null;
+ 
+-    // Get the actual elements from entries
+-    const elements: IElement[] = [];
++    // Get the actual elements from entries (reuse pooled array)
++    const elements = this._hitTestAABBResultPool;
++    elements.length = 0; // Clear for reuse
+     for (const entry of candidates) {
+       const el = (entry as ISpatialEntry & { element: IElement }).element;
+ 
+@@ -1027,11 +1055,22 @@ export class InteractionManager implements IInteractionManager {
+    * Only elements with focusable=true participate.
+    */
+   private _buildTabOrder(): IElement[] {
++    if (this._tabOrder) return this._tabOrder;
++
+     const order: IElement[] = [];
+     this._collectFocusable(this._view.scene.root as IElement, order);
++    this._tabOrder = order;
+     return order;
+   }
+ 
++  /**
++   * Invalidate the cached tab order when scene structure changes.
++   * @private
++   */
++  private _invalidateTabOrder(): void {
++    this._tabOrder = null;
++  }
++
+   private _collectFocusable(element: IElement, result: IElement[]): void {
+     if (!element.visible) return;
+ 
+@@ -1057,6 +1096,7 @@ export class InteractionManager implements IInteractionManager {
+     container.removeEventListener("wheel", this._onWheel);
+     container.removeEventListener("keydown", this._onKeyDown);
+     container.removeEventListener("keyup", this._onKeyUp);
++    container.removeEventListener("dblclick", this._onDoubleClick);
+ 
+     this._spatialHash.clear();
+     this._spatialEntries.clear();
+diff --git a/src/interaction/SpatialHashGrid.ts b/src/interaction/SpatialHashGrid.ts
+index c47282a..15496b9 100644
+--- a/src/interaction/SpatialHashGrid.ts
++++ b/src/interaction/SpatialHashGrid.ts
+@@ -42,6 +42,10 @@ export class SpatialHashGrid {
+   private _cells = new Map<number, Set<ISpatialEntry>>();
+   /** Map tracking which cells contain each entry. */
+   private _entryToCells = new Map<ISpatialEntry, number[]>();
++  /** Reusable result array for AABB queries. */
++  private _queryAABBResult: ISpatialEntry[] = [];
++  /** Reusable Set for deduplication in AABB queries to avoid allocation. */
++  private _seenSet = new Set<ISpatialEntry>();
+ 
+   /**
+    * Creates a new SpatialHashGrid.
+@@ -141,7 +145,7 @@ export class SpatialHashGrid {
+     const key = cellKey(cx, cy);
+ 
+     const cell = this._cells.get(key);
+-    if (!cell) return this._queryResult.length = 0, this._queryResult;
++    if (!cell) return (this._queryResult.length = 0), this._queryResult;
+ 
+     // Reuse array to avoid allocation on every pointer event
+     const result = this._queryResult;
+@@ -164,7 +168,11 @@ export class SpatialHashGrid {
+       height,
+     );
+ 
+-    const result = new Set<ISpatialEntry>();
++    // Reuse result array and Set instead of allocating new ones
++    const result = this._queryAABBResult;
++    result.length = 0;
++    const seen = this._seenSet;
++    seen.clear();
+ 
+     for (let cx = minCX; cx <= maxCX; cx++) {
+       for (let cy = minCY; cy <= maxCY; cy++) {
+@@ -172,13 +180,16 @@ export class SpatialHashGrid {
+         const cell = this._cells.get(key);
+         if (cell) {
+           for (const entry of cell) {
+-            result.add(entry);
++            if (!seen.has(entry)) {
++              seen.add(entry);
++              result.push(entry);
++            }
+           }
+         }
+       }
+     }
+ 
+-    return Array.from(result);
++    return result;
+   }
+ 
+   /**
+diff --git a/src/math/MatrixPool.ts b/src/math/MatrixPool.ts
+new file mode 100644
+index 0000000..8bbb486
+--- /dev/null
++++ b/src/math/MatrixPool.ts
+@@ -0,0 +1,48 @@
++/**
++ * MatrixPool — Object pool for Float32Array matrices.
++ *
++ * Eliminates per-frame Float32Array allocations in matrix operations.
++ * Typical usage: acquire a matrix for a temp calculation, use it, then release back to the pool.
++ *
++ * @module Math
++ * @example
++ * ```typescript
++ * import { acquire, release } from './MatrixPool';
++ *
++ * const mat = acquire();
++ * // Use mat...
++ * release(mat);
++ * ```
++ */
++
++/** Pool of reusable Float32Array matrices. */
++const pool: Float32Array[] = [];
++/** Maximum number of matrices to keep in the pool. Tune based on profiling. */
++const MAX_POOL_SIZE = 256;
++
++/**
++ * Acquire a Float32Array matrix from the pool.
++ * If the pool is empty, allocates a new one.
++ * @returns A 6-element Float32Array (2x3 affine matrix) ready for use
++ */
++export function acquire(): Float32Array {
++  if (pool.length > 0) {
++    return pool.pop()!;
++  }
++  return new Float32Array(6);
++}
++
++/**
++ * Release a matrix back to the pool for reuse.
++ * Clears the data before returning to pool.
++ * @param mat - The matrix to release
++ */
++export function release(mat: Float32Array): void {
++  if (pool.length < MAX_POOL_SIZE) {
++    // Clear data (set identity matrix for safety)
++    mat[0] = 1; mat[1] = 0;
++    mat[2] = 0; mat[3] = 1;
++    mat[4] = 0; mat[5] = 0;
++    pool.push(mat);
++  }
++}
+diff --git a/src/math/matrix.ts b/src/math/matrix.ts
+index d75d4fe..475170f 100644
+--- a/src/math/matrix.ts
++++ b/src/math/matrix.ts
+@@ -21,6 +21,8 @@
+  * ```
+  */
+ 
++export { acquire as acquireMatrix, release as releaseMatrix } from './MatrixPool';
++
+ /**
+  * A 2D affine transformation matrix stored as Float32Array(6).
+  * Follows the order: [a, b, c, d, tx, ty].
+@@ -40,20 +42,21 @@ export function identity(): MatrixArray {
+  *
+  * @param a - The first matrix (left operand).
+  * @param b - The second matrix (right operand).
+- * @returns A new MatrixArray representing the product.
++ * @param out - Optional output matrix. If not provided, allocates a new one.
++ * @returns A MatrixArray representing the product.
+  */
+-export function multiply(a: MatrixArray, b: MatrixArray): MatrixArray {
++export function multiply(a: MatrixArray, b: MatrixArray, out?: MatrixArray): MatrixArray {
+   // | a0 a2 a4 |   | b0 b2 b4 |
+   // | a1 a3 a5 | × | b1 b3 b5 |
+   // |  0  0  1 |   |  0  0  1 |
+-  return new Float32Array([
+-    a[0] * b[0] + a[2] * b[1],
+-    a[1] * b[0] + a[3] * b[1],
+-    a[0] * b[2] + a[2] * b[3],
+-    a[1] * b[2] + a[3] * b[3],
+-    a[0] * b[4] + a[2] * b[5] + a[4],
+-    a[1] * b[4] + a[3] * b[5] + a[5],
+-  ]);
++  const result = out ?? new Float32Array(6);
++  result[0] = a[0] * b[0] + a[2] * b[1];
++  result[1] = a[1] * b[0] + a[3] * b[1];
++  result[2] = a[0] * b[2] + a[2] * b[3];
++  result[3] = a[1] * b[2] + a[3] * b[3];
++  result[4] = a[0] * b[4] + a[2] * b[5] + a[4];
++  result[5] = a[1] * b[4] + a[3] * b[5] + a[5];
++  return result;
+ }
+ 
+ /**
+@@ -61,22 +64,38 @@ export function multiply(a: MatrixArray, b: MatrixArray): MatrixArray {
+  *
+  * @param tx - Translation along the X axis.
+  * @param ty - Translation along the Y axis.
+- * @returns A new MatrixArray [1, 0, 0, 1, tx, ty].
++ * @param out - Optional output matrix. If not provided, allocates a new one.
++ * @returns A MatrixArray [1, 0, 0, 1, tx, ty].
+  */
+-export function translate(tx: number, ty: number): MatrixArray {
+-  return new Float32Array([1, 0, 0, 1, tx, ty]);
++export function translate(tx: number, ty: number, out?: MatrixArray): MatrixArray {
++  const result = out ?? new Float32Array(6);
++  result[0] = 1;
++  result[1] = 0;
++  result[2] = 0;
++  result[3] = 1;
++  result[4] = tx;
++  result[5] = ty;
++  return result;
+ }
+ 
+ /**
+  * Creates a rotation matrix.
+  *
+  * @param angle - The rotation angle in radians, clockwise.
+- * @returns A new MatrixArray representing the rotation.
++ * @param out - Optional output matrix. If not provided, allocates a new one.
++ * @returns A MatrixArray representing the rotation.
+  */
+-export function rotate(angle: number): MatrixArray {
++export function rotate(angle: number, out?: MatrixArray): MatrixArray {
+   const cos = Math.cos(angle);
+   const sin = Math.sin(angle);
+-  return new Float32Array([cos, sin, -sin, cos, 0, 0]);
++  const result = out ?? new Float32Array(6);
++  result[0] = cos;
++  result[1] = sin;
++  result[2] = -sin;
++  result[3] = cos;
++  result[4] = 0;
++  result[5] = 0;
++  return result;
+ }
+ 
+ /**
+@@ -84,10 +103,18 @@ export function rotate(angle: number): MatrixArray {
+  *
+  * @param sx - Scale factor along the X axis.
+  * @param sy - Scale factor along the Y axis.
+- * @returns A new MatrixArray [sx, 0, 0, sy, 0, 0].
++ * @param out - Optional output matrix. If not provided, allocates a new one.
++ * @returns A MatrixArray [sx, 0, 0, sy, 0, 0].
+  */
+-export function scale(sx: number, sy: number): MatrixArray {
+-  return new Float32Array([sx, 0, 0, sy, 0, 0]);
++export function scale(sx: number, sy: number, out?: MatrixArray): MatrixArray {
++  const result = out ?? new Float32Array(6);
++  result[0] = sx;
++  result[1] = 0;
++  result[2] = 0;
++  result[3] = sy;
++  result[4] = 0;
++  result[5] = 0;
++  return result;
+ }
+ 
+ /**
+@@ -95,33 +122,42 @@ export function scale(sx: number, sy: number): MatrixArray {
+  *
+  * @param sx - Skew angle along the X axis in radians.
+  * @param sy - Skew angle along the Y axis in radians.
+- * @returns A new MatrixArray [1, tan(sy), tan(sx), 1, 0, 0].
++ * @param out - Optional output matrix. If not provided, allocates a new one.
++ * @returns A MatrixArray [1, tan(sy), tan(sx), 1, 0, 0].
+  */
+-export function skew(sx: number, sy: number): MatrixArray {
+-  return new Float32Array([1, Math.tan(sy), Math.tan(sx), 1, 0, 0]);
++export function skew(sx: number, sy: number, out?: MatrixArray): MatrixArray {
++  const result = out ?? new Float32Array(6);
++  result[0] = 1;
++  result[1] = Math.tan(sy);
++  result[2] = Math.tan(sx);
++  result[3] = 1;
++  result[4] = 0;
++  result[5] = 0;
++  return result;
+ }
+ 
+ /**
+  * Inverts a matrix.
+  *
+  * @param mat - The matrix to invert.
+- * @returns A new MatrixArray, or null if the matrix is singular (determinant is zero).
++ * @param out - Optional output matrix. If not provided, allocates a new one.
++ * @returns A MatrixArray, or null if the matrix is singular (determinant is zero).
+  */
+-export function invert(mat: MatrixArray): MatrixArray | null {
++export function invert(mat: MatrixArray, out?: MatrixArray): MatrixArray | null {
+   const [a, b, c, d, tx, ty] = mat;
+   const det = a * d - b * c;
+   if (Math.abs(det) < 1e-10) {
+     return null;
+   }
+   const invDet = 1 / det;
+-  return new Float32Array([
+-    d * invDet,
+-    -b * invDet,
+-    -c * invDet,
+-    a * invDet,
+-    (c * ty - d * tx) * invDet,
+-    (b * tx - a * ty) * invDet,
+-  ]);
++  const result = out ?? new Float32Array(6);
++  result[0] = d * invDet;
++  result[1] = -b * invDet;
++  result[2] = -c * invDet;
++  result[3] = a * invDet;
++  result[4] = (c * ty - d * tx) * invDet;
++  result[5] = (b * tx - a * ty) * invDet;
++  return result;
+ }
+ 
+ /**
+diff --git a/src/rendering/Arena2DContext.ts b/src/rendering/Arena2DContext.ts
+index 0fa7498..7838613 100644
+--- a/src/rendering/Arena2DContext.ts
++++ b/src/rendering/Arena2DContext.ts
+@@ -39,7 +39,7 @@ export interface IRenderTextStyle {
+ export type CanvasContext = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
+ 
+ export interface IArena2DContext {
+-  readonly raw: CanvasContext;
++  raw: CanvasContext;
+ 
+   // Shape primitives (6.1)
+   drawRect(
+@@ -185,7 +185,7 @@ export function buildFontString(style: IRenderTextStyle): string {
+  */
+ export class Arena2DContext implements IArena2DContext {
+   /** The underlying canvas rendering context. */
+-  readonly raw: CanvasContext;
++  raw: CanvasContext;
+ 
+   /**
+    * Creates a new Arena2DContext.
+@@ -195,6 +195,15 @@ export class Arena2DContext implements IArena2DContext {
+     this.raw = ctx;
+   }
+ 
++  /**
++   * Updates the wrapped canvas context. Allows reusing a single Arena2DContext
++   * for multiple rendering operations with different canvas contexts.
++   * @param ctx - The new canvas rendering context to wrap.
++   */
++  setContext(ctx: CanvasContext): void {
++    this.raw = ctx;
++  }
++
+   // ── Shape Primitives (6.1) ──
+ 
+   private _applyFillStroke(style?: PaintStyle): void {
+diff --git a/src/text/TextLayout.ts b/src/text/TextLayout.ts
+index 3005716..f42a9ad 100644
+--- a/src/text/TextLayout.ts
++++ b/src/text/TextLayout.ts
+@@ -90,15 +90,21 @@ function measureWidth(text: string): number {
+ /**
+  * Compute per-character x-offsets (advancements) for a string.
+  * Each entry is the left edge of the character relative to line start.
++ * Uses cumulative measurement of individual characters to avoid substring allocations.
+  */
+ function computeAdvancements(text: string): number[] {
+   const ctx = getMeasureContext();
+   const advancements: number[] = [];
+-  let x = 0;
++  let cumulativeAdvance = 0;
++
++  // Measure individual characters and accumulate the advancement
++  // Avoids N growing-substring allocations
+   for (let i = 0; i < text.length; i++) {
+-    advancements.push(x);
+-    x += ctx.measureText(text[i]).width;
++    advancements.push(cumulativeAdvance);
++    const charWidth = ctx.measureText(text[i]).width;
++    cumulativeAdvance += charWidth;
+   }
++
+   return advancements;
+ }
+ 
+@@ -112,7 +118,9 @@ interface LayoutCacheEntry {
+ }
+ 
+ const CACHE_SIZE = 32;
+-const _cache: LayoutCacheEntry[] = [];
++const _cache: Array<LayoutCacheEntry | null> = new Array(CACHE_SIZE).fill(null);
++let _cacheIndex = 0;
++let _cacheCount = 0;
+ 
+ function buildFontKey(style: ILayoutTextStyle): string {
+   return `${style.fontWeight ?? "normal"}_${style.fontStyle ?? "normal"}_${style.fontSize}_${style.fontFamily}`;
+@@ -123,8 +131,10 @@ function findCached(
+   fontKey: string,
+   availableWidth: number,
+ ): ITextLayout | null {
+-  for (const entry of _cache) {
++  for (let i = 0; i < _cache.length; i++) {
++    const entry = _cache[i];
+     if (
++      entry &&
+       entry.text === text &&
+       entry.fontKey === fontKey &&
+       entry.availableWidth === availableWidth
+@@ -141,10 +151,12 @@ function addToCache(
+   availableWidth: number,
+   result: ITextLayout,
+ ): void {
+-  if (_cache.length >= CACHE_SIZE) {
+-    _cache.shift();
++  // Use circular buffer: O(1) insertion instead of O(n) shift
++  _cache[_cacheIndex] = { text, fontKey, availableWidth, result };
++  _cacheIndex = (_cacheIndex + 1) % CACHE_SIZE;
++  if (_cacheCount < CACHE_SIZE) {
++    _cacheCount++;
+   }
+-  _cache.push({ text, fontKey, availableWidth, result });
+ }
+ 
+ // ── Word-Wrap Algorithm ──

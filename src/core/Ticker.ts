@@ -50,6 +50,7 @@ export class Ticker implements ITicker {
   private _running = false;
   private _elements: Set<IElement> = new Set();
   private _renderCallback: (() => void) | null = null;
+  private _rafCallback = (t: number) => this._tick(t);
 
   /**
    * Accumulated time since last tick in ms.
@@ -186,7 +187,7 @@ export class Ticker implements ITicker {
 
   private _requestFrame(): void {
     if (typeof requestAnimationFrame !== "undefined") {
-      this._rafId = requestAnimationFrame((t) => this._tick(t));
+      this._rafId = requestAnimationFrame(this._rafCallback);
     }
   }
 }

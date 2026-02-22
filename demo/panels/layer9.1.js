@@ -7,6 +7,7 @@ export default async function (Arena2D) {
   const countSelect = document.getElementById("l9_1-count");
   const resetBtn = document.getElementById("l9_1-reset");
   const statusEl = document.getElementById("l9_1-status");
+  const fpsEl = document.getElementById("l9_1-fps");
 
   let isolatedElement = null;
   let pointerPos = { x: 0, y: 0 };
@@ -19,14 +20,32 @@ export default async function (Arena2D) {
   view.resize(width, height);
   scene.ticker.start();
 
+  let _debugCounter = 0;
   container.addEventListener("pointermove", (e) => {
     const rect = container.getBoundingClientRect();
     pointerPos.x = e.clientX - rect.left;
     pointerPos.y = e.clientY - rect.top;
+    if (++_debugCounter % 60 === 0) {
+      const sceneCoords = view.screenToScene(e.clientX, e.clientY);
+      const hit = view.interaction.hitTest(sceneCoords.x, sceneCoords.y);
+      const hovered = view.interaction.hoveredElement;
+      console.log(`[DBG] ptr=(${pointerPos.x.toFixed(0)},${pointerPos.y.toFixed(0)}) scene=(${sceneCoords.x.toFixed(0)},${sceneCoords.y.toFixed(0)}) hit=${hit?.id || 'null'} hover=${hovered?.id || 'null'} children=${scene.root.children.length}`);
+    }
   });
+
+  let frameCount = 0;
+  let lastFpsTime = performance.now();
 
   const updater = new Element("updater");
   updater.update = (dt) => {
+    frameCount++;
+    const now = performance.now();
+    if (now - lastFpsTime >= 1000) {
+      if (fpsEl) fpsEl.textContent = `FPS: ${frameCount}`;
+      frameCount = 0;
+      lastFpsTime = now;
+    }
+
     if (isolatedElement) {
       // Calculate distance from center of element to pointer
       const dx = pointerPos.x - (isolatedElement.x + isolatedElement.width / 2);

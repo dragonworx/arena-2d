@@ -46,7 +46,7 @@ export default async function (Arena2D) {
 
         // Draw background
         card.paint = (ctx) => {
-          const isHover = card === view.interaction.hoverElement;
+          const isHover = card === view.interaction.hoveredElement;
           let color = isHover ? "#4a90d9" : "#2a2a3a";
 
           // Mix in red flash if card was recently clicked (only if not during drag)
@@ -81,6 +81,7 @@ export default async function (Arena2D) {
           originalUpdate(dt);
           if (cardFlashAlpha > 0) {
             cardFlashAlpha *= 0.9;
+            card.invalidate(2); // Trigger DirtyFlags.Visual repaint
           }
         };
 

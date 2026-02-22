@@ -39,7 +39,7 @@ export interface IRenderTextStyle {
 export type CanvasContext = CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
 
 export interface IArena2DContext {
-  readonly raw: CanvasContext;
+  raw: CanvasContext;
 
   // Shape primitives (6.1)
   drawRect(
@@ -185,13 +185,22 @@ export function buildFontString(style: IRenderTextStyle): string {
  */
 export class Arena2DContext implements IArena2DContext {
   /** The underlying canvas rendering context. */
-  readonly raw: CanvasContext;
+  raw: CanvasContext;
 
   /**
    * Creates a new Arena2DContext.
    * @param ctx - The canvas rendering context to wrap.
    */
   constructor(ctx: CanvasContext) {
+    this.raw = ctx;
+  }
+
+  /**
+   * Updates the wrapped canvas context. Allows reusing a single Arena2DContext
+   * for multiple rendering operations with different canvas contexts.
+   * @param ctx - The new canvas rendering context to wrap.
+   */
+  setContext(ctx: CanvasContext): void {
     this.raw = ctx;
   }
 
