@@ -5,9 +5,9 @@ export default async function (Arena2D) {
   const sceneContainer = document.getElementById("l9-scene-container");
   if (!sceneContainer) return;
 
-  const scene = new Scene(800, 400);
+  const scene = new Scene(400, 200);
   const view = new View(sceneContainer, scene);
-  view.resize(800, 400);
+  view.resize(400, 200);
   scene.ticker.start();
 
   // Color palette for elements
@@ -63,8 +63,8 @@ export default async function (Arena2D) {
 
   // Background container (covers whole scene)
   const bg = new Element("background");
-  bg.width = 800;
-  bg.height = 400;
+  bg.width = 400;
+  bg.height = 200;
   bg.interactive = true;
   bg.cursor = "default";
   scene.root.addChild(bg);
@@ -75,10 +75,10 @@ export default async function (Arena2D) {
   const boxConfigs = [
     {
       id: "box-A",
-      x: 40,
-      y: 40,
-      w: 180,
-      h: 140,
+      x: 20,
+      y: 20,
+      w: 90,
+      h: 70,
       z: 0,
       color: colors[0],
       focusable: true,
@@ -86,10 +86,10 @@ export default async function (Arena2D) {
     },
     {
       id: "box-B",
-      x: 180, // Moved right
-      y: 80,
-      w: 180,
-      h: 140,
+      x: 90, // Moved right
+      y: 40,
+      w: 90,
+      h: 70,
       z: 1,
       color: colors[1],
       focusable: true,
@@ -97,8 +97,8 @@ export default async function (Arena2D) {
     },
     {
       id: "box-C",
-      x: 320, // Moved right significantly
-      y: 120,
+      x: 160, // Moved right significantly
+      y: 60,
       w: 90,
       h: 70,
       z: 2,
@@ -108,10 +108,10 @@ export default async function (Arena2D) {
     },
     {
       id: "box-D",
-      x: 550, // Moved right
-      y: 40,
-      w: 200,
-      h: 160,
+      x: 275, // Moved right
+      y: 20,
+      w: 100,
+      h: 80,
       z: 0,
       color: colors[3],
       focusable: true,
@@ -119,8 +119,8 @@ export default async function (Arena2D) {
     },
     {
       id: "box-E",
-      x: 600, // Moved right
-      y: 150,
+      x: 300, // Moved right
+      y: 75,
       w: 80,
       h: 80,
       z: 1,
@@ -132,10 +132,10 @@ export default async function (Arena2D) {
 
   // Nested container with children
   const nestedContainer = new Container("nested-group");
-  nestedContainer.x = 450; // Moved right
-  nestedContainer.y = 250;
-  nestedContainer.width = 260;
-  nestedContainer.height = 120;
+  nestedContainer.x = 225; // Moved right
+  nestedContainer.y = 125;
+  nestedContainer.width = 130;
+  nestedContainer.height = 60;
   nestedContainer.interactive = true;
   nestedContainer.cursor = "move";
   scene.root.addChild(nestedContainer);
@@ -146,8 +146,8 @@ export default async function (Arena2D) {
   });
 
   const nestedChild1 = new Element("nested-1");
-  nestedChild1.x = 10;
-  nestedChild1.y = 70;
+  nestedChild1.x = 5;
+  nestedChild1.y = 35;
   nestedChild1.width = 50;
   nestedChild1.height = 50;
   nestedChild1.interactive = true;
@@ -156,8 +156,8 @@ export default async function (Arena2D) {
   nestedContainer.addChild(nestedChild1);
 
   const nestedChild2 = new Element("nested-2");
-  nestedChild2.x = 80;
-  nestedChild2.y = 70;
+  nestedChild2.x = 40;
+  nestedChild2.y = 35;
   nestedChild2.width = 50;
   nestedChild2.height = 50;
   nestedChild2.interactive = true;
@@ -192,10 +192,10 @@ export default async function (Arena2D) {
 
   // 1. Draggable Item
   const dragItem = new Element("drag-me");
-  dragItem.x = 50;
-  dragItem.y = 300;
-  dragItem.width = 80;
-  dragItem.height = 80;
+  dragItem.x = 25;
+  dragItem.y = 150;
+  dragItem.width = 40;
+  dragItem.height = 40;
   dragItem.interactive = true;
   dragItem.draggable = true;
   dragItem.cursor = "grab";
@@ -204,20 +204,20 @@ export default async function (Arena2D) {
 
   // 2. Drop Zone
   const dropZone = new Element("drop-zone");
-  dropZone.x = 200;
-  dropZone.y = 300;
-  dropZone.width = 120;
-  dropZone.height = 120;
+  dropZone.x = 100;
+  dropZone.y = 150;
+  dropZone.width = 60;
+  dropZone.height = 60;
   dropZone.interactive = true;
   scene.root.addChild(dropZone);
   allElements.push({ el: dropZone, color: "#2d3436", label: "drop-zone" });
 
   // 3. X-Axis Constraint Item
   const constraintItem = new Element("drag-x-only");
-  constraintItem.x = 350;
-  constraintItem.y = 320;
-  constraintItem.width = 80;
-  constraintItem.height = 60;
+  constraintItem.x = 175;
+  constraintItem.y = 160;
+  constraintItem.width = 40;
+  constraintItem.height = 30;
   constraintItem.interactive = true;
   constraintItem.draggable = true;
   constraintItem.dragConstraint = "x";
@@ -226,14 +226,14 @@ export default async function (Arena2D) {
   allElements.push({ el: constraintItem, color: "#0984e3", label: "drag-x" });
 
   // 4. Unreachable Item (for testing AABB drag)
-  // This item is constrained to X axis at Y=100.
-  // The drop zone is at Y=300.
+  // This item is constrained to X axis at Y=50.
+  // The drop zone is at Y=150.
   // Dragging this and moving cursor over drop zone should NOT fire dragenter.
   const unreachableItem = new Element("unreachable");
-  unreachableItem.x = 500;
-  unreachableItem.y = 100;
-  unreachableItem.width = 80;
-  unreachableItem.height = 60;
+  unreachableItem.x = 250;
+  unreachableItem.y = 50;
+  unreachableItem.width = 40;
+  unreachableItem.height = 30;
   unreachableItem.interactive = true;
   unreachableItem.draggable = true;
   unreachableItem.dragConstraint = "x";

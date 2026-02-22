@@ -42,12 +42,20 @@
     padding: 6px 4px;
     font-size: 11px;
   }
-  /* 3-Column Layout */
+  /* Control + Canvas Grid Layout */
   .l8-main-grid {
     display: grid;
-    grid-template-columns: 260px 1fr 1fr;
+    grid-template-columns: 180px 1fr;
+    grid-template-rows: auto auto;
     gap: 16px;
-    align-items: start;
+  }
+
+  /* Full-width flex+anchor row */
+  .l8-canvas-row {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
   }
   .l8-panel {
     min-width: 0; /* Prevent grid blowout */
@@ -60,9 +68,9 @@
 </div>
 
 <div class="card l8-main-grid">
-  <!-- COL 1: Controls -->
+  <!-- ROW 1: Controls (spanning full width) -->
   <div class="l8-panel" style="display: flex; flex-direction: column; gap: 0;">
-    
+
     <!-- Container Controls -->
     <div class="control-group">
       <h3>Container</h3>
@@ -75,7 +83,7 @@
           Height <span id="l8-ch-val" class="control-value">300</span>
           <input type="range" id="l8-ctrl-ch" min="100" max="500" value="300" class="l8-compact-input">
         </label>
-        
+
         <label class="control-label l8-compact-label l8-full">
           Display
           <select id="l8-ctrl-display" style="margin-top:2px; padding:4px;">
@@ -137,7 +145,7 @@
     <!-- Selected Child Controls -->
     <div class="control-group">
       <h3>Selected Child <span id="l8-child-info" style="font-weight:normal; text-transform:none; float:right; color:#888;">(None)</span></h3>
-      
+
       <div class="l8-grid">
         <label class="control-label l8-compact-label">
           Grow <span id="l8-grow-val" class="control-value">0</span>
@@ -157,7 +165,7 @@
           <input type="range" id="l8-ctrl-height" min="20" max="150" value="40" class="l8-compact-input">
         </label>
       </div>
-      
+
       <div class="l8-grid" style="margin-top:8px; border-top:1px dashed #444; padding-top:8px;">
         <label class="control-label l8-compact-label l8-full" style="justify-content:flex-start; gap:8px;">
           <input type="checkbox" id="l8-child-visible" checked> Visible (Layout + Paint)
@@ -193,38 +201,41 @@
 
   </div>
 
-  <!-- COL 2: Flex Preview -->
-  <div class="l8-panel">
-    <h3 style="margin-top:0; font-size:14px; color:#ccc; margin-bottom:12px;">Flex Layout</h3>
-    <canvas id="l8-layout-canvas" style="border:1px dashed #555; border-radius:6px; background:#1a1a2e; margin-bottom:8px;"></canvas>
-    
-    <div style="display:flex; gap:16px; font-size:11px; color:#888; justify-content: space-between; align-items: center;">
-      <div>
-        <span style="margin-right:12px">Time: <strong id="l8-stat-time" style="color:#eee">0.00</strong>ms</span>
-        <span style="margin-right:12px">Children: <strong id="l8-stat-children" style="color:#eee">0</strong></span>
-        <span>Size: <strong id="l8-stat-size" style="color:#eee">350x300</strong></span>
-      </div>
-    </div>
-  </div>
+  <!-- ROW 2: Flex and Anchor Demos Side-by-Side -->
+  <div class="l8-canvas-row">
+    <!-- Flex Preview -->
+    <div class="l8-panel">
+      <h3 style="margin-top:0; font-size:14px; color:#ccc; margin-bottom:12px;">Flex Layout</h3>
+      <canvas id="l8-layout-canvas" style="border:1px dashed #555; border-radius:6px; background:#1a1a2e; margin-bottom:8px;"></canvas>
 
-  <!-- COL 3: Anchor Preview -->
-  <div class="l8-panel">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-      <h3 style="margin:0; font-size:14px; color:#ccc;">Anchor Layout</h3>
-      <div style="display:flex; gap:12px;">
-          <label class="control-label" style="font-size:11px; margin:0; display:flex; align-items:center; gap:4px;">
-          W <span id="l8-aw-val" class="control-value" style="font-size:11px; min-width:2em;">350</span>
-          <input type="range" id="l8-ctrl-aw" min="200" max="600" value="350" style="width:60px; height:2px; margin:0;">
-        </label>
-        <label class="control-label" style="font-size:11px; margin:0; display:flex; align-items:center; gap:4px;">
-          H <span id="l8-ah-val" class="control-value" style="font-size:11px; min-width:2em;">300</span>
-          <input type="range" id="l8-ctrl-ah" min="150" max="500" value="300" style="width:60px; height:2px; margin:0;">
-        </label>
+      <div style="display:flex; gap:16px; font-size:11px; color:#888; justify-content: space-between; align-items: center;">
+        <div>
+          <span style="margin-right:12px">Time: <strong id="l8-stat-time" style="color:#eee">0.00</strong>ms</span>
+          <span style="margin-right:12px">Children: <strong id="l8-stat-children" style="color:#eee">0</strong></span>
+          <span>Size: <strong id="l8-stat-size" style="color:#eee">350x300</strong></span>
+        </div>
       </div>
     </div>
-    <canvas id="l8-anchor-canvas" style="border:1px dashed #555; border-radius:6px; background:#1a1a2e; width:100%;"></canvas>
-    <p style="color:#666; font-size:11px; margin-top:8px; line-height:1.4;">
-      Anchors position elements relative to container edges.
-    </p>
+
+    <!-- Anchor Preview -->
+    <div class="l8-panel">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h3 style="margin:0; font-size:14px; color:#ccc;">Anchor Layout</h3>
+        <div style="display:flex; gap:12px;">
+            <label class="control-label" style="font-size:11px; margin:0; display:flex; align-items:center; gap:4px;">
+            W <span id="l8-aw-val" class="control-value" style="font-size:11px; min-width:2em;">350</span>
+            <input type="range" id="l8-ctrl-aw" min="200" max="600" value="350" style="width:60px; height:2px; margin:0;">
+          </label>
+          <label class="control-label" style="font-size:11px; margin:0; display:flex; align-items:center; gap:4px;">
+            H <span id="l8-ah-val" class="control-value" style="font-size:11px; min-width:2em;">300</span>
+            <input type="range" id="l8-ctrl-ah" min="150" max="500" value="300" style="width:60px; height:2px; margin:0;">
+          </label>
+        </div>
+      </div>
+      <canvas id="l8-anchor-canvas" style="border:1px dashed #555; border-radius:6px; background:#1a1a2e; width:100%;"></canvas>
+      <p style="color:#666; font-size:11px; margin-top:8px; line-height:1.4;">
+        Anchors position elements relative to container edges.
+      </p>
+    </div>
   </div>
 </div>
