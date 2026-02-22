@@ -119,8 +119,11 @@ export default async function (Arena2D) {
   function drawShapeGeometry(ctx, shape, label) {
     // Only fill closed shapes
     const shouldFill = label === 'Circle' || label === 'Rectangle' || label === 'Polygon' || label === 'Ellipse';
-    const fillColor = shouldFill ? "rgba(74, 144, 226, 0.2)" : undefined;
-    ctx.drawGeometry(shape, fillColor, "#4a90e2");
+    const style = {
+      fillColor: shouldFill ? "rgba(74, 144, 226, 0.2)" : undefined,
+      strokeColor: "#4a90e2"
+    };
+    ctx.drawGeometry(shape, style);
   }
 
   // Animation loop
