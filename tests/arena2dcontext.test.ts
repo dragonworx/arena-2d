@@ -247,7 +247,7 @@ describe("Arena2DContext — shape primitives", () => {
     const mockCtx = createMockCtx();
     const uiCtx = new Arena2DContext(mockCtx);
 
-    uiCtx.drawRect(10, 20, 100, 50, "#f00", "#0f0");
+    uiCtx.drawRect(10, 20, 100, 50, { fillColor: "#f00", strokeColor: "#0f0" });
 
     const methods = mockCtx._calls.map((c) => c.method);
     expect(methods).toContain("fillRect");
@@ -264,7 +264,7 @@ describe("Arena2DContext — shape primitives", () => {
     const mockCtx = createMockCtx();
     const uiCtx = new Arena2DContext(mockCtx);
 
-    uiCtx.drawRect(0, 0, 50, 50, "#f00");
+    uiCtx.drawRect(0, 0, 50, 50, { fillColor: "#f00" });
 
     const methods = mockCtx._calls.map((c) => c.method);
     expect(methods).toContain("fillRect");
@@ -275,7 +275,7 @@ describe("Arena2DContext — shape primitives", () => {
     const mockCtx = createMockCtx();
     const uiCtx = new Arena2DContext(mockCtx);
 
-    uiCtx.drawRoundedRect(0, 0, 100, 50, 10, "#f00");
+    uiCtx.drawRoundedRect(0, 0, 100, 50, 10, { fillColor: "#f00" });
 
     const rrCall = mockCtx._calls.find((c) => c.method === "roundRect");
     expect(rrCall).toBeDefined();
@@ -286,7 +286,7 @@ describe("Arena2DContext — shape primitives", () => {
     const mockCtx = createMockCtx();
     const uiCtx = new Arena2DContext(mockCtx);
 
-    uiCtx.drawRoundedRect(0, 0, 100, 50, [5, 10, 15, 20], "#f00");
+    uiCtx.drawRoundedRect(0, 0, 100, 50, [5, 10, 15, 20], { fillColor: "#f00" });
 
     const rrCall = mockCtx._calls.find((c) => c.method === "roundRect");
     expect(rrCall?.args[4]).toEqual([5, 10, 15, 20]);
@@ -296,7 +296,7 @@ describe("Arena2DContext — shape primitives", () => {
     const mockCtx = createMockCtx();
     const uiCtx = new Arena2DContext(mockCtx);
 
-    uiCtx.drawCircle(50, 50, 25, "#f00");
+    uiCtx.drawCircle(50, 50, 25, { fillColor: "#f00" });
 
     const arcCall = mockCtx._calls.find((c) => c.method === "arc");
     expect(arcCall).toBeDefined();
@@ -307,7 +307,7 @@ describe("Arena2DContext — shape primitives", () => {
     const mockCtx = createMockCtx();
     const uiCtx = new Arena2DContext(mockCtx);
 
-    uiCtx.drawEllipse(50, 50, 30, 20, "#f00");
+    uiCtx.drawEllipse(50, 50, 30, 20, { fillColor: "#f00" });
 
     const eCall = mockCtx._calls.find((c) => c.method === "ellipse");
     expect(eCall).toBeDefined();
@@ -318,7 +318,7 @@ describe("Arena2DContext — shape primitives", () => {
     const mockCtx = createMockCtx();
     const uiCtx = new Arena2DContext(mockCtx);
 
-    uiCtx.drawLine(0, 0, 100, 100, "#fff", 2);
+    uiCtx.drawLine(0, 0, 100, 100, { strokeColor: "#fff", lineWidth: 2 });
 
     const methods = mockCtx._calls.map((c) => c.method);
     expect(methods).toContain("moveTo");
@@ -341,7 +341,7 @@ describe("Arena2DContext — shape primitives", () => {
       { x: 100, y: 0 },
       { x: 50, y: 80 },
     ];
-    uiCtx.drawPolygon(points, "#f00", "#0f0");
+    uiCtx.drawPolygon(points, { fillColor: "#f00", strokeColor: "#0f0" });
 
     const methods = mockCtx._calls.map((c) => c.method);
     expect(methods).toContain("moveTo");
@@ -360,7 +360,7 @@ describe("Arena2DContext — shape primitives", () => {
     const mockCtx = createMockCtx();
     const uiCtx = new Arena2DContext(mockCtx);
 
-    uiCtx.drawPolygon([], "#f00");
+    uiCtx.drawPolygon([], { fillColor: "#f00" });
     expect(mockCtx._calls.length).toBe(0);
   });
 
@@ -369,7 +369,7 @@ describe("Arena2DContext — shape primitives", () => {
     const uiCtx = new Arena2DContext(mockCtx);
 
     const path = {} as Path2D;
-    uiCtx.drawPath(path, "#f00", "#0f0");
+    uiCtx.drawPath(path, { fillColor: "#f00", strokeColor: "#0f0" });
 
     const fillCall = mockCtx._calls.find((c) => c.method === "fill");
     expect(fillCall).toBeDefined();

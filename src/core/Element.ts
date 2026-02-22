@@ -138,7 +138,9 @@ export class Element extends EventEmitter implements IElement {
   readonly style: IStyle = createDefaultStyle();
 
   // ── Local bounds ──
-  localBounds: IRect = { x: 0, y: 0, width: 0, height: 0 };
+  protected _localBounds: IRect = { x: 0, y: 0, width: 0, height: 0 };
+  get localBounds(): IRect { return this._localBounds; }
+  set localBounds(value: IRect) { this._localBounds = value; }
 
   // ── Transform ──
   localMatrix: MatrixArray = identity();

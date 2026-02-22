@@ -29,6 +29,9 @@ function createMockCtx() {
     fillRect: mock((...args: unknown[]) => {
       calls.push({ method: "fillRect", args });
     }),
+    _savedCompositeOp: undefined as string | undefined,
+    save: mock(() => { calls.push({ method: "save", args: [] }); }),
+    restore: mock(() => { calls.push({ method: "restore", args: [] }); }),
   };
 
   const ctx = {
@@ -48,6 +51,19 @@ function createMockCtx() {
         }
       },
     ),
+    save: mock(() => { raw.save(); raw._savedCompositeOp = raw.globalCompositeOperation; }),
+    restore: mock(() => { raw.restore(); if (raw._savedCompositeOp !== undefined) { raw.globalCompositeOperation = raw._savedCompositeOp; } }),
+    setCompositeOperation: mock((op: string) => {
+      raw.globalCompositeOperation = op;
+      calls.push({ method: "setCompositeOperation", args: [op] });
+    }),
+    drawRect: mock((x: number, y: number, w: number, h: number, style?: Record<string, unknown>) => {
+      if (style?.fillColor) {
+        raw.fillStyle = style.fillColor as string;
+        raw.fillRect(x, y, w, h);
+      }
+      calls.push({ method: "drawRect", args: [x, y, w, h, style] });
+    }),
     drawImageRegion: mock(
       (
         image: CanvasImageSource,

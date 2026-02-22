@@ -15,6 +15,7 @@ import { Arc } from '../src/geometry/Arc';
 import { QuadraticCurve } from '../src/geometry/QuadraticCurve';
 import { BezierCurve } from '../src/geometry/BezierCurve';
 import { Path } from '../src/geometry/Path';
+import { CompositeGeometry } from '../src/geometry/CompositeGeometry';
 
 describe('Vector', () => {
   it('should create a vector with x and y components', () => {
@@ -480,5 +481,143 @@ describe('Transformations', () => {
     const bbox = c.boundingBox;
     expect(bbox.width > 10).toBe(true);
     expect(bbox.height > 10).toBe(true);
+  });
+});
+
+describe('CompositeGeometry', () => {
+  it('should create an empty composite', () => {
+    const comp = new CompositeGeometry();
+    expect(comp.type).toBe('composite');
+    expect(comp.children.length).toBe(0);
+  });
+
+  it('should add and remove children', () => {
+    const comp = new CompositeGeometry();
+    const c1 = new Circle(0, 0, 5);
+    const c2 = new Circle(10, 0, 5);
+
+    comp.addChild(c1);
+    comp.addChild(c2);
+    expect(comp.children.length).toBe(2);
+
+    comp.removeChild(c1);
+    expect(comp.children.length).toBe(1);
+    expect(comp.children[0]).toBe(c2);
+  });
+
+  it('should not add the same child twice', () => {
+    const comp = new CompositeGeometry();
+    const c = new Circle(0, 0, 5);
+    comp.addChild(c);
+    comp.addChild(c);
+    expect(comp.children.length).toBe(1);
+  });
+
+  it('should use union containsPoint across children', () => {
+    const comp = new CompositeGeometry();
+    const c1 = new Circle(0, 0, 5);
+    const c2 = new Circle(20, 0, 5);
+    c1.updateLocalMatrix();
+    c2.updateLocalMatrix();
+    comp.addChild(c1);
+    comp.addChild(c2);
+
+    // Update world matrices
+    const id = c1.localMatrix.slice() as any;
+    comp.updateWorldMatrix(id);
+
+    expect(comp.containsPoint(0, 0)).toBe(true);   // inside c1
+    expect(comp.containsPoint(20, 0)).toBe(true);   // inside c2
+    expect(comp.containsPoint(10, 0)).toBe(false);  // between them
+  });
+
+  it('should cascade transforms to children', () => {
+    const comp = new CompositeGeometry();
+    const child = new Circle(0, 0, 5);
+    child.updateLocalMatrix();
+    comp.addChild(child);
+
+    // Move the composite to (100, 100)
+    comp.x = 100;
+    comp.y = 100;
+    comp.updateLocalMatrix();
+
+    const { identity } = require('../src/math/matrix');
+    comp.updateWorldMatrix(identity());
+
+    // Child should now be centered at (100, 100) in world space
+    expect(comp.containsPoint(100, 100)).toBe(true);
+    expect(comp.containsPoint(0, 0)).toBe(false);
+  });
+
+  it('should support nested composites (3-level)', () => {
+    const root = new CompositeGeometry();
+    const mid = new CompositeGeometry();
+    const leaf = new Circle(0, 0, 5);
+    leaf.updateLocalMatrix();
+
+    mid.addChild(leaf);
+    root.addChild(mid);
+
+    // root at (50, 50), mid at (10, 10) → leaf at (60, 60)
+    root.x = 50;
+    root.y = 50;
+    root.updateLocalMatrix();
+
+    mid.x = 10;
+    mid.y = 10;
+    mid.updateLocalMatrix();
+
+    const { identity } = require('../src/math/matrix');
+    root.updateWorldMatrix(identity());
+
+    expect(root.containsPoint(60, 60)).toBe(true);
+    expect(root.containsPoint(0, 0)).toBe(false);
+    expect(root.containsPoint(50, 50)).toBe(false);
+  });
+
+  it('should return min distanceTo across children', () => {
+    const comp = new CompositeGeometry();
+    const c1 = new Circle(0, 0, 5);
+    const c2 = new Circle(20, 0, 5);
+    c1.updateLocalMatrix();
+    c2.updateLocalMatrix();
+    comp.addChild(c1);
+    comp.addChild(c2);
+
+    const { identity } = require('../src/math/matrix');
+    comp.updateWorldMatrix(identity());
+
+    // Point at (10, 0) is 5 units from both circles
+    const dist = comp.distanceTo(10, 0);
+    expect(Math.abs(dist - 5) < 1e-6).toBe(true);
+  });
+
+  it('should compute union bounding box', () => {
+    const comp = new CompositeGeometry();
+    const r1 = new Rectangle(0, 0, 10, 10);
+    const r2 = new Rectangle(20, 20, 10, 10);
+    r1.updateLocalMatrix();
+    r2.updateLocalMatrix();
+    comp.addChild(r1);
+    comp.addChild(r2);
+
+    const { identity } = require('../src/math/matrix');
+    comp.updateWorldMatrix(identity());
+
+    const bb = comp.boundingBox;
+    expect(bb.x).toBe(0);
+    expect(bb.y).toBe(0);
+    expect(bb.width).toBe(30);
+    expect(bb.height).toBe(30);
+  });
+
+  it('should removeAllChildren', () => {
+    const comp = new CompositeGeometry();
+    comp.addChild(new Circle(0, 0, 5));
+    comp.addChild(new Circle(10, 0, 5));
+    expect(comp.children.length).toBe(2);
+    comp.removeAllChildren();
+    expect(comp.children.length).toBe(0);
   });
 });

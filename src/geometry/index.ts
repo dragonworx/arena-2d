@@ -17,6 +17,7 @@ export type {
   IBezierCurve,
   IQuadraticCurve,
   IPath,
+  ICompositeGeometry,
   PathSegment,
 } from './types';
 
@@ -34,3 +35,4 @@ export { Arc } from './Arc';
 export { QuadraticCurve } from './QuadraticCurve';
 export { BezierCurve } from './BezierCurve';
 export { Path } from './Path';
+export { CompositeGeometry } from './CompositeGeometry';

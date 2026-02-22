@@ -371,15 +371,27 @@ export default async function (Arena2D) {
   // ── Zoom modifier tracking ──
   // Track Ctrl/Meta via keydown/keyup — WheelEvent.ctrlKey is unreliable
   // because browsers synthesise it for trackpad pinch gestures.
+  // Also track Shift for pan cursor feedback.
 
   let zoomModifierDown = false;
   const onKeyDown = (e) => {
     if (e.key === "Control" || e.key === "Meta") zoomModifierDown = true;
+    if (e.key === "Shift") {
+      shiftDown = true;
+      updateCursor();
+    }
   };
   const onKeyUp = (e) => {
     if (e.key === "Control" || e.key === "Meta") zoomModifierDown = false;
+    if (e.key === "Shift") {
+      shiftDown = false;
+      updateCursor();
+    }
   };
-  const onBlur = () => { zoomModifierDown = false; };
+  const onBlur = () => {
+    zoomModifierDown = false;
+    shiftDown = false;
+  };
   window.addEventListener("keydown", onKeyDown);
   window.addEventListener("keyup", onKeyUp);
   window.addEventListener("blur", onBlur);
@@ -477,6 +489,21 @@ export default async function (Arena2D) {
   // ── Hover & Click interaction ──
 
   let hoveredEl = null;
+  let justFinishedPan = false;
+  let panTarget = null;  // Forward declare for updateCursor
+  let shiftDown = false;  // Forward declare for updateCursor
+
+  function updateCursor() {
+    if (panTarget) {
+      outputCanvas.style.cursor = "grabbing";
+    } else if (hoveredEl) {
+      outputCanvas.style.cursor = "pointer";
+    } else if (shiftDown) {
+      outputCanvas.style.cursor = "grab";
+    } else {
+      outputCanvas.style.cursor = "auto";
+    }
+  }
 
   function updateHover(e) {
     if (panTarget) return;
@@ -487,12 +514,18 @@ export default async function (Arena2D) {
       if (hoveredEl) elState.get(hoveredEl).hovered = false;
       if (hit) elState.get(hit).hovered = true;
       hoveredEl = hit;
-      if (!panTarget) outputCanvas.style.cursor = hit ? "pointer" : "grab";
+      updateCursor();
     }
   }
 
   outputCanvas.addEventListener("click", (e) => {
     if (e.button !== 0) return;
+    // Suppress click events that immediately follow a pan to avoid
+    // accidentally triggering interactions on elements under the pointer
+    if (justFinishedPan) {
+      justFinishedPan = false;
+      return;
+    }
     const rect = outputCanvas.getBoundingClientRect();
     const pos = canvasToScene(e.clientX - rect.left, e.clientY - rect.top);
     const hit = pos ? hitTestElements(pos.x, pos.y) : null;
@@ -507,13 +540,11 @@ export default async function (Arena2D) {
 
   const shouldPan = (e) => e.button === 1 || (e.button === 0 && e.shiftKey);
 
-  let panTarget = null;
   let lastPanX = 0;
   let lastPanY = 0;
 
-  outputCanvas.style.cursor = "grab";
-
   outputCanvas.addEventListener("pointerdown", (e) => {
+    justFinishedPan = false;
     if (shouldPan(e)) {
       const rect = outputCanvas.getBoundingClientRect();
       const canvasX = e.clientX - rect.left;
@@ -524,7 +555,7 @@ export default async function (Arena2D) {
 
       lastPanX = e.clientX;
       lastPanY = e.clientY;
-      outputCanvas.style.cursor = "grabbing";
+      updateCursor();
       outputCanvas.setPointerCapture(e.pointerId);
       e.preventDefault();
     }
@@ -549,14 +580,20 @@ export default async function (Arena2D) {
       lastPanY = e.clientY;
     }
     updateHover(e);
+    updateCursor();
   });
 
   outputCanvas.addEventListener("pointerup", (e) => {
     if (panTarget) {
       panTarget = null;
       outputCanvas.releasePointerCapture(e.pointerId);
+      // Mark that we just finished a pan so the following click event
+      // (if any) will be suppressed to avoid accidental interactions
+      justFinishedPan = true;
+      updateCursor();
+    } else {
+      updateHover(e);
     }
-    updateHover(e);
   });
 
   outputCanvas.addEventListener("pointerleave", () => {
@@ -564,7 +601,7 @@ export default async function (Arena2D) {
       elState.get(hoveredEl).hovered = false;
       hoveredEl = null;
     }
-    if (!panTarget) outputCanvas.style.cursor = "grab";
+    updateCursor();
   });
 
   // Prevent context menu on middle-click

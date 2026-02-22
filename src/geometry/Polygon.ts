@@ -54,7 +54,7 @@ export class Polygon extends Geometry implements IPolygon {
   }
 
   /** @inheritdoc */
-  protected getLocalBounds(): IRect {
+  public getLocalBounds(): IRect {
     if (this.points.length === 0) {
       return { x: 0, y: 0, width: 0, height: 0 };
     }
@@ -250,11 +250,21 @@ export class Polygon extends Geometry implements IPolygon {
       return this.localToWorld(this.points[0].x, this.points[0].y);
     }
 
-    const totalLength = this.perimeter;
-    const targetDistance = (t % 1) * (this.closed ? totalLength : totalLength);
+    // Calculate unscaled perimeter (segment lengths are in local space)
+    let unscaledPerimeter = 0;
+    const pointCount = this.closed ? this.points.length : this.points.length - 1;
+    for (let i = 0; i < pointCount; i++) {
+      const p1 = this.points[i];
+      const p2 = this.points[(i + 1) % this.points.length];
+      const dx = p2.x - p1.x;
+      const dy = p2.y - p1.y;
+      unscaledPerimeter += Math.sqrt(dx * dx + dy * dy);
+    }
+
+    const normalized = t === 1 ? 1 : (t % 1);
+    const targetDistance = normalized * unscaledPerimeter;
     let currentDistance = 0;
 
-    const pointCount = this.closed ? this.points.length : this.points.length - 1;
     for (let i = 0; i < pointCount; i++) {
       const p1 = this.points[i];
       const p2 = this.points[(i + 1) % this.points.length];
@@ -263,7 +273,7 @@ export class Polygon extends Geometry implements IPolygon {
       const segmentLength = Math.sqrt(dx * dx + dy * dy);
 
       if (currentDistance + segmentLength >= targetDistance) {
-        const ratio = (targetDistance - currentDistance) / segmentLength;
+        const ratio = segmentLength > 0 ? (targetDistance - currentDistance) / segmentLength : 0;
         return this.localToWorld(p1.x + ratio * dx, p1.y + ratio * dy);
       }
 

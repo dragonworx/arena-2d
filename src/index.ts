@@ -36,6 +36,7 @@ export { DirtyFlags } from "./core/DirtyFlags";
 export type { IElement } from "./core/Element";
 export { Element } from "./core/Element";
 export { ShapeElement } from "./elements/ShapeElement";
+export { GeometryElement } from "./elements/GeometryElement";
 
 // --- Layer 4: Container & Child Management ---
 export type { IContainer } from "./core/Container";
@@ -118,6 +119,13 @@ export { TextInput } from "./elements/TextInput";
 export { Image } from "./elements/Image";
 export { Rect } from "./elements/Rect";
 export { Circle as CircleElement } from "./elements/Circle";
+export { LineElement } from "./elements/LineElement";
+export { EllipseElement } from "./elements/EllipseElement";
+export { PolygonElement } from "./elements/PolygonElement";
+export { ArcElement } from "./elements/ArcElement";
+export { QuadraticCurveElement } from "./elements/QuadraticCurveElement";
+export { BezierCurveElement } from "./elements/BezierCurveElement";
+export { PathElement } from "./elements/PathElement";
 
 // --- Layer 13: Scroll Containers ---
 export type { IScrollContainer } from "./elements/ScrollContainer";

@@ -19,20 +19,18 @@ export default async function (Arena2D) {
 
   const arenaCtx = new Arena2D.Arena2DContext(ctx);
 
-  // Setup canvas - get parent container size
+  // Setup canvas - responsive width, fixed height
+  canvas.style.display = 'block';
+  canvas.style.width = '100%';
+  canvas.style.height = '700px';
+
   function resizeCanvas() {
-    const parent = canvas.parentElement;
-    if (parent) {
-      const rect = parent.getBoundingClientRect();
-      canvas.width = Math.max(rect.width, 800);
-      canvas.height = Math.max(rect.height - 100, 600);
-    } else {
-      canvas.width = 800;
-      canvas.height = 600;
+    const w = canvas.clientWidth;
+    const h = 700; // Fixed height
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width = w;
+      canvas.height = h;
     }
-    // Sync CSS size to prevent stretching
-    canvas.style.width = canvas.width + 'px';
-    canvas.style.height = canvas.height + 'px';
   }
   resizeCanvas();
   window.addEventListener('resize', resizeCanvas);
@@ -40,16 +38,9 @@ export default async function (Arena2D) {
   // Create geometry shapes
   const shapes = [];
   const cols = 4;
-  const cellWidth = canvas.width / cols;
-  const cellHeight = canvas.height / 3;
 
   // Helper to add shape to grid
   function addShape(shape, label, col, row) {
-    shape.x = col * cellWidth + cellWidth / 2;
-    shape.y = row * cellHeight + cellHeight / 2;
-    shape.rotation = 0;
-    shape.updateLocalMatrix();
-    shape.worldMatrix = shape.localMatrix.slice();
     shapes.push({ shape, label, col, row });
   }
 
@@ -128,6 +119,12 @@ export default async function (Arena2D) {
 
   // Animation loop
   function render() {
+    resizeCanvas(); // Update canvas if window resized
+
+    // Recalculate grid dimensions based on current canvas size
+    const cellWidth = canvas.width / cols;
+    const cellHeight = canvas.height / 3;
+
     rotation += 0.002; // Slowly rotate shapes
     scale = 0.8 + 0.2 * Math.sin(Date.now() * 0.001); // Pulse scale
     skewX = 0.2 * Math.sin(Date.now() * 0.0015); // Oscillate skew
@@ -152,7 +149,9 @@ export default async function (Arena2D) {
     }
 
     // Update shape transforms
-    for (const { shape } of shapes) {
+    for (const { shape, col, row } of shapes) {
+      shape.x = col * cellWidth + cellWidth / 2;
+      shape.y = row * cellHeight + cellHeight / 2;
       shape.rotation = rotation;
       shape.scaleX = scale;
       shape.scaleY = scale;
@@ -281,6 +280,28 @@ export default async function (Arena2D) {
         ctx.fill();
       } catch (e) {
         // Some shapes might not implement pointAt correctly yet
+      }
+
+      // Draw start point (green) at t=0
+      try {
+        const startPt = shape.pointAt(0);
+        ctx.fillStyle = '#00ff00';
+        ctx.beginPath();
+        ctx.arc(startPt.x, startPt.y, 4, 0, Math.PI * 2);
+        ctx.fill();
+      } catch (e) {
+        // Silently fail
+      }
+
+      // Draw end point (red) at t=1
+      try {
+        const endPt = shape.pointAt(1);
+        ctx.fillStyle = '#ff0000';
+        ctx.beginPath();
+        ctx.arc(endPt.x, endPt.y, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+      } catch (e) {
+        // Silently fail
       }
 
       // Draw ray intersection points in world space (outside rotation)

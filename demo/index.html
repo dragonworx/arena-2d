@@ -25,6 +25,9 @@
         <a class="nav-link" data-panel="layer-1.1">
           <span class="nav-dot"></span> Layer 1.1 — Geometry
         </a>
+        <a class="nav-link" data-panel="layer-1.2">
+          <span class="nav-dot"></span> Layer 1.2 — Composite
+        </a>
         <a class="nav-link" data-panel="layer-2">
           <span class="nav-dot"></span> Layer 2 — Events
         </a>
@@ -90,6 +93,9 @@
 
     <!-- Layer 1.1 Panel -->
     <div id="layer-1.1" class="panel"></div>
+
+    <!-- Layer 1.2 Panel -->
+    <div id="layer-1.2" class="panel"></div>
 
     <!-- Layer 2 Panel -->
     <div id="layer-2" class="panel"></div>
@@ -190,9 +196,11 @@
         }
       } catch (err) {
         console.error(`Error initializing panel ${panelId}:`, err);
+        const stack = err instanceof Error ? err.stack : String(err);
         panel.innerHTML = `<div class="card" style="border-color: #f06060; color: #f06060;">
           <h3>Failed to load demo</h3>
           <p>${err.message}</p>
+          <pre style="background: rgba(240, 96, 96, 0.1); padding: 12px; border-radius: 4px; overflow-x: auto; font-size: 12px; margin-top: 12px;">${stack}</pre>
         </div>`;
       }
     }
@@ -289,9 +297,10 @@
       headers.forEach(h => {
         // Skip global sidebar header
         if (h.closest('.sidebar-header')) return;
-        
+
         if (!h.querySelector('.view-source-btn')) {
           // Only sub-panels
+          const panel = h.closest('.panel');
           if (panel) {
             const btn = document.createElement('span');
             btn.className = 'view-source-btn';

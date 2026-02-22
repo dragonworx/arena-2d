@@ -65,7 +65,7 @@ export class Arc extends Geometry implements IArc {
   }
 
   /** @inheritdoc */
-  protected getLocalBounds(): IRect {
+  public getLocalBounds(): IRect {
     // Approximate bounds by checking arc endpoints and extrema
     const startX = this.cx + Math.cos(this.startAngle) * this.radius;
     const startY = this.cy + Math.sin(this.startAngle) * this.radius;
@@ -102,9 +102,10 @@ export class Arc extends Geometry implements IArc {
    * @private
    */
   private angleInArc(angle: number): boolean {
-    let a = angle % (2 * Math.PI);
-    let start = this.startAngle % (2 * Math.PI);
-    let end = this.endAngle % (2 * Math.PI);
+    const TWO_PI = 2 * Math.PI;
+    let a = ((angle % TWO_PI) + TWO_PI) % TWO_PI;
+    let start = ((this.startAngle % TWO_PI) + TWO_PI) % TWO_PI;
+    let end = ((this.endAngle % TWO_PI) + TWO_PI) % TWO_PI;
 
     if (!this.counterclockwise) {
       if (start <= end) {
@@ -245,8 +246,9 @@ export class Arc extends Geometry implements IArc {
 
   /** @inheritdoc */
   pointAt(t: number): { x: number; y: number } {
-    let angle = this.startAngle + ((t % 1) * (this.endAngle - this.startAngle));
-    if (this.counterclockwise) angle = this.startAngle - ((t % 1) * (this.startAngle - this.endAngle));
+    const normalized = t === 1 ? 1 : (t % 1);
+    let angle = this.startAngle + (normalized * (this.endAngle - this.startAngle));
+    if (this.counterclockwise) angle = this.startAngle - (normalized * (this.startAngle - this.endAngle));
 
     const x = this.cx + Math.cos(angle) * this.radius;
     const y = this.cy + Math.sin(angle) * this.radius;

@@ -41,7 +41,7 @@ export class Path extends Geometry implements IPath {
   private cachedPerimeter: number | null = null;
 
   /** @inheritdoc */
-  protected getLocalBounds(): IRect {
+  public getLocalBounds(): IRect {
     if (this.segments.length === 0) {
       return { x: 0, y: 0, width: 0, height: 0 };
     }

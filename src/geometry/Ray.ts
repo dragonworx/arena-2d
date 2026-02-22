@@ -61,7 +61,7 @@ export class Ray extends Geometry implements IRay {
   }
 
   /** @inheritdoc */
-  protected getLocalBounds(): IRect {
+  public getLocalBounds(): IRect {
     // Rays extend to infinity, so use a large bounding box
     const large = 1e6;
     const dx = this.directionX;

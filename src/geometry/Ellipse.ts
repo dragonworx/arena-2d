@@ -49,7 +49,7 @@ export class Ellipse extends Geometry implements IEllipse {
   }
 
   /** @inheritdoc */
-  protected getLocalBounds(): IRect {
+  public getLocalBounds(): IRect {
     return {
       x: this.cx - this.rx,
       y: this.cy - this.ry,

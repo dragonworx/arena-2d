@@ -60,7 +60,7 @@ export class QuadraticCurve extends Geometry implements IQuadraticCurve {
   }
 
   /** @inheritdoc */
-  protected getLocalBounds(): IRect {
+  public getLocalBounds(): IRect {
     let minX = Math.min(this.x0, this.cpx, this.x1);
     let maxX = Math.max(this.x0, this.cpx, this.x1);
     let minY = Math.min(this.y0, this.cpy, this.y1);

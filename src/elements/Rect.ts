@@ -1,18 +1,19 @@
-import { ShapeElement } from "./ShapeElement";
+import { GeometryElement } from "./GeometryElement";
+import { Rectangle } from "../geometry/Rectangle";
 import type { IArena2DContext } from "../rendering/Arena2DContext";
 import { DirtyFlags } from "../core/DirtyFlags";
 
 /**
- * Rect element — A standard rectangle shape element.
+ * Rect element — A rectangle shape element backed by a Rectangle geometry.
  *
- * Provides a high-level way to add rectangles to a scene without
- * writing custom paint() methods.
+ * Supports optional rounded corners. Uses the Rectangle geometry for
+ * hit-testing and spatial queries.
  */
-export class Rect extends ShapeElement {
+export class Rect extends GeometryElement<Rectangle> {
   private _radius: number | [number, number, number, number] = 0;
 
   constructor(id?: string) {
-    super(id);
+    super(new Rectangle(0, 0, 1, 1), id);
     this.fill = "#ffffff";
   }
 
@@ -23,6 +24,20 @@ export class Rect extends ShapeElement {
       this.invalidate(DirtyFlags.Visual);
     }
   }
+
+  /** Sync width/height changes into the underlying Rectangle geometry. */
+  override set width(value: number) {
+    super.width = value;
+    this.geometry.width = Math.max(value, Number.EPSILON);
+  }
+  override get width(): number { return super.width; }
+
+  /** Sync width/height changes into the underlying Rectangle geometry. */
+  override set height(value: number) {
+    super.height = value;
+    this.geometry.height = Math.max(value, Number.EPSILON);
+  }
+  override get height(): number { return super.height; }
 
   override paint(ctx: IArena2DContext): void {
     const style = { fillColor: this._fill, strokeColor: this._stroke, lineWidth: this._lineWidth };

@@ -50,7 +50,7 @@ export class Line extends Geometry implements ILine {
   }
 
   /** @inheritdoc */
-  protected getLocalBounds(): IRect {
+  public getLocalBounds(): IRect {
     const minX = Math.min(this.x1, this.x2);
     const maxX = Math.max(this.x1, this.x2);
     const minY = Math.min(this.y1, this.y2);
@@ -154,8 +154,9 @@ export class Line extends Geometry implements ILine {
 
   /** @inheritdoc */
   pointAt(t: number): { x: number; y: number } {
-    const x = this.x1 + (this.x2 - this.x1) * (t % 1);
-    const y = this.y1 + (this.y2 - this.y1) * (t % 1);
+    const normalized = t === 1 ? 1 : (t % 1);
+    const x = this.x1 + (this.x2 - this.x1) * normalized;
+    const y = this.y1 + (this.y2 - this.y1) * normalized;
     return this.localToWorld(x, y);
   }
 

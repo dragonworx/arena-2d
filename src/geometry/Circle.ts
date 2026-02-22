@@ -49,7 +49,7 @@ export class Circle extends Geometry implements ICircle {
   }
 
   /** @inheritdoc */
-  protected getLocalBounds(): IRect {
+  public getLocalBounds(): IRect {
     return {
       x: this.cx - this.radius,
       y: this.cy - this.radius,

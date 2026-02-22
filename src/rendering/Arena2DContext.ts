@@ -358,6 +358,7 @@ export class Arena2DContext implements IArena2DContext {
     geometry: IGeometry,
     style?: PaintStyle,
   ): void {
+    const ctx = this.raw;
     const type = geometry.type;
 
     if (type === "rectangle") {
@@ -377,7 +378,6 @@ export class Arena2DContext implements IArena2DContext {
       this.drawPolygon(g.points, style, g.closed);
     } else if (type === "arc") {
       const g = geometry as IArc;
-      const ctx = this.raw;
       ctx.beginPath();
       ctx.arc(g.cx, g.cy, g.radius, g.startAngle, g.endAngle, g.counterclockwise);
       if (style?.strokeColor !== undefined) {
@@ -386,7 +386,6 @@ export class Arena2DContext implements IArena2DContext {
       }
     } else if (type === "quadraticCurve") {
       const g = geometry as IQuadraticCurve;
-      const ctx = this.raw;
       ctx.beginPath();
       ctx.moveTo(g.x0, g.y0);
       ctx.quadraticCurveTo(g.cpx, g.cpy, g.x1, g.y1);
@@ -396,34 +395,29 @@ export class Arena2DContext implements IArena2DContext {
       }
     } else if (type === "bezierCurve") {
       const g = geometry as IBezierCurve;
-      const ctx = this.raw;
       const cp = g.controlPoints;
-      if (cp.length < 2) return;
-
-      if (cp.length === 4) {
-        // Native cubic
-        ctx.beginPath();
-        ctx.moveTo(cp[0].x, cp[0].y);
-        ctx.bezierCurveTo(cp[1].x, cp[1].y, cp[2].x, cp[2].y, cp[3].x, cp[3].y);
-      } else {
-        // Higher-order or quadratic: Sample it
-        ctx.beginPath();
-        ctx.moveTo(cp[0].x, cp[0].y);
-        const samples = 32;
-        for (let i = 1; i <= samples; i++) {
-          const pt = g.pointAt(i / samples);
-          const local = (g as any).worldToLocal(pt.x, pt.y);
-          ctx.lineTo(local.x, local.y);
+      if (cp.length >= 2) {
+        if (cp.length === 4) {
+          ctx.beginPath();
+          ctx.moveTo(cp[0].x, cp[0].y);
+          ctx.bezierCurveTo(cp[1].x, cp[1].y, cp[2].x, cp[2].y, cp[3].x, cp[3].y);
+        } else {
+          ctx.beginPath();
+          ctx.moveTo(cp[0].x, cp[0].y);
+          const samples = 32;
+          for (let i = 1; i <= samples; i++) {
+            const pt = g.pointAt(i / samples);
+            const local = (g as any).worldToLocal(pt.x, pt.y);
+            ctx.lineTo(local.x, local.y);
+          }
         }
-      }
-
-      if (style?.strokeColor !== undefined) {
-        ctx.strokeStyle = style.strokeColor;
-        ctx.stroke();
+        if (style?.strokeColor !== undefined) {
+          ctx.strokeStyle = style.strokeColor;
+          ctx.stroke();
+        }
       }
     } else if (type === "path") {
       const g = geometry as IPath;
-      const ctx = this.raw;
       ctx.beginPath();
       for (const seg of g.segments) {
         if (seg.type === "moveTo") ctx.moveTo(seg.x, seg.y);
@@ -436,6 +430,16 @@ export class Arena2DContext implements IArena2DContext {
       if (style?.strokeColor !== undefined) {
         ctx.strokeStyle = style.strokeColor;
         ctx.stroke();
+      }
+    } else if (type === "composite") {
+      if (geometry.children) {
+        for (const child of geometry.children) {
+          ctx.save();
+          const m = child.localMatrix;
+          ctx.transform(m[0], m[1], m[2], m[3], m[4], m[5]);
+          this.drawGeometry(child, style);
+          ctx.restore();
+        }
       }
     }
   }

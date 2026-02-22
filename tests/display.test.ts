@@ -53,6 +53,8 @@ const mockCanvas = {
     removeEventListener: () => {},
   }),
   getComputedStyle: () => ({ position: "static" }),
+  addEventListener: () => {},
+  removeEventListener: () => {},
 };
 // biome-ignore lint/suspicious/noExplicitAny: Mocking globals
 (global as any).getComputedStyle = () => ({ position: "static" });

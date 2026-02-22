@@ -24,12 +24,10 @@ export abstract class Geometry extends Transform implements IGeometry {
   abstract readonly type: string;
 
   /**
-   * Computes the local bounds (before transform) used for AABB calculation.
-   * Subclasses must override this.
-   *
-   * @protected
+   * Computes the local bounds (before transform) of the geometry.
+   * @public
    */
-  protected abstract getLocalBounds(): IRect;
+  abstract getLocalBounds(): IRect;
 
   /**
    * Calculates the shortest distance from a world-space point to this geometry.

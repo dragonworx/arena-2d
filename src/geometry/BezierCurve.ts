@@ -44,7 +44,7 @@ export class BezierCurve extends Geometry implements IBezierCurve {
   }
 
   /** @inheritdoc */
-  protected getLocalBounds(): IRect {
+  public getLocalBounds(): IRect {
     if (this.controlPoints.length === 0) {
       return { x: 0, y: 0, width: 0, height: 0 };
     }

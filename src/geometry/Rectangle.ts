@@ -51,7 +51,7 @@ export class Rectangle extends Geometry implements IRectangle {
   }
 
   /** @inheritdoc */
-  protected getLocalBounds(): IRect {
+  public getLocalBounds(): IRect {
     return {
       x: this.rectX,
       y: this.rectY,

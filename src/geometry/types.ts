@@ -9,7 +9,6 @@
 
 import type { IRect } from '../math/aabb';
 import type { ITransform } from '../math/Transform';
-import type { IArena2DContext } from '../rendering/Arena2DContext';
 
 /**
  * Base interface for all geometric shapes.
@@ -83,11 +82,8 @@ export interface IGeometry extends ITransform {
    */
   tangentAt(t: number): { x: number; y: number };
 
-  /**
-   * Optional method to render the geometry to a canvas context.
-   * @param ctx - The Arena2D rendering context.
-   */
-  paint?(ctx: IArena2DContext): void;
+  /** Optional children for composite geometries. */
+  readonly children?: ReadonlyArray<IGeometry>;
 }
 
 /**
@@ -259,3 +255,15 @@ export type PathSegment =
   | { type: 'bezierCurveTo'; cp1x: number; cp1y: number; cp2x: number; cp2y: number; x: number; y: number }
   | { type: 'arc'; cx: number; cy: number; radius: number; startAngle: number; endAngle: number; counterclockwise: boolean }
   | { type: 'closePath' };
+
+/** Interface for a composite geometry that holds child geometries. */
+export interface ICompositeGeometry extends IGeometry {
+  /** The child geometries in this composite. */
+  readonly children: ReadonlyArray<IGeometry>;
+  /** Adds a child geometry. */
+  addChild(child: IGeometry): void;
+  /** Removes a child geometry. */
+  removeChild(child: IGeometry): void;
+  /** Removes all child geometries. */
+  removeAllChildren(): void;
+}

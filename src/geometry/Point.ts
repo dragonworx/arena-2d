@@ -40,7 +40,7 @@ export class Point extends Geometry implements IPoint {
   }
 
   /** @inheritdoc */
-  protected getLocalBounds(): IRect {
+  public getLocalBounds(): IRect {
     return { x: this.px, y: this.py, width: 0, height: 0 };
   }
 
