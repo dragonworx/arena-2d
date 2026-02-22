@@ -23,6 +23,7 @@ import { DirtyFlags } from "./DirtyFlags";
 import type { IElement } from "./Element";
 import { type ILayer, Layer } from "./Layer";
 import type { IScene, Scene } from "./Scene";
+import type { MatrixArray } from "../math/matrix";
 
 // ── Types ──
 
@@ -544,6 +545,57 @@ export class View implements IView {
   // ── Rendering Pipeline ──
 
   /**
+   * Determines if an element should be culled based on frustum and container clipping.
+   * @private
+   */
+  private _shouldCull(element: IElement, container: IContainer | null, frustum: IRect): boolean {
+    if (container && (container as Container).clipContent) {
+      const clipWorldAABB = computeAABB(
+        { x: 0, y: 0, width: (container as Container).width, height: (container as Container).height },
+        (container as Container).worldMatrix,
+      );
+      return !intersect(clipWorldAABB, frustum);
+    } else if (!container) {
+      const bounds = element.localBounds;
+      if (bounds.width > 0 || bounds.height > 0) {
+        const worldAABB = computeAABB(bounds, element.worldMatrix);
+        return !intersect(worldAABB, frustum);
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Returns sorted children by zIndex.
+   * @private
+   */
+  private _sortedChildren(container: IContainer): IElement[] {
+    return Array.from(container.children).sort((a, b) => a.zIndex - b.zIndex);
+  }
+
+  /**
+   * Applies world transform to a canvas context with pan/zoom scaling.
+   * @private
+   */
+  private _applyWorldTransform(
+    ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+    m: MatrixArray,
+    dpr: number,
+    zoom: number,
+    panX: number,
+    panY: number,
+  ): void {
+    ctx.setTransform(
+      dpr * zoom * m[0],
+      dpr * zoom * m[1],
+      dpr * zoom * m[2],
+      dpr * zoom * m[3],
+      dpr * (zoom * m[4] + panX),
+      dpr * (zoom * m[5] + panY),
+    );
+  }
+
+  /**
    * Recursively paint element and descendants to their assigned layers.
    * Uses frustum culling to skip elements outside the visible area.
    *
@@ -567,24 +619,7 @@ export class View implements IView {
     // both for culling the container itself and for narrowing the child frustum.
     let clipWorldAABB: IRect | null = null;
 
-    if (frustum) {
-      if (container?.clipContent) {
-        // Clipped container: cull if clip region is entirely outside frustum
-        clipWorldAABB = computeAABB(
-          { x: 0, y: 0, width: container.width, height: container.height },
-          container.worldMatrix,
-        );
-        if (!intersect(clipWorldAABB, frustum)) return;
-      } else if (!container) {
-        // Leaf element: cull if world AABB is entirely outside frustum
-        const bounds = element.localBounds;
-        if (bounds.width > 0 || bounds.height > 0) {
-          const worldAABB = computeAABB(bounds, element.worldMatrix);
-          if (!intersect(worldAABB, frustum)) return;
-        }
-      }
-      // Non-clipped containers: always recurse (children can extend beyond)
-    }
+    if (frustum && this._shouldCull(element, container, frustum)) return;
 
     // Handle cacheAsBitmap
     if (container && container.cacheAsBitmap) {
@@ -604,14 +639,7 @@ export class View implements IView {
     const px = this._panX;
     const py = this._panY;
 
-    layer.ctx.setTransform(
-      dpr * z * m[0],
-      dpr * z * m[1],
-      dpr * z * m[2],
-      dpr * z * m[3],
-      dpr * (z * m[4] + px),
-      dpr * (z * m[5] + py),
-    );
+    this._applyWorldTransform(layer.ctx, m, dpr, z, px, py);
 
     layer.ctx.globalAlpha = element.effectiveAlpha;
     layer.ctx.globalCompositeOperation = element.blendMode;
@@ -635,14 +663,7 @@ export class View implements IView {
       if (container.clipContent) {
         layer.ctx.save();
         const cm = container.worldMatrix;
-        layer.ctx.setTransform(
-          dpr * z * cm[0],
-          dpr * z * cm[1],
-          dpr * z * cm[2],
-          dpr * z * cm[3],
-          dpr * (z * cm[4] + px),
-          dpr * (z * cm[5] + py),
-        );
+        this._applyWorldTransform(layer.ctx, cm, dpr, z, px, py);
         layer.ctx.beginPath();
         layer.ctx.rect(0, 0, container.width, container.height);
         layer.ctx.clip();
@@ -662,9 +683,7 @@ export class View implements IView {
           : clipWorldAABB;
       }
 
-      const sortedChildren = Array.from(container.children).sort(
-        (a, b) => a.zIndex - b.zIndex,
-      );
+      const sortedChildren = this._sortedChildren(container);
       for (const child of sortedChildren) {
         this._paintRecursive(child, childFrustum);
       }
@@ -703,26 +722,7 @@ export class View implements IView {
     // ── Frustum culling (mirrors _paintRecursive logic) ──
     let clipWorldAABB: IRect | null = null;
 
-    if (frustum) {
-      if (container && (container as Container).clipContent) {
-        clipWorldAABB = computeAABB(
-          {
-            x: 0,
-            y: 0,
-            width: (container as Container).width,
-            height: (container as Container).height,
-          },
-          element.worldMatrix,
-        );
-        if (!intersect(clipWorldAABB, frustum)) return;
-      } else if (!container) {
-        const bounds = element.localBounds;
-        if (bounds.width > 0 || bounds.height > 0) {
-          const worldAABB = computeAABB(bounds, element.worldMatrix);
-          if (!intersect(worldAABB, frustum)) return;
-        }
-      }
-    }
+    if (frustum && this._shouldCull(element, container, frustum)) return;
 
     if (element.interactive) {
       const uid = (element as unknown as { uid: number }).uid;
@@ -738,14 +738,7 @@ export class View implements IView {
       const z = this._zoom;
       const px = this._panX;
       const py = this._panY;
-      raw.setTransform(
-        dpr * z * m[0],
-        dpr * z * m[1],
-        dpr * z * m[2],
-        dpr * z * m[3],
-        dpr * (z * m[4] + px),
-        dpr * (z * m[5] + py),
-      );
+      this._applyWorldTransform(raw, m, dpr, z, px, py);
       raw.globalAlpha = 1.0;
       raw.globalCompositeOperation = "source-over";
       raw.fillStyle = color;
@@ -778,9 +771,7 @@ export class View implements IView {
           : clipWorldAABB;
       }
 
-      const sorted = Array.from(container.children).sort(
-        (a, b) => a.zIndex - b.zIndex,
-      );
+      const sorted = this._sortedChildren(container);
       for (const child of sorted) {
         this._paintHitRecursive(child, ctx, childFrustum);
       }
@@ -842,9 +833,7 @@ export class View implements IView {
   ): void {
     if ("children" in element) {
       const container = element as IContainer;
-      const sorted = Array.from(container.children).sort(
-        (a, b) => a.zIndex - b.zIndex,
-      );
+      const sorted = this._sortedChildren(container);
 
       for (const child of sorted) {
         if (!child.visible || child.alpha <= 0) continue;

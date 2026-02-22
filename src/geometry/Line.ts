@@ -107,37 +107,16 @@ export class Line extends Geometry implements ILine {
     const local1 = this.worldToLocal(x1, y1);
     const local2 = this.worldToLocal(x2, y2);
 
-    // Check if this line segment intersects with the given line segment
-    const p1x = this.x1, p1y = this.y1;
-    const p2x = this.x2, p2y = this.y2;
-    const p3x = local1.x, p3y = local1.y;
-    const p4x = local2.x, p4y = local2.y;
+    const intersection = Geometry.lineSegmentIntersection(
+      this.x1, this.y1, this.x2, this.y2,
+      local1.x, local1.y, local2.x, local2.y,
+    );
 
-    const denom = (p1x - p2x) * (p3y - p4y) - (p1y - p2y) * (p3x - p4x);
-    if (Math.abs(denom) < 1e-10) return [];
-
-    const t = ((p1x - p3x) * (p3y - p4y) - (p1y - p3y) * (p3x - p4x)) / denom;
-    const u = -((p1x - p2x) * (p1y - p3y) - (p1y - p2y) * (p1x - p3x)) / denom;
-
-    if (t >= 0 && t <= 1 && u >= 0 && u <= 1) {
-      return [this.localToWorld(p1x + t * (p2x - p1x), p1y + t * (p2y - p1y))];
+    if (intersection) {
+      return [this.localToWorld(intersection.x, intersection.y)];
     }
 
     return [];
-  }
-
-  /** @inheritdoc */
-  intersectsShape(shape: any): Array<{ x: number; y: number }> {
-    // Check if any part of the shape intersects with this line
-    const results: Array<{ x: number; y: number }> = [];
-    for (let i = 0; i <= 32; i++) {
-      const t = i / 32;
-      const pt = shape.pointAt(t);
-      if (this.containsPoint(pt.x, pt.y)) {
-        results.push(pt);
-      }
-    }
-    return results;
   }
 
   /** @inheritdoc */
@@ -170,8 +149,7 @@ export class Line extends Geometry implements ILine {
     const dx = this.x2 - this.x1;
     const dy = this.y2 - this.y1;
     const length = Math.sqrt(dx * dx + dy * dy);
-    const scale = Math.sqrt(Math.abs(this.scaleX * this.scaleY));
-    return 2 * length * scale;
+    return 2 * length * this.uniformScale;
   }
 
   /** @inheritdoc */

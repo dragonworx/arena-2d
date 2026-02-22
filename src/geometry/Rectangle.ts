@@ -131,37 +131,13 @@ export class Rectangle extends Geometry implements IRectangle {
     p4: { x: number; y: number },
     results: Array<{ x: number; y: number }>,
   ): void {
-    const x1 = p1.x, y1 = p1.y;
-    const x2 = p2.x, y2 = p2.y;
-    const x3 = p3.x, y3 = p3.y;
-    const x4 = p4.x, y4 = p4.y;
-
-    const denom = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
-    if (Math.abs(denom) < 1e-10) return;
-
-    const t = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)) / denom;
-    const u = -((x1 - x2) * (y1 - y3) - (y1 - y2) * (x1 - x3)) / denom;
-
-    if (t >= 0 && t <= 1 && u >= 0 && u <= 1) {
-      results.push({
-        x: x1 + t * (x2 - x1),
-        y: y1 + t * (y2 - y1),
-      });
+    const intersection = Geometry.lineSegmentIntersection(
+      p1.x, p1.y, p2.x, p2.y,
+      p3.x, p3.y, p4.x, p4.y,
+    );
+    if (intersection) {
+      results.push(intersection);
     }
-  }
-
-  /** @inheritdoc */
-  intersectsShape(shape: any): Array<{ x: number; y: number }> {
-    // Simple approach: sample the shape and check containment
-    const results: Array<{ x: number; y: number }> = [];
-    for (let i = 0; i <= 32; i++) {
-      const t = i / 32;
-      const pt = shape.pointAt(t);
-      if (this.containsPoint(pt.x, pt.y)) {
-        results.push(pt);
-      }
-    }
-    return results;
   }
 
   /** @inheritdoc */

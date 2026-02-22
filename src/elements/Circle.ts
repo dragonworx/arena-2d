@@ -1,47 +1,20 @@
-import { Element } from "../core/Element";
-import type { IArena2DContext, FillStyle } from "../rendering/Arena2DContext";
+import { ShapeElement } from "./ShapeElement";
+import type { IArena2DContext } from "../rendering/Arena2DContext";
 import { DirtyFlags } from "../core/DirtyFlags";
 
 /**
  * Circle element — A standard circle shape element.
- * 
+ *
  * Provides a high-level way to add circles to a scene.
  * The circle is centered within the element's width/height if not specified,
  * but by default uses (radius, radius) as the center in local space.
  */
-export class Circle extends Element {
-  private _fill: FillStyle | undefined;
-  private _stroke: FillStyle | undefined;
-  private _lineWidth: number = 1;
+export class Circle extends ShapeElement {
   private _radius: number = 0;
 
   constructor(id?: string) {
     super(id);
-    this._fill = "#ffffff";
-  }
-
-  get fill(): FillStyle | undefined { return this._fill; }
-  set fill(value: FillStyle | undefined) {
-    if (this._fill !== value) {
-      this._fill = value;
-      this.invalidate(DirtyFlags.Visual);
-    }
-  }
-
-  get stroke(): FillStyle | undefined { return this._stroke; }
-  set stroke(value: FillStyle | undefined) {
-    if (this._stroke !== value) {
-      this._stroke = value;
-      this.invalidate(DirtyFlags.Visual);
-    }
-  }
-
-  get lineWidth(): number { return this._lineWidth; }
-  set lineWidth(value: number) {
-    if (this._lineWidth !== value) {
-      this._lineWidth = value;
-      this.invalidate(DirtyFlags.Visual);
-    }
+    this.fill = "#ffffff";
   }
 
   get radius(): number { return this._radius; }

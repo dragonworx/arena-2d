@@ -1,0 +1,12 @@
+$ lsof -ti:3000 | xargs kill -9 2>/dev/null || true && bun demo/server.ts
+
+  Arena-2D Dev Server
+  ───────────────────
+  → http://localhost:3000
+
+  Watching src/
+  Watching demo/
+
+  Ready. Waiting for changes...
+
+error: script "dev" was terminated by signal SIGHUP (Terminal hung up)

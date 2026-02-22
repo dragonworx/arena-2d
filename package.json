@@ -9,7 +9,7 @@
     "url": "https://github.com/dragonworx/arena-2d.git"
   },
   "scripts": {
-    "dev": "lsof -ti:3000 | xargs kill -9 2>/dev/null || true && bun demo/server.ts",
+    "dev": "lsof -ti:${PORT:-3000} | xargs kill -9 2>/dev/null || true && PORT=${PORT:-3000} bun demo/server.ts",
     "build": "bun run build.ts && bunx dts-bundle-generator -o dist/arena-2d.d.ts src/index.ts",
     "test": "bun test",
     "typecheck": "tsc --noEmit",

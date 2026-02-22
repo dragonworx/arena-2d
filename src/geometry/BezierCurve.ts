@@ -199,24 +199,6 @@ export class BezierCurve extends Geometry implements IBezierCurve {
     return results;
   }
 
-  /** @inheritdoc */
-  intersectsShape(shape: any): Array<{ x: number; y: number }> {
-    const results: Array<{ x: number; y: number }> = [];
-    for (let i = 0; i <= 32; i++) {
-      const t = i / 32;
-      const pt = shape.pointAt(t);
-      if (this.containsPoint(pt.x, pt.y)) {
-        results.push(pt);
-      }
-    }
-    return results;
-  }
-
-  /** @inheritdoc */
-  containsPoint(x: number, y: number): boolean {
-    const closest = this.closestPointTo(x, y);
-    return Math.abs(closest.x - x) < 1e-6 && Math.abs(closest.y - y) < 1e-6;
-  }
 
   /** @inheritdoc */
   get area(): number {
@@ -237,8 +219,7 @@ export class BezierCurve extends Geometry implements IBezierCurve {
       prevPt = pt;
     }
 
-    const scale = Math.sqrt(Math.abs(this.scaleX * this.scaleY));
-    return length * scale;
+    return length * this.uniformScale;
   }
 
   /** @inheritdoc */

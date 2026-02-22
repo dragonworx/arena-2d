@@ -59,6 +59,20 @@ export class SpatialHashGrid {
     return this._cellSize;
   }
 
+  private _getCellBounds(
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+  ): { minCX: number; minCY: number; maxCX: number; maxCY: number } {
+    return {
+      minCX: Math.floor(x * this._inverseCellSize),
+      minCY: Math.floor(y * this._inverseCellSize),
+      maxCX: Math.floor((x + w) * this._inverseCellSize),
+      maxCY: Math.floor((y + h) * this._inverseCellSize),
+    };
+  }
+
   /**
    * Insert an entry into all cells its AABB overlaps.
    */
@@ -69,10 +83,12 @@ export class SpatialHashGrid {
     }
 
     const { x, y, width, height } = entry.aabb;
-    const minCX = Math.floor(x * this._inverseCellSize);
-    const minCY = Math.floor(y * this._inverseCellSize);
-    const maxCX = Math.floor((x + width) * this._inverseCellSize);
-    const maxCY = Math.floor((y + height) * this._inverseCellSize);
+    const { minCX, minCY, maxCX, maxCY } = this._getCellBounds(
+      x,
+      y,
+      width,
+      height,
+    );
 
     const keys: number[] = [];
 
@@ -141,10 +157,12 @@ export class SpatialHashGrid {
    */
   queryAABB(aabb: IRect): ISpatialEntry[] {
     const { x, y, width, height } = aabb;
-    const minCX = Math.floor(x * this._inverseCellSize);
-    const minCY = Math.floor(y * this._inverseCellSize);
-    const maxCX = Math.floor((x + width) * this._inverseCellSize);
-    const maxCY = Math.floor((y + height) * this._inverseCellSize);
+    const { minCX, minCY, maxCX, maxCY } = this._getCellBounds(
+      x,
+      y,
+      width,
+      height,
+    );
 
     const result = new Set<ISpatialEntry>();
 

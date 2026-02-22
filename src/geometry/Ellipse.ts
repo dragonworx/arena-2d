@@ -148,19 +148,6 @@ export class Ellipse extends Geometry implements IEllipse {
   }
 
   /** @inheritdoc */
-  intersectsShape(shape: any): Array<{ x: number; y: number }> {
-    const results: Array<{ x: number; y: number }> = [];
-    for (let i = 0; i <= 32; i++) {
-      const t = i / 32;
-      const pt = shape.pointAt(t);
-      if (this.containsPoint(pt.x, pt.y)) {
-        results.push(pt);
-      }
-    }
-    return results;
-  }
-
-  /** @inheritdoc */
   containsPoint(x: number, y: number): boolean {
     const local = this.worldToLocal(x, y);
     const px = (local.x - this.cx) / this.rx;

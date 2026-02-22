@@ -177,6 +177,21 @@ export class Arena2DContext implements IArena2DContext {
 
   // ── Shape Primitives (6.1) ──
 
+  private _applyFillStroke(
+    fill?: FillStyle,
+    stroke?: FillStyle,
+  ): void {
+    const ctx = this.raw;
+    if (fill !== undefined) {
+      ctx.fillStyle = fill;
+      ctx.fill();
+    }
+    if (stroke !== undefined) {
+      ctx.strokeStyle = stroke;
+      ctx.stroke();
+    }
+  }
+
   /**
    * Draws a rectangle with optional fill and stroke.
    * @param x - The top-left X coordinate.
@@ -228,14 +243,7 @@ export class Arena2DContext implements IArena2DContext {
     const ctx = this.raw;
     ctx.beginPath();
     ctx.roundRect(x, y, w, h, radius);
-    if (fill !== undefined) {
-      ctx.fillStyle = fill;
-      ctx.fill();
-    }
-    if (stroke !== undefined) {
-      ctx.strokeStyle = stroke;
-      ctx.stroke();
-    }
+    this._applyFillStroke(fill, stroke);
   }
 
   /**
@@ -256,14 +264,7 @@ export class Arena2DContext implements IArena2DContext {
     const ctx = this.raw;
     ctx.beginPath();
     ctx.arc(cx, cy, r, 0, TAU);
-    if (fill !== undefined) {
-      ctx.fillStyle = fill;
-      ctx.fill();
-    }
-    if (stroke !== undefined) {
-      ctx.strokeStyle = stroke;
-      ctx.stroke();
-    }
+    this._applyFillStroke(fill, stroke);
   }
 
   /**
@@ -286,14 +287,7 @@ export class Arena2DContext implements IArena2DContext {
     const ctx = this.raw;
     ctx.beginPath();
     ctx.ellipse(cx, cy, rx, ry, 0, 0, TAU);
-    if (fill !== undefined) {
-      ctx.fillStyle = fill;
-      ctx.fill();
-    }
-    if (stroke !== undefined) {
-      ctx.strokeStyle = stroke;
-      ctx.stroke();
-    }
+    this._applyFillStroke(fill, stroke);
   }
 
   /**
@@ -340,14 +334,7 @@ export class Arena2DContext implements IArena2DContext {
     if (closed) {
       ctx.closePath();
     }
-    if (fill !== undefined) {
-      ctx.fillStyle = fill;
-      ctx.fill();
-    }
-    if (stroke !== undefined) {
-      ctx.strokeStyle = stroke;
-      ctx.stroke();
-    }
+    this._applyFillStroke(fill, stroke);
   }
 
   drawPath(path: Path2D, fill?: FillStyle, stroke?: FillStyle): void {

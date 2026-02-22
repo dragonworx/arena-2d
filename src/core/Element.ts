@@ -216,6 +216,17 @@ export class Element extends EventEmitter implements IElement {
     return null;
   }
 
+  /**
+   * Helper for numeric property validation.
+   * @private
+   */
+  private _safeFinite(prop: string, value: number, fallback: number): number {
+    if (Arena2D.debug && !Number.isFinite(value)) {
+      console.warn(`Arena2D: [${this.id}] ${prop} set to ${value}`);
+    }
+    return Number.isFinite(value) ? value : fallback;
+  }
+
   // ── Transform getters / setters ──
   // Each setter checks for change and calls invalidate(Transform).
 
@@ -223,10 +234,7 @@ export class Element extends EventEmitter implements IElement {
     return this._x;
   }
   set x(value: number) {
-    if (Arena2D.debug && !Number.isFinite(value)) {
-      console.warn(`Arena2D: [${this.id}] x set to ${value}`);
-    }
-    const safeValue = Number.isFinite(value) ? value : this._x;
+    const safeValue = this._safeFinite('x', value, this._x);
     if (this._x !== safeValue) {
       this._x = safeValue;
       this.invalidate(DirtyFlags.Transform);
@@ -237,10 +245,7 @@ export class Element extends EventEmitter implements IElement {
     return this._y;
   }
   set y(value: number) {
-    if (Arena2D.debug && !Number.isFinite(value)) {
-      console.warn(`Arena2D: [${this.id}] y set to ${value}`);
-    }
-    const safeValue = Number.isFinite(value) ? value : this._y;
+    const safeValue = this._safeFinite('y', value, this._y);
     if (this._y !== safeValue) {
       this._y = safeValue;
       this.invalidate(DirtyFlags.Transform);
@@ -251,10 +256,7 @@ export class Element extends EventEmitter implements IElement {
     return this._rotation;
   }
   set rotation(value: number) {
-    if (Arena2D.debug && !Number.isFinite(value)) {
-      console.warn(`Arena2D: [${this.id}] rotation set to ${value}`);
-    }
-    const safeValue = Number.isFinite(value) ? value : this._rotation;
+    const safeValue = this._safeFinite('rotation', value, this._rotation);
     if (this._rotation !== safeValue) {
       this._rotation = safeValue;
       this.invalidate(DirtyFlags.Transform);
@@ -265,10 +267,7 @@ export class Element extends EventEmitter implements IElement {
     return this._scaleX;
   }
   set scaleX(value: number) {
-    if (Arena2D.debug && !Number.isFinite(value)) {
-      console.warn(`Arena2D: [${this.id}] scaleX set to ${value}`);
-    }
-    let safeValue = Number.isFinite(value) ? value : this._scaleX;
+    let safeValue = this._safeFinite('scaleX', value, this._scaleX);
     if (safeValue === 0) safeValue = Number.EPSILON;
 
     if (this._scaleX !== safeValue) {
@@ -281,10 +280,7 @@ export class Element extends EventEmitter implements IElement {
     return this._scaleY;
   }
   set scaleY(value: number) {
-    if (Arena2D.debug && !Number.isFinite(value)) {
-      console.warn(`Arena2D: [${this.id}] scaleY set to ${value}`);
-    }
-    let safeValue = Number.isFinite(value) ? value : this._scaleY;
+    let safeValue = this._safeFinite('scaleY', value, this._scaleY);
     if (safeValue === 0) safeValue = Number.EPSILON;
 
     if (this._scaleY !== safeValue) {
@@ -297,10 +293,7 @@ export class Element extends EventEmitter implements IElement {
     return this._skewX;
   }
   set skewX(value: number) {
-    if (Arena2D.debug && !Number.isFinite(value)) {
-      console.warn(`Arena2D: [${this.id}] skewX set to ${value}`);
-    }
-    const safeValue = Number.isFinite(value) ? value : this._skewX;
+    const safeValue = this._safeFinite('skewX', value, this._skewX);
     if (this._skewX !== safeValue) {
       this._skewX = safeValue;
       this.invalidate(DirtyFlags.Transform);
@@ -311,10 +304,7 @@ export class Element extends EventEmitter implements IElement {
     return this._skewY;
   }
   set skewY(value: number) {
-    if (Arena2D.debug && !Number.isFinite(value)) {
-      console.warn(`Arena2D: [${this.id}] skewY set to ${value}`);
-    }
-    const safeValue = Number.isFinite(value) ? value : this._skewY;
+    const safeValue = this._safeFinite('skewY', value, this._skewY);
     if (this._skewY !== safeValue) {
       this._skewY = safeValue;
       this.invalidate(DirtyFlags.Transform);
@@ -325,10 +315,7 @@ export class Element extends EventEmitter implements IElement {
     return this._pivotX;
   }
   set pivotX(value: number) {
-    if (Arena2D.debug && !Number.isFinite(value)) {
-      console.warn(`Arena2D: [${this.id}] pivotX set to ${value}`);
-    }
-    const safeValue = Number.isFinite(value) ? value : this._pivotX;
+    const safeValue = this._safeFinite('pivotX', value, this._pivotX);
     if (this._pivotX !== safeValue) {
       this._pivotX = safeValue;
       this.invalidate(DirtyFlags.Transform);
@@ -339,10 +326,7 @@ export class Element extends EventEmitter implements IElement {
     return this._pivotY;
   }
   set pivotY(value: number) {
-    if (Arena2D.debug && !Number.isFinite(value)) {
-      console.warn(`Arena2D: [${this.id}] pivotY set to ${value}`);
-    }
-    const safeValue = Number.isFinite(value) ? value : this._pivotY;
+    const safeValue = this._safeFinite('pivotY', value, this._pivotY);
     if (this._pivotY !== safeValue) {
       this._pivotY = safeValue;
       this.invalidate(DirtyFlags.Transform);
@@ -355,10 +339,7 @@ export class Element extends EventEmitter implements IElement {
     return this._width;
   }
   set width(value: number) {
-    if (Arena2D.debug && !Number.isFinite(value)) {
-      console.warn(`Arena2D: [${this.id}] width set to ${value}`);
-    }
-    const safeValue = Math.max(0, Number.isFinite(value) ? value : this._width);
+    const safeValue = Math.max(0, this._safeFinite('width', value, this._width));
     if (this._width !== safeValue) {
       this._width = safeValue;
       this.invalidate(DirtyFlags.Visual);
@@ -370,10 +351,7 @@ export class Element extends EventEmitter implements IElement {
     return this._height;
   }
   set height(value: number) {
-    if (Arena2D.debug && !Number.isFinite(value)) {
-      console.warn(`Arena2D: [${this.id}] height set to ${value}`);
-    }
-    const safeValue = Math.max(0, Number.isFinite(value) ? value : this._height);
+    const safeValue = Math.max(0, this._safeFinite('height', value, this._height));
     if (this._height !== safeValue) {
       this._height = safeValue;
       this.invalidate(DirtyFlags.Visual);

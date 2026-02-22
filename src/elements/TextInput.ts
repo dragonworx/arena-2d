@@ -294,12 +294,11 @@ export class TextInput extends Text {
     const adv = line.advancements;
 
     // Compute alignment offset
-    let alignOffsetX = 0;
-    if (style.textAlign === "center") {
-      alignOffsetX = (this.width - line.width) / 2;
-    } else if (style.textAlign === "right") {
-      alignOffsetX = this.width - line.width;
-    }
+    const alignOffsetX = this._alignOffsetX(
+      style.textAlign,
+      this.width,
+      line.width,
+    );
 
     const adjustedX = localX - alignOffsetX;
 
@@ -882,27 +881,26 @@ export class TextInput extends Text {
 
   // ── Word/Line boundary helpers ──
 
+  private _getCat(ch: string): "space" | "word" | "punct" {
+    if (/\s/.test(ch)) return "space";
+    if (/[a-zA-Z0-9]/.test(ch)) return "word";
+    return "punct";
+  }
+
   _getWordBoundaryLeft(pos: number): number {
     const t = this.text;
     if (pos <= 0) return 0;
 
     let i = pos - 1;
 
-    // Helper to get character category
-    const getCat = (ch: string) => {
-      if (/\s/.test(ch)) return "space";
-      if (/[a-zA-Z0-9]/.test(ch)) return "word";
-      return "punct";
-    };
-
     // If starting in whitespace, skip it first
-    while (i >= 0 && getCat(t[i]) === "space") i--;
+    while (i >= 0 && this._getCat(t[i]) === "space") i--;
 
     if (i < 0) return 0;
 
     // Start of the segment we are jumping over
-    const cat = getCat(t[i]);
-    while (i > 0 && getCat(t[i - 1]) === cat) i--;
+    const cat = this._getCat(t[i]);
+    while (i > 0 && this._getCat(t[i - 1]) === cat) i--;
 
     return i;
   }
@@ -914,21 +912,14 @@ export class TextInput extends Text {
 
     let i = pos;
 
-    // Helper to get character category
-    const getCat = (ch: string) => {
-      if (/\s/.test(ch)) return "space";
-      if (/[a-zA-Z0-9]/.test(ch)) return "word";
-      return "punct";
-    };
-
     // If starting in whitespace, skip it first
-    while (i < len && getCat(t[i]) === "space") i++;
+    while (i < len && this._getCat(t[i]) === "space") i++;
 
     if (i >= len) return len;
 
     // End of the segment we are jumping over
-    const cat = getCat(t[i]);
-    while (i < len && getCat(t[i]) === cat) i++;
+    const cat = this._getCat(t[i]);
+    while (i < len && this._getCat(t[i]) === cat) i++;
 
     return i;
   }
@@ -1087,12 +1078,11 @@ export class TextInput extends Text {
         const localSelEnd = Math.min(line.text.length, selEnd - lineStart);
 
         // Compute alignment offset
-        let alignOffsetX = 0;
-        if (style.textAlign === "center") {
-          alignOffsetX = (elementWidth - line.width) / 2;
-        } else if (style.textAlign === "right") {
-          alignOffsetX = elementWidth - line.width;
-        }
+        const alignOffsetX = this._alignOffsetX(
+          style.textAlign,
+          elementWidth,
+          line.width,
+        );
 
         const startX =
           localSelStart < line.advancements.length
@@ -1131,12 +1121,11 @@ export class TextInput extends Text {
     const { lineIdx, colIdx } = this._getLineAndCol(pos);
     const line = layout.lines[lineIdx];
 
-    let alignOffsetX = 0;
-    if (style.textAlign === "center") {
-      alignOffsetX = (elementWidth - line.width) / 2;
-    } else if (style.textAlign === "right") {
-      alignOffsetX = elementWidth - line.width;
-    }
+    const alignOffsetX = this._alignOffsetX(
+      style.textAlign,
+      elementWidth,
+      line.width,
+    );
 
     const caretX =
       colIdx < line.advancements.length

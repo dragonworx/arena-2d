@@ -174,6 +174,21 @@ export class Text extends Element {
     return computeMaxContentWidth(this._text, this._renderStyle());
   }
 
+  // ── Alignment helpers ──
+
+  protected _alignOffsetX(
+    align: string,
+    elementWidth: number,
+    lineWidth: number,
+  ): number {
+    if (align === "center") {
+      return (elementWidth - lineWidth) / 2;
+    } else if (align === "right") {
+      return elementWidth - lineWidth;
+    }
+    return 0;
+  }
+
   // ── Frame loop ──
 
   override update(dt: number): void {
@@ -205,12 +220,7 @@ export class Text extends Element {
       const y = i * lineHeight;
 
       // Compute x offset based on text alignment
-      let x = 0;
-      if (style.textAlign === "center") {
-        x = (elementWidth - line.width) / 2;
-      } else if (style.textAlign === "right") {
-        x = elementWidth - line.width;
-      }
+      const x = this._alignOffsetX(style.textAlign, elementWidth, line.width);
 
       raw.fillText(line.text, x, y);
     }

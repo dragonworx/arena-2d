@@ -480,6 +480,20 @@ export class InteractionManager implements IInteractionManager {
     this._updateCursor(target);
   }
 
+  /**
+   * Checks if an element is a descendant of an ancestor.
+   * @private
+   */
+  private _isDescendantOf(element: IElement, ancestor: IElement | null | undefined): boolean {
+    if (!ancestor) return false;
+    let current: IElement | null = element;
+    while (current) {
+      if (current === ancestor) return true;
+      current = current.parent;
+    }
+    return false;
+  }
+
   private _updateSpatialEntry(element: IElement): void {
     if (element.interactive && element.visible) {
       const aabb = computeAABB(
@@ -573,18 +587,8 @@ export class InteractionManager implements IInteractionManager {
       const el = (entry as ISpatialEntry & { element: IElement }).element;
       if (el?.interactive && el.visible) {
         // Check exclusion
-        if (exclude) {
-          // Check if el is exclude or a descendant of exclude
-          let current: IElement | null = el;
-          let isExcluded = false;
-          while (current) {
-            if (current === exclude) {
-              isExcluded = true;
-              break;
-            }
-            current = current.parent;
-          }
-          if (isExcluded) continue;
+        if (exclude && this._isDescendantOf(el, exclude)) {
+          continue;
         }
 
         if (filter && !filter(el)) continue;
@@ -606,16 +610,7 @@ export class InteractionManager implements IInteractionManager {
         const hitEl = scene._getElementByUID(hitUid);
         if (hitEl) {
           // Double check filtering/exclusion
-          let current: IElement | null = hitEl;
-          let isExcluded = false;
-          while (current) {
-            if (current === exclude) {
-              isExcluded = true;
-              break;
-            }
-            current = current.parent;
-          }
-          if (!isExcluded && (!filter || filter(hitEl))) {
+          if (!this._isDescendantOf(hitEl, exclude) && (!filter || filter(hitEl))) {
             return hitEl;
           }
         }
@@ -680,18 +675,7 @@ export class InteractionManager implements IInteractionManager {
 
       // Must be interactive, visible, and NOT the exclude target (or its child)
       if (el?.interactive && el.visible) {
-        if (exclude) {
-          let current: IElement | null = el;
-          let isExcluded = false;
-          while (current) {
-            if (current === exclude) {
-              isExcluded = true;
-              break;
-            }
-            current = current.parent;
-          }
-          if (isExcluded) continue;
-        }
+        if (this._isDescendantOf(el, exclude)) continue;
         if (filter && !filter(el)) continue;
         elements.push(el);
       }

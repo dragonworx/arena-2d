@@ -209,19 +209,6 @@ export class Arc extends Geometry implements IArc {
   }
 
   /** @inheritdoc */
-  intersectsShape(shape: any): Array<{ x: number; y: number }> {
-    const results: Array<{ x: number; y: number }> = [];
-    for (let i = 0; i <= 32; i++) {
-      const t = i / 32;
-      const pt = shape.pointAt(t);
-      if (this.containsPoint(pt.x, pt.y)) {
-        results.push(pt);
-      }
-    }
-    return results;
-  }
-
-  /** @inheritdoc */
   containsPoint(x: number, y: number): boolean {
     const local = this.worldToLocal(x, y);
     const dx = local.x - this.cx;
@@ -241,8 +228,7 @@ export class Arc extends Geometry implements IArc {
     if (this.counterclockwise && angle > 0) angle = 2 * Math.PI - angle;
     if (!this.counterclockwise && angle < 0) angle = 2 * Math.PI + angle;
 
-    const scale = Math.abs(this.scaleX * this.scaleY);
-    const r = this.radius * Math.sqrt(Math.abs(this.scaleX * this.scaleY));
+    const r = this.radius * this.uniformScale;
     return Math.abs(angle) * r * r * 0.5;
   }
 
@@ -253,8 +239,7 @@ export class Arc extends Geometry implements IArc {
     if (this.counterclockwise && angle > 0) angle = 2 * Math.PI - angle;
     if (!this.counterclockwise && angle < 0) angle = 2 * Math.PI + angle;
 
-    const scale = Math.sqrt(Math.abs(this.scaleX * this.scaleY));
-    const r = this.radius * scale;
+    const r = this.radius * this.uniformScale;
     return Math.abs(angle) * r + 2 * r;
   }
 

@@ -63,26 +63,76 @@ export abstract class Geometry extends Transform implements IGeometry {
   /**
    * Finds all intersection points between this geometry and another shape.
    * Both shapes are processed in world space.
+   * Default implementation samples 32 points along the shape boundary.
    *
    * @param shape - The other geometry to test against.
    * @returns An array of intersection points in world space.
    */
-  abstract intersectsShape(shape: IGeometry): Array<{ x: number; y: number }>;
+  intersectsShape(shape: IGeometry): Array<{ x: number; y: number }> {
+    const results: Array<{ x: number; y: number }> = [];
+    for (let i = 0; i <= 32; i++) {
+      const pt = shape.pointAt(i / 32);
+      if (this.containsPoint(pt.x, pt.y)) results.push(pt);
+    }
+    return results;
+  }
 
   /**
    * Checks if a world-space point is contained within this geometry.
+   * Default implementation checks proximity to the closest point using closestPointTo().
    *
    * @param x - The X coordinate in world space.
    * @param y - The Y coordinate in world space.
    * @returns True if the point is inside or on the boundary.
    */
-  abstract containsPoint(x: number, y: number): boolean;
+  containsPoint(x: number, y: number): boolean {
+    const closest = this.closestPointTo(x, y);
+    return Math.abs(closest.x - x) < 1e-6 && Math.abs(closest.y - y) < 1e-6;
+  }
 
   /** The area of the geometry in world units (affected by scale). */
   abstract get area(): number;
 
   /** The perimeter or arc length of the geometry in world units (affected by scale). */
   abstract get perimeter(): number;
+
+  /**
+   * Computes the uniform scale factor from the geometry's scale transform.
+   * Useful for scaling-dependent calculations like stroke width.
+   * @protected
+   */
+  protected get uniformScale(): number {
+    return Math.sqrt(Math.abs(this.scaleX * this.scaleY));
+  }
+
+  /**
+   * Finds the intersection point between two line segments.
+   * Uses parametric line intersection algorithm.
+   *
+   * @protected
+   * @param x1 - First segment start X
+   * @param y1 - First segment start Y
+   * @param x2 - First segment end X
+   * @param y2 - First segment end Y
+   * @param x3 - Second segment start X
+   * @param y3 - Second segment start Y
+   * @param x4 - Second segment end X
+   * @param y4 - Second segment end Y
+   * @returns The intersection point, or null if lines don't intersect
+   */
+  protected static lineSegmentIntersection(
+    x1: number, y1: number, x2: number, y2: number,
+    x3: number, y3: number, x4: number, y4: number,
+  ): { x: number; y: number } | null {
+    const denom = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+    if (Math.abs(denom) < 1e-10) return null;
+    const t = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)) / denom;
+    const u = -((x1 - x2) * (y1 - y3) - (y1 - y2) * (x1 - x3)) / denom;
+    if (t >= 0 && t <= 1 && u >= 0 && u <= 1) {
+      return { x: x1 + t * (x2 - x1), y: y1 + t * (y2 - y1) };
+    }
+    return null;
+  }
 
   /**
    * Returns a point at standardized parameter `t` (0 to 1) along the geometry's boundary.

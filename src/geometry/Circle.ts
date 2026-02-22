@@ -150,15 +150,13 @@ export class Circle extends Geometry implements ICircle {
 
   /** @inheritdoc */
   get area(): number {
-    const scale = Math.sqrt(Math.abs(this.scaleX * this.scaleY));
-    const r = this.radius * scale;
+    const r = this.radius * this.uniformScale;
     return Math.PI * r * r;
   }
 
   /** @inheritdoc */
   get perimeter(): number {
-    const scale = Math.sqrt(Math.abs(this.scaleX * this.scaleY));
-    const r = this.radius * scale;
+    const r = this.radius * this.uniformScale;
     return 2 * Math.PI * r;
   }
 

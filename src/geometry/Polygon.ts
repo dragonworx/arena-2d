@@ -179,33 +179,7 @@ export class Polygon extends Geometry implements IPolygon {
     x1: number, y1: number, x2: number, y2: number,
     x3: number, y3: number, x4: number, y4: number,
   ): { x: number; y: number } | null {
-    const denom = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
-    if (Math.abs(denom) < 1e-10) return null;
-
-    const t = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)) / denom;
-    const u = -((x1 - x2) * (y1 - y3) - (y1 - y2) * (x1 - x3)) / denom;
-
-    if (t >= 0 && t <= 1 && u >= 0 && u <= 1) {
-      return {
-        x: x1 + t * (x2 - x1),
-        y: y1 + t * (y2 - y1),
-      };
-    }
-
-    return null;
-  }
-
-  /** @inheritdoc */
-  intersectsShape(shape: any): Array<{ x: number; y: number }> {
-    const results: Array<{ x: number; y: number }> = [];
-    for (let i = 0; i <= 32; i++) {
-      const t = i / 32;
-      const pt = shape.pointAt(t);
-      if (this.containsPoint(pt.x, pt.y)) {
-        results.push(pt);
-      }
-    }
-    return results;
+    return Geometry.lineSegmentIntersection(x1, y1, x2, y2, x3, y3, x4, y4);
   }
 
   /** @inheritdoc */
@@ -263,8 +237,7 @@ export class Polygon extends Geometry implements IPolygon {
       perimeter += Math.sqrt(dx * dx + dy * dy);
     }
 
-    const scale = Math.sqrt(Math.abs(this.scaleX * this.scaleY));
-    return perimeter * scale;
+    return perimeter * this.uniformScale;
   }
 
   /** @inheritdoc */

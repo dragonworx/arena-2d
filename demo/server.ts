@@ -1,7 +1,7 @@
 import { watch } from "node:fs";
 import { extname, join } from "node:path";
 
-const PORT = 3000;
+const PORT = parseInt(process.env.PORT || "3000", 10);
 const PROJECT_ROOT = join(import.meta.dir, "..");
 const DEMO_DIR = import.meta.dir;
 const SRC_DIR = join(PROJECT_ROOT, "src");
