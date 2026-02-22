@@ -1,4 +1,4 @@
-export default async function (Arena2D) {
+export default async function (Arena2D, { signal }) {
   const { Container, Element, resolveLayout, getLayoutData } = Arena2D;
 
   // ── Flex Demo ──
@@ -300,7 +300,7 @@ export default async function (Arena2D) {
       childInfo.textContent = "Click a box to select";
     }
     render();
-  });
+  }, { signal });
 
   // ── Control event handlers ──
   for (const el of [
@@ -310,33 +310,33 @@ export default async function (Arena2D) {
     ctrlAlign,
     ctrlWrap,
   ]) {
-    el.addEventListener("change", () => render());
+    el.addEventListener("change", () => render(), { signal });
   }
 
   ctrlCW.addEventListener("input", () => {
     document.getElementById("l8-cw-val").textContent = ctrlCW.value;
     render();
-  });
+  }, { signal });
 
   ctrlCH.addEventListener("input", () => {
     document.getElementById("l8-ch-val").textContent = ctrlCH.value;
     render();
-  });
+  }, { signal });
 
   ctrlGap.addEventListener("input", () => {
     document.getElementById("l8-gap-val").textContent = ctrlGap.value;
     render();
-  });
+  }, { signal });
 
   ctrlPadding.addEventListener("input", () => {
     document.getElementById("l8-padding-val").textContent = ctrlPadding.value;
     render();
-  });
+  }, { signal });
 
   ctrlMargin.addEventListener("input", () => {
     document.getElementById("l8-margin-val").textContent = ctrlMargin.value;
     render();
-  });
+  }, { signal });
 
   ctrlGrow.addEventListener("input", () => {
     document.getElementById("l8-grow-val").textContent = ctrlGrow.value;
@@ -346,7 +346,7 @@ export default async function (Arena2D) {
       });
       render();
     }
-  });
+  }, { signal });
 
   ctrlShrink.addEventListener("input", () => {
     document.getElementById("l8-shrink-val").textContent = ctrlShrink.value;
@@ -356,7 +356,7 @@ export default async function (Arena2D) {
       });
       render();
     }
-  });
+  }, { signal });
 
   ctrlWidth.addEventListener("input", () => {
     document.getElementById("l8-width-val").textContent = ctrlWidth.value;
@@ -366,7 +366,7 @@ export default async function (Arena2D) {
       child.updateStyle({ width: Number(ctrlWidth.value) });
       render();
     }
-  });
+  }, { signal });
 
   ctrlHeight.addEventListener("input", () => {
     document.getElementById("l8-height-val").textContent = ctrlHeight.value;
@@ -376,10 +376,10 @@ export default async function (Arena2D) {
       child.updateStyle({ height: Number(ctrlHeight.value) });
       render();
     }
-  });
+  }, { signal });
 
   for (const el of [showPadding, showMargins]) {
-    el.addEventListener("change", render);
+    el.addEventListener("change", render, { signal });
   }
 
   childVisible.addEventListener("change", () => {
@@ -387,18 +387,18 @@ export default async function (Arena2D) {
       root.children[selectedIndex].visible = childVisible.checked;
       render();
     }
-  });
+  }, { signal });
 
   childDisplay.addEventListener("change", () => {
     if (selectedIndex >= 0) {
       root.children[selectedIndex].display = childDisplay.value;
       render();
     }
-  });
+  }, { signal });
 
-  btnAdd.addEventListener("click", addChild);
-  btnRemove.addEventListener("click", removeSelectedChild);
-  btnReset.addEventListener("click", resetLayout);
+  btnAdd.addEventListener("click", addChild, { signal });
+  btnRemove.addEventListener("click", removeSelectedChild, { signal });
+  btnReset.addEventListener("click", resetLayout, { signal });
 
   // Initial setup
   resizeCanvas();
@@ -553,12 +553,14 @@ export default async function (Arena2D) {
   ctrlAW.addEventListener("input", () => {
     document.getElementById("l8-aw-val").textContent = ctrlAW.value;
     renderAnchor();
-  });
+  }, { signal });
 
   ctrlAH.addEventListener("input", () => {
     document.getElementById("l8-ah-val").textContent = ctrlAH.value;
     renderAnchor();
-  });
+  }, { signal });
 
   renderAnchor();
+
+  return;
 }

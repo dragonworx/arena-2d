@@ -1,7 +1,10 @@
-export default async function (Arena2D) {
+export default async function (Arena2D, { signal }) {
   const { Scene, View, Easing, Tween, Element, Ticker } = Arena2D;
 
   // ── Setup ──
+  const nestedPlayBtn = document.getElementById("l51-nested-play");
+  const nestedFpsSlider = document.getElementById("l51-nested-fps");
+  const nestedFpsVal = document.getElementById("l51-nested-fps-val");
   const container = document.getElementById("l51-canvas").parentElement;
   const scene = new Scene(600, 440);
   const view = new View(document.getElementById("l51-canvas"), scene);
@@ -80,10 +83,6 @@ export default async function (Arena2D) {
     yoyo: true,
     easing: "easeInOutQuad",
   });
-
-  const nestedPlayBtn = document.getElementById("l51-nested-play");
-  const nestedFpsSlider = document.getElementById("l51-nested-fps");
-  const nestedFpsVal = document.getElementById("l51-nested-fps-val");
 
   nestedPlayBtn.onclick = () => {
     if (nestedTicker.running) {

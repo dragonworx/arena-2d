@@ -1,4 +1,4 @@
-export default async function (Arena2D) {
+export default async function (Arena2D, { signal }) {
   const { EventEmitter } = Arena2D;
 
   // ── Setup ──
@@ -31,7 +31,7 @@ export default async function (Arena2D) {
     log(
       `Added persistent handler #${id}. Total active: ${handlerStack.length}`,
     );
-  });
+  }, { signal });
 
   // .once - adds a single handler
   document.getElementById("btn-once")?.addEventListener("click", () => {
@@ -43,7 +43,7 @@ export default async function (Arena2D) {
       );
     });
     log(`Added one-time handler #${id}.`);
-  });
+  }, { signal });
 
   // .off - removes the last handler from the stack
   document.getElementById("btn-off")?.addEventListener("click", () => {
@@ -56,25 +56,31 @@ export default async function (Arena2D) {
     } else {
       log("No persistent handlers to remove.", "bar");
     }
-  });
+  }, { signal });
 
   // .emit - fires the event
   document.getElementById("btn-emit")?.addEventListener("click", () => {
     const payload = { timestamp: Date.now() };
     log(`Emitting 'test-event'...`);
     emitter.emit("test-event", payload);
-  });
+  }, { signal });
 
   // .removeAllListeners - clears everything
   document.getElementById("btn-remove-all")?.addEventListener("click", () => {
     emitter.removeAllListeners();
     handlerStack.length = 0;
     log("Removed all listeners.", "bar");
-  });
+  }, { signal });
 
   document.getElementById("btn-clear-logs")?.addEventListener("click", () => {
     if (logs) logs.innerHTML = "";
-  });
+  }, { signal });
 
   log("EventEmitter ready. Waiting for events...");
+
+  return {
+    destroy: () => {
+      emitter.removeAllListeners();
+    }
+  };
 }

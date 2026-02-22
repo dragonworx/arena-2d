@@ -1,4 +1,4 @@
-export default async function (Arena2D) {
+export default async function (Arena2D, { signal }) {
   const {
     computeAABB,
     multiply,
@@ -149,12 +149,17 @@ export default async function (Arena2D) {
       ctx.fillText("(0,0)", c0.x + 4, c0.y - 4);
     }
 
-    for (const slider of document.querySelectorAll(
-      "#layer-1 input[type=range]",
-    )) {
-      slider.addEventListener("input", draw);
+    const sliders = document.querySelectorAll("#layer-1 input[type=range]");
+    for (const slider of sliders) {
+      slider.addEventListener("input", draw, { signal });
     }
 
-    requestAnimationFrame(draw);
+    let rafId = requestAnimationFrame(draw);
+
+    return {
+      destroy: () => {
+        cancelAnimationFrame(rafId);
+      }
+    };
   }
 }

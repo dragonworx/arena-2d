@@ -1,4 +1,4 @@
-export default async function (Arena2D) {
+export default async function (Arena2D, { signal }) {
   const { Scene, View, ScrollContainer, Element, Text, Image } = Arena2D;
 
   const wrap = document.getElementById("l13-canvas-wrap");
@@ -132,19 +132,21 @@ export default async function (Arena2D) {
     sc.dragEnabled = dragCheck.checked;
   }
 
+
+
   [widthSlider, heightSlider, thresholdSlider, scrollXCheck, scrollYCheck, inertiaCheck, dragCheck].forEach(el => {
-    el.addEventListener("input", update);
+    el.addEventListener("input", update, { signal });
   });
 
   resetBtn.addEventListener("click", () => {
     sc.scrollTo(0, 0);
-  });
+  }, { signal });
 
   randomBtn.addEventListener("click", () => {
     const maxScrollX = Math.max(0, sc.contentBounds.width - sc.width);
     const maxScrollY = Math.max(0, sc.contentBounds.height - sc.height);
     sc.scrollTo(Math.random() * maxScrollX, Math.random() * maxScrollY);
-  });
+  }, { signal });
 
   // Stats updater "element"
   const statsUpdater = new Element("stats-updater");
@@ -158,4 +160,6 @@ export default async function (Arena2D) {
 
   // Init
   update();
+
+  return scene;
 }

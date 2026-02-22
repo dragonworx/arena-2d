@@ -1,4 +1,4 @@
-export default async function (Arena2D) {
+export default async function (Arena2D, { signal }) {
   const { Scene, View, Image, Element } = Arena2D;
 
   // ── Helper: generate a colored test image on canvas ──
@@ -241,6 +241,15 @@ export default async function (Arena2D) {
   // Control Panel Logic
   // ═══════════════════════════════════════════════════════
 
+  const colSlider = document.getElementById("l12-sprite-col");
+  const rowSlider = document.getElementById("l12-sprite-row");
+  const nsTopSlider = document.getElementById("l12-ns-top");
+  const nsRightSlider = document.getElementById("l12-ns-right");
+  const nsBottomSlider = document.getElementById("l12-ns-bottom");
+  const nsLeftSlider = document.getElementById("l12-ns-left");
+  const nsWidthSlider = document.getElementById("l12-ns-width");
+  const nsHeightSlider = document.getElementById("l12-ns-height");
+
   // Standard Image
   const widthSlider = document.getElementById("l12-width");
   const heightSlider = document.getElementById("l12-height");
@@ -270,14 +279,13 @@ export default async function (Arena2D) {
     }
   }
 
-  widthSlider.addEventListener("input", updateStandard);
-  heightSlider.addEventListener("input", updateStandard);
-  tintEnable.addEventListener("change", updateStandard);
-  tintColor.addEventListener("input", updateStandard);
+  widthSlider.addEventListener("input", updateStandard, { signal });
+  heightSlider.addEventListener("input", updateStandard, { signal });
+  tintEnable.addEventListener("change", updateStandard, { signal });
+  tintColor.addEventListener("input", updateStandard, { signal });
 
   // Sprite Sheet
-  const colSlider = document.getElementById("l12-sprite-col");
-  const rowSlider = document.getElementById("l12-sprite-row");
+
   const colVal = document.getElementById("l12-col-val");
   const rowVal = document.getElementById("l12-row-val");
 
@@ -290,17 +298,10 @@ export default async function (Arena2D) {
     highlight.invalidate(2); // Visual
   }
 
-  colSlider.addEventListener("input", updateSprite);
-  rowSlider.addEventListener("input", updateSprite);
+  colSlider.addEventListener("input", updateSprite, { signal });
+  rowSlider.addEventListener("input", updateSprite, { signal });
 
   // Nine-Slice
-  const nsTopSlider = document.getElementById("l12-ns-top");
-  const nsRightSlider = document.getElementById("l12-ns-right");
-  const nsBottomSlider = document.getElementById("l12-ns-bottom");
-  const nsLeftSlider = document.getElementById("l12-ns-left");
-  const nsWidthSlider = document.getElementById("l12-ns-width");
-  const nsHeightSlider = document.getElementById("l12-ns-height");
-
   function updateNineSlice() {
     const t = Number(nsTopSlider.value);
     const r = Number(nsRightSlider.value);
@@ -328,11 +329,10 @@ export default async function (Arena2D) {
   }
 
   [nsTopSlider, nsRightSlider, nsBottomSlider, nsLeftSlider, nsWidthSlider, nsHeightSlider].forEach(s => {
-    s.addEventListener("input", updateNineSlice);
+    s.addEventListener("input", updateNineSlice, { signal });
   });
 
   // Stats
   const stats = document.getElementById("l12-stats");
   stats.textContent = `Scene: 600×580 | DPR: ${view.dpr}\nSource Img: ${testImg.width}×${testImg.height}\nSprite Sheet: ${spriteSheet.width}×${spriteSheet.height}`;
 }
-

@@ -1,4 +1,4 @@
-export default async function (Arena2D) {
+export default async function (Arena2D, { signal }) {
   const { Scene, View, Container, TextInput, Text } = Arena2D;
 
   // ── Controls ──
@@ -305,6 +305,10 @@ export default async function (Arena2D) {
     }
   }
 
-  fontSizeSlider.addEventListener("input", updateInputs);
-  inputWidthSlider.addEventListener("input", updateInputs);
+
+
+  fontSizeSlider.addEventListener("input", updateInputs, { signal });
+  inputWidthSlider.addEventListener("input", updateInputs, { signal });
+
+  return scene;
 }

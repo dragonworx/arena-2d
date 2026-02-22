@@ -12,7 +12,7 @@
  * - Intersection points: pink dots where the ray hits shapes
  */
 
-export default async function (Arena2D) {
+export default async function (Arena2D, { signal }) {
   const {
     Scene, View, Element, Container,
     GeometryElement, CompositeGeometry,
@@ -224,7 +224,7 @@ export default async function (Arena2D) {
     const rect = sceneContainer.getBoundingClientRect();
     mouseX = e.clientX - rect.left;
     mouseY = e.clientY - rect.top;
-  });
+  }, { signal });
 
   const overlay = new Element('overlay');
   overlay.zIndex = 1000;
@@ -352,4 +352,6 @@ export default async function (Arena2D) {
   });
 
   scene.ticker.start();
+
+  return scene;
 }

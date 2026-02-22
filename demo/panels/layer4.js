@@ -1,4 +1,4 @@
-export default async function (Arena2D) {
+export default async function (Arena2D, { signal }) {
   const { Container, Element, DirtyFlags, resolvePointerPosition } = Arena2D;
   // ── Inject HTML panel ──
 
@@ -91,7 +91,7 @@ export default async function (Arena2D) {
     } else {
       // Optional: Deselect if clicking empty space?
     }
-  });
+  }, { signal });
 
   // ── Create child ──
 
@@ -274,7 +274,7 @@ export default async function (Arena2D) {
     if (!(selected instanceof Container)) return;
     const child = createChild(selected);
     selectElement(child);
-  });
+  }, { signal });
 
   document.getElementById("btn-remove-child").addEventListener("click", () => {
     if (selected === root) return;
@@ -283,7 +283,7 @@ export default async function (Arena2D) {
       parent.removeChild(selected);
       selectElement(parent);
     }
-  });
+  }, { signal });
 
   document.getElementById("btn-sort").addEventListener("click", () => {
     if (selected instanceof Container) {
@@ -291,7 +291,7 @@ export default async function (Arena2D) {
       updateTree();
       render();
     }
-  });
+  }, { signal });
 
   document.getElementById("btn-reparent").addEventListener("click", () => {
     if (selected === root) return;
@@ -305,13 +305,13 @@ export default async function (Arena2D) {
     logEvent(`Re-parented ${selected.id}`);
     updateTree();
     render();
-  });
+  }, { signal });
 
   document.getElementById("btn-deselect").addEventListener("click", () => {
     selected = null;
     selectElement(null);
     logEvent("Deselected");
-  });
+  }, { signal });
 
   // ── Property Listeners ──
 
@@ -342,7 +342,7 @@ export default async function (Arena2D) {
             : v.toFixed(2);
       }
       render();
-    });
+    }, { signal });
   }
 
   addListener(selX, "x", selXVal);
@@ -359,7 +359,7 @@ export default async function (Arena2D) {
 
   document.getElementById("btn-clear-log").addEventListener("click", () => {
     log.textContent = "";
-  });
+  }, { signal });
 
   // ── Initial scene setup ──
 
@@ -415,4 +415,6 @@ export default async function (Arena2D) {
 
   selectElement(root);
   logEvent("Refinements: Core Hit Test + Pointer Logic");
+
+  return root;
 }

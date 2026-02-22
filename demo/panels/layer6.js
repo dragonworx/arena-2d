@@ -1,4 +1,4 @@
-export default async function (Arena2D) {
+export default async function (Arena2D, { signal }) {
   const { Arena2DContext } = Arena2D;
 
   // ── Helper to wrap a canvas ──
@@ -340,4 +340,6 @@ export default async function (Arena2D) {
   stc.setTextAlign("center");
   stc.fillText("center", 700, 80);
   stc.drawText("strokeText / setTextAlign", 700, 120, { ...labelStyle, textAlign: "center" });
+
+  return;
 }

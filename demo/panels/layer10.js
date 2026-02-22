@@ -1,4 +1,4 @@
-export default async function (Arena2D) {
+export default async function (Arena2D, { signal }) {
   const { Scene, View, Text } = Arena2D;
 
   // ── Control elements ──
@@ -173,26 +173,28 @@ export default async function (Arena2D) {
     lineHeightVal.textContent = lhValue > 0 ? `${lhValue}px` : "auto";
   }
 
+
+
   // ── Event listeners ──
-  textArea.addEventListener("input", updateText);
-  fontFamilySelect.addEventListener("change", updateText);
-  fontSizeSlider.addEventListener("input", updateText);
-  fontWeightSelect.addEventListener("change", updateText);
-  fontStyleSelect.addEventListener("change", updateText);
-  textAlignSelect.addEventListener("change", updateText);
-  widthSlider.addEventListener("input", updateText);
-  lineHeightSlider.addEventListener("input", updateText);
-  colorInput.addEventListener("input", updateText);
+  textArea.addEventListener("input", updateText, { signal });
+  fontFamilySelect.addEventListener("change", updateText, { signal });
+  fontSizeSlider.addEventListener("input", updateText, { signal });
+  fontWeightSelect.addEventListener("change", updateText, { signal });
+  fontStyleSelect.addEventListener("change", updateText, { signal });
+  textAlignSelect.addEventListener("change", updateText, { signal });
+  widthSlider.addEventListener("input", updateText, { signal });
+  lineHeightSlider.addEventListener("input", updateText, { signal });
+  colorInput.addEventListener("input", updateText, { signal });
 
   showAdvCheckbox.addEventListener("change", () => {
     showAdvancements = showAdvCheckbox.checked;
-  });
+  }, { signal });
   showBoundsCheckbox.addEventListener("change", () => {
     showBounds = showBoundsCheckbox.checked;
-  });
+  }, { signal });
   showLinesCheckbox.addEventListener("change", () => {
     showLines = showLinesCheckbox.checked;
-  });
+  }, { signal });
 
   // ── Performance test ──
   perfBtn.addEventListener("click", () => {
@@ -242,8 +244,10 @@ export default async function (Arena2D) {
       <div>With cache: ${(cacheElapsed / iterations).toFixed(3)}ms/layout (${iterations} iterations)</div>
       <div>Cache speedup: ${(elapsed / cacheElapsed).toFixed(1)}x</div>
     `;
-  });
+  }, { signal });
 
   // Initial update
   updateText();
+
+  return scene;
 }

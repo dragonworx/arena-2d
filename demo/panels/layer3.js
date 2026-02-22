@@ -1,4 +1,4 @@
-export default async function (Arena2D) {
+export default async function (Arena2D, { signal }) {
   const { Element, DirtyFlags } = Arena2D;
   // ── DOM refs ──
   const canvas = document.getElementById("l3-canvas");
@@ -165,24 +165,24 @@ export default async function (Arena2D) {
     // Property table
     const props = destroyed
       ? [
-          ["id", `${el.id} 💀`],
-          ["flags", "—"],
-          ["visible", "—"],
-          ["parent", "null"],
-        ]
+        ["id", `${el.id} 💀`],
+        ["flags", "—"],
+        ["visible", "—"],
+        ["parent", "null"],
+      ]
       : [
-          ["id", el.id],
-          ["x / y", `${el.x.toFixed(1)} / ${el.y.toFixed(1)}`],
-          ["rotation", el.rotation.toFixed(3)],
-          ["scaleX / Y", `${el.scaleX.toFixed(2)} / ${el.scaleY.toFixed(2)}`],
-          ["alpha", el.alpha.toFixed(2)],
-          ["effectiveAlpha", el.effectiveAlpha.toFixed(2)],
-          ["visible", String(el.visible)],
-          [
-            "worldPos",
-            `(${el.worldMatrix[4].toFixed(1)}, ${el.worldMatrix[5].toFixed(1)})`,
-          ],
-        ];
+        ["id", el.id],
+        ["x / y", `${el.x.toFixed(1)} / ${el.y.toFixed(1)}`],
+        ["rotation", el.rotation.toFixed(3)],
+        ["scaleX / Y", `${el.scaleX.toFixed(2)} / ${el.scaleY.toFixed(2)}`],
+        ["alpha", el.alpha.toFixed(2)],
+        ["effectiveAlpha", el.effectiveAlpha.toFixed(2)],
+        ["visible", String(el.visible)],
+        [
+          "worldPos",
+          `(${el.worldMatrix[4].toFixed(1)}, ${el.worldMatrix[5].toFixed(1)})`,
+        ],
+      ];
 
     flagTbody.innerHTML = props
       .map(
@@ -245,33 +245,30 @@ export default async function (Arena2D) {
     // auto update/render is handled by the stateChanged listener
   }
 
+
+
   for (const c of Object.values(ctrls)) {
-    c.slider.addEventListener("input", onSliderInput);
+    c.slider.addEventListener("input", onSliderInput, { signal });
   }
 
-  // ── Update button ──
   btnUpdate.addEventListener("click", () => {
     if (destroyed) return;
     log("Manual update() triggered");
     doUpdate();
-  });
+  }, { signal });
 
-  // ── Toggle visibility ──
   document.getElementById("btn-toggle-vis").addEventListener("click", () => {
     if (destroyed) return;
     el.visible = !el.visible;
     log(`visible = ${el.visible}`);
-    // visible setter fires stateChanged → auto handles render
     if (!chkAuto.checked) updateInspector();
-  });
+  }, { signal });
 
-  // ── Modify all props (coalesce) ──
   document.getElementById("btn-coalesce").addEventListener("click", () => {
     if (destroyed) {
       log("⚠ Element is destroyed");
       return;
     }
-    // Clear first so demo is clear
     el.update(0);
 
     el.x = el.x + 15;
@@ -283,11 +280,9 @@ export default async function (Arena2D) {
 
     log(`⚡ Coalesced: T|V|L|S → flags=${flagName(el.dirtyFlags)}`);
     syncControls();
-    // auto handling via stateChanged
     if (!chkAuto.checked) updateInspector();
-  });
+  }, { signal });
 
-  // ── Destroy ──
   document.getElementById("btn-destroy").addEventListener("click", () => {
     if (destroyed) {
       log("⚠ Already destroyed");
@@ -299,22 +294,29 @@ export default async function (Arena2D) {
     el.emit("stateChanged", { flag: 0 });
     log("   emit after destroy → (no handler fired)");
     render();
-  });
+  }, { signal });
 
-  // ── Reset ──
   document.getElementById("btn-reset").addEventListener("click", () => {
     createEl();
     syncControls();
     log("🔄 Reset → element recreated");
     doUpdate();
-  });
+  }, { signal });
 
-  // ── Clear log ──
   document.getElementById("btn-clear-log").addEventListener("click", () => {
     logLines = [];
     eventLog.textContent = "";
-  });
+  }, { signal });
 
   log("Ready. Adjust sliders with 'auto' on to see instant updates.");
   log("Uncheck 'auto' → changes accumulate flags → press 'Update' to resolve.");
+
+  return {
+    destroy: () => {
+      destroyed = true;
+      if (el && !el.destroyed) {
+        el.destroy();
+      }
+    }
+  };
 }

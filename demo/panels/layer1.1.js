@@ -4,7 +4,7 @@
  * closest point detection, and geometric property display.
  */
 
-export default async function (Arena2D) {
+export default async function (Arena2D, { signal }) {
   // Import geometry classes
   const {
     Point, Vector, Circle, Rectangle, Line, Ray, Ellipse,
@@ -35,7 +35,7 @@ export default async function (Arena2D) {
     }
   }
   resizeCanvas();
-  window.addEventListener('resize', resizeCanvas);
+  window.addEventListener('resize', resizeCanvas, { signal });
 
   // Create geometry shapes
   const shapes = [];
@@ -99,14 +99,14 @@ export default async function (Arena2D) {
     tSlider.addEventListener('input', (e) => {
       parametricT = parseFloat(e.target.value);
       tValue.textContent = parametricT.toFixed(2);
-    });
+    }, { signal });
   }
 
   canvas.addEventListener('mousemove', (e) => {
     const rect = canvas.getBoundingClientRect();
     mouseX = e.clientX - rect.left;
     mouseY = e.clientY - rect.top;
-  });
+  }, { signal });
 
   // Helper to draw shape geometry
   function drawShapeGeometry(ctx, shape, label) {
@@ -347,8 +347,12 @@ export default async function (Arena2D) {
       infoEl.innerHTML = `${infoLines.slice(0, 3).join('<br/>')}...<br/>Ray Intersections: ${intersectionCount}`;
     }
 
-    requestAnimationFrame(render);
+    rafId = requestAnimationFrame(render);
   }
 
-  render();
+  let rafId = requestAnimationFrame(render);
+
+  return {
+    destroy: () => cancelAnimationFrame(rafId)
+  };
 }

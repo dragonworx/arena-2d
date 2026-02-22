@@ -1,4 +1,4 @@
-export default async function (Arena2D) {
+export default async function (Arena2D, { signal }) {
   const { Scene, View, Element } = Arena2D;
 
   const container = document.getElementById("l9_1-scene-container");
@@ -31,7 +31,7 @@ export default async function (Arena2D) {
       const hovered = view.interaction.hoveredElement;
       console.log(`[DBG] ptr=(${pointerPos.x.toFixed(0)},${pointerPos.y.toFixed(0)}) scene=(${sceneCoords.x.toFixed(0)},${sceneCoords.y.toFixed(0)}) hit=${hit?.id || 'null'} hover=${hovered?.id || 'null'} children=${scene.root.children.length}`);
     }
-  });
+  }, { signal });
 
   let frameCount = 0;
   let lastFpsTime = performance.now();
@@ -192,8 +192,9 @@ export default async function (Arena2D) {
     }, 10);
   }
 
-  resetBtn?.addEventListener("click", generateScene);
+  resetBtn?.addEventListener("click", generateScene, { signal });
 
   // Initial generation
   generateScene();
+  return scene;
 }

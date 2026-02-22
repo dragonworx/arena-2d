@@ -143,11 +143,49 @@
 
   <!-- Routing -->
   <script>
-    const loadedPanels = new Set(['layer-1']);
-    const initializedPanels = new Set();
+    let activePanelCleanup = null;
+    let activePanelAbort = null;
+    let activePanelId = null;
     let Arena2D = null;
 
     async function navigateTo(panelId, pushHistory = true) {
+      if (activePanelId === panelId) return;
+
+      // Unload active panel
+      if (activePanelAbort) {
+        try {
+          activePanelAbort.abort();
+        } catch (err) {
+          console.error(`Error aborting signal for panel ${activePanelId}:`, err);
+        }
+        activePanelAbort = null;
+      }
+
+      if (activePanelCleanup) {
+        try {
+          if (typeof activePanelCleanup === "function") {
+            activePanelCleanup();
+          } else if (activePanelCleanup.destroy) {
+            activePanelCleanup.destroy();
+          } else if (Array.isArray(activePanelCleanup)) {
+            activePanelCleanup.forEach(obj => {
+              if (obj && obj.destroy) obj.destroy();
+            });
+          }
+        } catch (err) {
+          console.error(`Error cleaning up panel ${activePanelId}:`, err);
+        }
+        activePanelCleanup = null;
+      }
+      
+      // Clear contents of old active panel
+      if (activePanelId) {
+        const oldPanel = document.getElementById(activePanelId);
+        if (oldPanel) oldPanel.innerHTML = '';
+      }
+
+      activePanelId = panelId;
+
       // Update nav active state
       document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
       const link = document.querySelector(`.nav-link[data-panel="${panelId}"]`);
@@ -164,9 +202,7 @@
       }
 
       // Dynamic demo loading
-      if (!initializedPanels.has(panelId)) {
-        await initPanel(panelId);
-      }
+      await initPanel(panelId);
     }
 
     async function initPanel(panelId) {
@@ -191,8 +227,9 @@
         const jsFilename = `./panels/${panelId.replace(/^layer-/, 'layer')}.js?v=${Date.now()}`;
         const module = await import(jsFilename);
         if (module.default) {
-          await module.default(Arena2D);
-          initializedPanels.add(panelId);
+          activePanelAbort = new AbortController();
+          const demoContext = { signal: activePanelAbort.signal };
+          activePanelCleanup = await module.default(Arena2D, demoContext);
         }
       } catch (err) {
         console.error(`Error initializing panel ${panelId}:`, err);

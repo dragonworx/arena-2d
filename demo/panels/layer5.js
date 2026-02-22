@@ -1,4 +1,4 @@
-export default async function (Arena2D) {
+export default async function (Arena2D, { signal }) {
   const { Ticker, Element } = Arena2D;
 
   // ── Canvas setup ──
@@ -338,24 +338,24 @@ export default async function (Arena2D) {
       parentTicker.maxDeltaTime = Math.max(0.1, 1.2 / v);
     }
     ctrlFpsVal.textContent = v === 0 ? "⏸" : v;
-  });
+  }, { signal });
 
   ctrlSpeed.addEventListener("input", () => {
     speed = Number(ctrlSpeed.value);
     ctrlSpeedVal.textContent = speed;
     updateBallVelocity();
-  });
+  }, { signal });
 
   ctrlDirection.addEventListener("input", () => {
     direction = Number(ctrlDirection.value);
     ctrlDirectionVal.textContent = `${direction}°`;
     updateBallVelocity();
-  });
+  }, { signal });
 
   ctrlGravity.addEventListener("input", () => {
     gravity = Number(ctrlGravity.value);
     ctrlGravityVal.textContent = gravity;
-  });
+  }, { signal });
 
   // ── Child control handlers ──
 
@@ -366,17 +366,17 @@ export default async function (Arena2D) {
       childTicker.maxDeltaTime = Math.max(0.1, 1.2 / v);
     }
     ctrlChildFpsVal.textContent = v;
-  });
+  }, { signal });
 
   ctrlOrbitSpeed.addEventListener("input", () => {
     orbitSpeed = Number(ctrlOrbitSpeed.value);
     ctrlOrbitSpeedVal.textContent = `${orbitSpeed}×`;
-  });
+  }, { signal });
 
   ctrlOrbitRadius.addEventListener("input", () => {
     orbitRadius = Number(ctrlOrbitRadius.value);
     ctrlOrbitRadiusVal.textContent = orbitRadius;
-  });
+  }, { signal });
 
   // ── Grandchild control handlers ──
 
@@ -387,17 +387,17 @@ export default async function (Arena2D) {
       grandchildTicker.maxDeltaTime = Math.max(0.1, 1.2 / v);
     }
     ctrlGrandchildFpsVal.textContent = v;
-  });
+  }, { signal });
 
   ctrlGrandchildSpeed.addEventListener("input", () => {
     grandchildSpeed = Number(ctrlGrandchildSpeed.value);
     ctrlGrandchildSpeedVal.textContent = `${grandchildSpeed}×`;
-  });
+  }, { signal });
 
   ctrlGrandchildRadius.addEventListener("input", () => {
     grandchildRadius = Number(ctrlGrandchildRadius.value);
     ctrlGrandchildRadiusVal.textContent = grandchildRadius;
-  });
+  }, { signal });
 
   // ── Button handlers ──
 
@@ -405,13 +405,13 @@ export default async function (Arena2D) {
     parentTicker.start();
     childTicker.start();
     grandchildTicker.start();
-  });
+  }, { signal });
 
   document.getElementById("btn-stop").addEventListener("click", () => {
     parentTicker.stop();
     childTicker.stop();
     grandchildTicker.stop();
-  });
+  }, { signal });
 
   document.getElementById("btn-reset").addEventListener("click", () => {
     parentTicker.stop();
@@ -491,10 +491,12 @@ export default async function (Arena2D) {
     parentTicker.start();
     childTicker.start();
     grandchildTicker.start();
-  });
+  }, { signal });
 
   // ── Auto-start both tickers ──
   parentTicker.start();
   childTicker.start();
   grandchildTicker.start();
+
+  return [parentTicker, childTicker, grandchildTicker, simElement, moonElement, satelliteElement];
 }

@@ -1,4 +1,4 @@
-export default async function (Arena2D) {
+export default async function (Arena2D, { signal }) {
   const { Scene, View, Container, Element, Rect, CircleElement } = Arena2D;
 
   // ── Controls ──
@@ -357,16 +357,16 @@ export default async function (Arena2D) {
   speedSlider.addEventListener("input", (e) => {
     speedMultiplier = Number.parseFloat(e.target.value);
     speedVal.textContent = `${speedMultiplier.toFixed(1)}x`;
-  });
+  }, { signal });
 
   // ── Prevent native trackpad/touch gestures on the canvas ──
 
   outputCanvas.style.touchAction = "none";
   outputCanvas.style.overscrollBehavior = "none";
   const onGesture = (e) => e.preventDefault();
-  outputCanvas.addEventListener("gesturestart", onGesture);
-  outputCanvas.addEventListener("gesturechange", onGesture);
-  outputCanvas.addEventListener("gestureend", onGesture);
+  outputCanvas.addEventListener("gesturestart", onGesture, { signal });
+  outputCanvas.addEventListener("gesturechange", onGesture, { signal });
+  outputCanvas.addEventListener("gestureend", onGesture, { signal });
 
   // ── Zoom modifier tracking ──
   // Track Ctrl/Meta via keydown/keyup — WheelEvent.ctrlKey is unreliable
@@ -392,9 +392,9 @@ export default async function (Arena2D) {
     zoomModifierDown = false;
     shiftDown = false;
   };
-  window.addEventListener("keydown", onKeyDown);
-  window.addEventListener("keyup", onKeyUp);
-  window.addEventListener("blur", onBlur);
+  window.addEventListener("keydown", onKeyDown, { signal });
+  window.addEventListener("keyup", onKeyUp, { signal });
+  window.addEventListener("blur", onBlur, { signal });
 
   // ── Wheel: pan (default) or zoom (Ctrl/Meta held) ──
 
@@ -465,7 +465,7 @@ export default async function (Arena2D) {
 
       clampSource(src);
     },
-    { passive: false },
+    { passive: false, signal },
   );
 
   // ── Element hit-testing via output canvas → scene mapping ──
@@ -534,7 +534,7 @@ export default async function (Arena2D) {
       s.c1 = randomColor();
       s.c2 = randomColor();
     }
-  });
+  }, { signal });
 
   // ── Pan (middle-click or Shift+left-click) ──
 
@@ -559,7 +559,7 @@ export default async function (Arena2D) {
       outputCanvas.setPointerCapture(e.pointerId);
       e.preventDefault();
     }
-  });
+  }, { signal });
 
   outputCanvas.addEventListener("pointermove", (e) => {
     if (panTarget) {
@@ -581,7 +581,7 @@ export default async function (Arena2D) {
     }
     updateHover(e);
     updateCursor();
-  });
+  }, { signal });
 
   outputCanvas.addEventListener("pointerup", (e) => {
     if (panTarget) {
@@ -594,7 +594,7 @@ export default async function (Arena2D) {
     } else {
       updateHover(e);
     }
-  });
+  }, { signal });
 
   outputCanvas.addEventListener("pointerleave", () => {
     if (hoveredEl) {
@@ -602,10 +602,10 @@ export default async function (Arena2D) {
       hoveredEl = null;
     }
     updateCursor();
-  });
+  }, { signal });
 
   // Prevent context menu on middle-click
-  outputCanvas.addEventListener("contextmenu", (e) => e.preventDefault());
+  outputCanvas.addEventListener("contextmenu", (e) => e.preventDefault(), { signal });
 
   // ── Start ──
 
@@ -613,11 +613,12 @@ export default async function (Arena2D) {
 
   // ── Cleanup ──
 
-  window.addEventListener("beforeunload", () => {
-    scene.destroy();
-    hiddenContainer.remove();
-    window.removeEventListener("keydown", onKeyDown);
-    window.removeEventListener("keyup", onKeyUp);
-    window.removeEventListener("blur", onBlur);
-  });
+  return {
+    destroy: () => {
+      scene.destroy();
+      if (hiddenContainer && hiddenContainer.parentNode) {
+        hiddenContainer.remove();
+      }
+    }
+  };
 }
