@@ -9,7 +9,7 @@
 
 import { DirtyFlags } from "../core/DirtyFlags";
 import type { IKeyboardEvent } from "../interaction/InteractionManager";
-import type { IArena2DContext, CanvasContext } from "../rendering/Arena2DContext";
+import type { IArena2DContext } from "../rendering/Arena2DContext";
 import { Text } from "./Text";
 
 // ── Constants ──
@@ -995,14 +995,13 @@ export class TextInput extends Text {
   override paint(ctx: IArena2DContext): void {
     const style = this.textStyle;
     const lineHeight = style.lineHeight;
-    const raw = ctx.raw;
     const elementWidth = this.width;
 
     // Set font
     const weight = style.fontWeight;
     const fontStyle = style.fontStyle;
-    raw.font = `${weight} ${fontStyle} ${style.fontSize}px ${style.fontFamily}`;
-    raw.textBaseline = "top";
+    ctx.setFont({ fontSize: style.fontSize, fontFamily: style.fontFamily, fontWeight: weight, fontStyle });
+    ctx.setTextBaseline("top");
 
     // Get display text (password masking)
     const displayText = this._getDisplayText();
@@ -1014,16 +1013,16 @@ export class TextInput extends Text {
 
     // Draw selection background
     if (this._isFocused && this.hasSelection) {
-      this._paintSelection(raw, layout, lineHeight, elementWidth, style);
+      this._paintSelection(ctx, layout, lineHeight, elementWidth, style);
     }
 
     // Draw text or placeholder
     if (showPlaceholder) {
-      raw.fillStyle = style.placeholderColor || "rgba(255, 255, 255, 0.3)";
-      raw.fillText(this._placeholder, 0, 0);
+      ctx.setFillStyle(style.placeholderColor || "rgba(255, 255, 255, 0.3)");
+      ctx.fillText(this._placeholder, 0, 0);
     } else {
       // Render text (masked or normal) using advancements for precision
-      raw.fillStyle = style.color;
+      ctx.setFillStyle(style.color);
       for (let i = 0; i < layout.lines.length; i++) {
         const line = layout.lines[i];
         const y = i * lineHeight;
@@ -1039,21 +1038,21 @@ export class TextInput extends Text {
           for (let j = 0; j < line.text.length; j++) {
             const charX =
               j < line.advancements.length ? line.advancements[j] : line.width;
-            raw.fillText(PASSWORD_CHAR, x + charX, y);
+            ctx.fillText(PASSWORD_CHAR, x + charX, y);
           }
         } else {
-          raw.fillText(line.text, x, y);
+          ctx.fillText(line.text, x, y);
         }
       }
     }
     // Draw caret
     if (this._isFocused && !this.hasSelection && this._caretVisible) {
-      this._paintCaret(raw, layout, lineHeight, elementWidth, style);
+      this._paintCaret(ctx, layout, lineHeight, elementWidth, style);
     }
   }
 
   private _paintSelection(
-    ctx: CanvasContext,
+    ctx: IArena2DContext,
     layout: {
       lines: { text: string; width: number; advancements: number[] }[];
     },
@@ -1064,7 +1063,7 @@ export class TextInput extends Text {
     const selStart = Math.min(this._selectionStart, this._selectionEnd);
     const selEnd = Math.max(this._selectionStart, this._selectionEnd);
 
-    ctx.fillStyle = style.selectionColor;
+    ctx.setFillStyle(style.selectionColor);
 
     let charOffset = 0;
     for (let i = 0; i < layout.lines.length; i++) {
@@ -1109,7 +1108,7 @@ export class TextInput extends Text {
   }
 
   private _paintCaret(
-    ctx: CanvasContext,
+    ctx: IArena2DContext,
     layout: {
       lines: { text: string; width: number; advancements: number[] }[];
     },
@@ -1134,7 +1133,7 @@ export class TextInput extends Text {
 
     const y = lineIdx * lineHeight;
 
-    ctx.fillStyle = style.color;
+    ctx.setFillStyle(style.color);
     ctx.fillRect(alignOffsetX + caretX, y, 1.5, lineHeight);
   }
 

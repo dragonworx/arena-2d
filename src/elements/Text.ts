@@ -206,14 +206,13 @@ export class Text extends Element {
     const style = this._textStyle;
     const lineHeight = style.lineHeight;
     const elementWidth = this.width;
-    const raw = ctx.raw;
 
     // Set font properties
     const weight = style.fontWeight;
     const fontStyle = style.fontStyle;
-    raw.font = `${weight} ${fontStyle} ${style.fontSize}px ${style.fontFamily}`;
-    raw.fillStyle = style.color;
-    raw.textBaseline = "top";
+    ctx.setFont({ fontSize: style.fontSize, fontFamily: style.fontFamily, fontWeight: weight, fontStyle });
+    ctx.setFillStyle(style.color);
+    ctx.setTextBaseline("top");
 
     for (let i = 0; i < layout.lines.length; i++) {
       const line = layout.lines[i];
@@ -222,7 +221,7 @@ export class Text extends Element {
       // Compute x offset based on text alignment
       const x = this._alignOffsetX(style.textAlign, elementWidth, line.width);
 
-      raw.fillText(line.text, x, y);
+      ctx.fillText(line.text, x, y);
     }
   }
 

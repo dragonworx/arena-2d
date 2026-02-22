@@ -19,6 +19,13 @@ const TAU = Math.PI * 2;
 
 export type FillStyle = string | CanvasGradient | CanvasPattern;
 
+export interface PaintStyle {
+  fillColor?: FillStyle;
+  strokeColor?: FillStyle;
+  lineWidth?: number;
+  alpha?: number;
+}
+
 export interface IRenderTextStyle {
   fontSize: number;
   fontFamily: string;
@@ -40,8 +47,7 @@ export interface IArena2DContext {
     y: number,
     w: number,
     h: number,
-    fill?: FillStyle,
-    stroke?: FillStyle,
+    style?: PaintStyle,
   ): void;
   drawRoundedRect(
     x: number,
@@ -49,40 +55,35 @@ export interface IArena2DContext {
     w: number,
     h: number,
     radius: number | [number, number, number, number],
-    fill?: FillStyle,
-    stroke?: FillStyle,
+    style?: PaintStyle,
   ): void;
   drawCircle(
     cx: number,
     cy: number,
     r: number,
-    fill?: FillStyle,
-    stroke?: FillStyle,
+    style?: PaintStyle,
   ): void;
   drawEllipse(
     cx: number,
     cy: number,
     rx: number,
     ry: number,
-    fill?: FillStyle,
-    stroke?: FillStyle,
+    style?: PaintStyle,
   ): void;
   drawLine(
     x1: number,
     y1: number,
     x2: number,
     y2: number,
-    stroke: FillStyle,
-    lineWidth?: number,
+    style?: PaintStyle,
   ): void;
   drawPolygon(
     points: Array<{ x: number; y: number }>,
-    fill?: FillStyle,
-    stroke?: FillStyle,
+    style?: PaintStyle,
     closed?: boolean,
   ): void;
-  drawPath(path: Path2D, fill?: FillStyle, stroke?: FillStyle): void;
-  drawGeometry(geometry: IGeometry, fill?: FillStyle, stroke?: FillStyle): void;
+  drawPath(path: Path2D, style?: PaintStyle): void;
+  drawGeometry(geometry: IGeometry, style?: PaintStyle): void;
 
   // Image (6.2)
   drawImage(
@@ -148,6 +149,25 @@ export interface IArena2DContext {
   // Line style (6.7)
   setLineWidth(width: number): void;
   setLineDash(segments: number[]): void;
+
+  // State setters (6.8)
+  setFillStyle(style: FillStyle): void;
+  setStrokeStyle(style: FillStyle): void;
+  setFont(style: IRenderTextStyle): void;
+  setTextBaseline(baseline: CanvasTextBaseline): void;
+  setTextAlign(align: CanvasTextAlign): void;
+  setGlobalAlpha(alpha: number): void;
+  setCompositeOperation(op: GlobalCompositeOperation): void;
+
+  // Low-level draw calls — use current canvas state (6.9)
+  fillText(text: string, x: number, y: number): void;
+  strokeText(text: string, x: number, y: number): void;
+  fillRect(x: number, y: number, w: number, h: number): void;
+  strokeRect(x: number, y: number, w: number, h: number): void;
+
+  // State scoping (6.10)
+  save(): void;
+  restore(): void;
 }
 
 // ── Helpers ──
@@ -177,17 +197,18 @@ export class Arena2DContext implements IArena2DContext {
 
   // ── Shape Primitives (6.1) ──
 
-  private _applyFillStroke(
-    fill?: FillStyle,
-    stroke?: FillStyle,
-  ): void {
+  private _applyFillStroke(style?: PaintStyle): void {
     const ctx = this.raw;
-    if (fill !== undefined) {
-      ctx.fillStyle = fill;
+    if (style?.lineWidth !== undefined) ctx.lineWidth = style.lineWidth;
+    if (style?.alpha !== undefined) ctx.globalAlpha = style.alpha;
+    if (style === undefined) {
+      ctx.fill();  // use current state
+    } else if (style.fillColor !== undefined) {
+      ctx.fillStyle = style.fillColor;
       ctx.fill();
     }
-    if (stroke !== undefined) {
-      ctx.strokeStyle = stroke;
+    if (style?.strokeColor !== undefined) {
+      ctx.strokeStyle = style.strokeColor;
       ctx.stroke();
     }
   }
@@ -198,26 +219,23 @@ export class Arena2DContext implements IArena2DContext {
    * @param y - The top-left Y coordinate.
    * @param w - The width.
    * @param h - The height.
-   * @param fill - Optional fill color or pattern.
-   * @param stroke - Optional stroke color or pattern.
+   * @param style - Optional paint style (fill, stroke, lineWidth, alpha).
    */
   drawRect(
     x: number,
     y: number,
     w: number,
     h: number,
-    fill?: FillStyle,
-    stroke?: FillStyle,
+    style?: PaintStyle,
   ): void {
     const ctx = this.raw;
-
-    if (fill !== undefined) {
-      ctx.fillStyle = fill;
-      ctx.fillRect(x, y, w, h);
-    }
-    if (stroke !== undefined) {
-      ctx.strokeStyle = stroke;
-      ctx.strokeRect(x, y, w, h);
+    if (style?.lineWidth !== undefined) ctx.lineWidth = style.lineWidth;
+    if (style?.alpha !== undefined) ctx.globalAlpha = style.alpha;
+    if (style === undefined) {
+      ctx.fillRect(x, y, w, h);  // use current state
+    } else {
+      if (style.fillColor !== undefined) { ctx.fillStyle = style.fillColor; ctx.fillRect(x, y, w, h); }
+      if (style.strokeColor !== undefined) { ctx.strokeStyle = style.strokeColor; ctx.strokeRect(x, y, w, h); }
     }
   }
 
@@ -228,8 +246,7 @@ export class Arena2DContext implements IArena2DContext {
    * @param w - The width.
    * @param h - The height.
    * @param radius - Corner radius (single value or array of [tl, tr, br, bl]).
-   * @param fill - Optional fill color or pattern.
-   * @param stroke - Optional stroke color or pattern.
+   * @param style - Optional paint style (fill, stroke, lineWidth, alpha).
    */
   drawRoundedRect(
     x: number,
@@ -237,13 +254,12 @@ export class Arena2DContext implements IArena2DContext {
     w: number,
     h: number,
     radius: number | [number, number, number, number],
-    fill?: FillStyle,
-    stroke?: FillStyle,
+    style?: PaintStyle,
   ): void {
     const ctx = this.raw;
     ctx.beginPath();
     ctx.roundRect(x, y, w, h, radius);
-    this._applyFillStroke(fill, stroke);
+    this._applyFillStroke(style);
   }
 
   /**
@@ -251,20 +267,18 @@ export class Arena2DContext implements IArena2DContext {
    * @param cx - Center X coordinate.
    * @param cy - Center Y coordinate.
    * @param r - Radius.
-   * @param fill - Optional fill color or pattern.
-   * @param stroke - Optional stroke color or pattern.
+   * @param style - Optional paint style (fill, stroke, lineWidth, alpha).
    */
   drawCircle(
     cx: number,
     cy: number,
     r: number,
-    fill?: FillStyle,
-    stroke?: FillStyle,
+    style?: PaintStyle,
   ): void {
     const ctx = this.raw;
     ctx.beginPath();
     ctx.arc(cx, cy, r, 0, TAU);
-    this._applyFillStroke(fill, stroke);
+    this._applyFillStroke(style);
   }
 
   /**
@@ -273,21 +287,19 @@ export class Arena2DContext implements IArena2DContext {
    * @param cy - Center Y coordinate.
    * @param rx - Horizontal radius.
    * @param ry - Vertical radius.
-   * @param fill - Optional fill color or pattern.
-   * @param stroke - Optional stroke color or pattern.
+   * @param style - Optional paint style (fill, stroke, lineWidth, alpha).
    */
   drawEllipse(
     cx: number,
     cy: number,
     rx: number,
     ry: number,
-    fill?: FillStyle,
-    stroke?: FillStyle,
+    style?: PaintStyle,
   ): void {
     const ctx = this.raw;
     ctx.beginPath();
     ctx.ellipse(cx, cy, rx, ry, 0, 0, TAU);
-    this._applyFillStroke(fill, stroke);
+    this._applyFillStroke(style);
   }
 
   /**
@@ -296,32 +308,27 @@ export class Arena2DContext implements IArena2DContext {
    * @param y1 - Start Y coordinate.
    * @param x2 - End X coordinate.
    * @param y2 - End Y coordinate.
-   * @param stroke - Stroke color or pattern.
-   * @param lineWidth - Optional line width.
+   * @param style - Optional paint style (stroke, lineWidth, alpha).
    */
   drawLine(
     x1: number,
     y1: number,
     x2: number,
     y2: number,
-    stroke: FillStyle,
-    lineWidth?: number,
+    style?: PaintStyle,
   ): void {
     const ctx = this.raw;
-    if (lineWidth !== undefined) {
-      ctx.lineWidth = lineWidth;
-    }
+    if (style?.lineWidth !== undefined) ctx.lineWidth = style.lineWidth;
     ctx.beginPath();
     ctx.moveTo(x1, y1);
     ctx.lineTo(x2, y2);
-    ctx.strokeStyle = stroke;
-    ctx.stroke();
+    if (style?.strokeColor !== undefined) { ctx.strokeStyle = style.strokeColor; ctx.stroke(); }
+    else { ctx.stroke(); }  // use current strokeStyle
   }
 
   drawPolygon(
     points: Array<{ x: number; y: number }>,
-    fill?: FillStyle,
-    stroke?: FillStyle,
+    style?: PaintStyle,
     closed: boolean = true,
   ): void {
     if (points.length === 0) return;
@@ -334,50 +341,47 @@ export class Arena2DContext implements IArena2DContext {
     if (closed) {
       ctx.closePath();
     }
-    this._applyFillStroke(fill, stroke);
+    this._applyFillStroke(style);
   }
 
-  drawPath(path: Path2D, fill?: FillStyle, stroke?: FillStyle): void {
+  drawPath(path: Path2D, style?: PaintStyle): void {
     const ctx = this.raw;
-    if (fill !== undefined) {
-      ctx.fillStyle = fill;
-      ctx.fill(path);
-    }
-    if (stroke !== undefined) {
-      ctx.strokeStyle = stroke;
-      ctx.stroke(path);
+    if (style?.lineWidth !== undefined) ctx.lineWidth = style.lineWidth;
+    if (style === undefined) { ctx.fill(path); }
+    else {
+      if (style.fillColor !== undefined) { ctx.fillStyle = style.fillColor; ctx.fill(path); }
+      if (style.strokeColor !== undefined) { ctx.strokeStyle = style.strokeColor; ctx.stroke(path); }
     }
   }
 
   drawGeometry(
     geometry: IGeometry,
-    fill?: FillStyle,
-    stroke?: FillStyle,
+    style?: PaintStyle,
   ): void {
     const type = geometry.type;
 
     if (type === "rectangle") {
       const g = geometry as IRectangle;
-      this.drawRect(g.rectX, g.rectY, g.width, g.height, fill, stroke);
+      this.drawRect(g.rectX, g.rectY, g.width, g.height, style);
     } else if (type === "circle") {
       const g = geometry as ICircle;
-      this.drawCircle(g.cx, g.cy, g.radius, fill, stroke);
+      this.drawCircle(g.cx, g.cy, g.radius, style);
     } else if (type === "ellipse") {
       const g = geometry as IEllipse;
-      this.drawEllipse(g.cx, g.cy, g.rx, g.ry, fill, stroke);
+      this.drawEllipse(g.cx, g.cy, g.rx, g.ry, style);
     } else if (type === "line") {
       const g = geometry as ILine;
-      this.drawLine(g.x1, g.y1, g.x2, g.y2, stroke || "#000", this.raw.lineWidth);
+      this.drawLine(g.x1, g.y1, g.x2, g.y2, style);
     } else if (type === "polygon") {
       const g = geometry as IPolygon;
-      this.drawPolygon(g.points, fill, stroke, g.closed);
+      this.drawPolygon(g.points, style, g.closed);
     } else if (type === "arc") {
       const g = geometry as IArc;
       const ctx = this.raw;
       ctx.beginPath();
       ctx.arc(g.cx, g.cy, g.radius, g.startAngle, g.endAngle, g.counterclockwise);
-      if (stroke !== undefined) {
-        ctx.strokeStyle = stroke;
+      if (style?.strokeColor !== undefined) {
+        ctx.strokeStyle = style.strokeColor;
         ctx.stroke();
       }
     } else if (type === "quadraticCurve") {
@@ -386,8 +390,8 @@ export class Arena2DContext implements IArena2DContext {
       ctx.beginPath();
       ctx.moveTo(g.x0, g.y0);
       ctx.quadraticCurveTo(g.cpx, g.cpy, g.x1, g.y1);
-      if (stroke !== undefined) {
-        ctx.strokeStyle = stroke;
+      if (style?.strokeColor !== undefined) {
+        ctx.strokeStyle = style.strokeColor;
         ctx.stroke();
       }
     } else if (type === "bezierCurve") {
@@ -413,8 +417,8 @@ export class Arena2DContext implements IArena2DContext {
         }
       }
 
-      if (stroke !== undefined) {
-        ctx.strokeStyle = stroke;
+      if (style?.strokeColor !== undefined) {
+        ctx.strokeStyle = style.strokeColor;
         ctx.stroke();
       }
     } else if (type === "path") {
@@ -429,8 +433,8 @@ export class Arena2DContext implements IArena2DContext {
         else if (seg.type === "arc") ctx.arc(seg.cx, seg.cy, seg.radius, seg.startAngle, seg.endAngle, seg.counterclockwise);
         else if (seg.type === "closePath") ctx.closePath();
       }
-      if (stroke !== undefined) {
-        ctx.strokeStyle = stroke;
+      if (style?.strokeColor !== undefined) {
+        ctx.strokeStyle = style.strokeColor;
         ctx.stroke();
       }
     }
@@ -584,7 +588,65 @@ export class Arena2DContext implements IArena2DContext {
     this.raw.setLineDash(segments);
   }
 
-  // ── Auto Save/Restore (6.8) ──
+  // ── State Setters (6.8) ──
+
+  setFillStyle(style: FillStyle): void {
+    this.raw.fillStyle = style;
+  }
+
+  setStrokeStyle(style: FillStyle): void {
+    this.raw.strokeStyle = style;
+  }
+
+  setFont(style: IRenderTextStyle): void {
+    this.raw.font = buildFontString(style);
+  }
+
+  setTextBaseline(baseline: CanvasTextBaseline): void {
+    this.raw.textBaseline = baseline;
+  }
+
+  setTextAlign(align: CanvasTextAlign): void {
+    this.raw.textAlign = align;
+  }
+
+  setGlobalAlpha(alpha: number): void {
+    this.raw.globalAlpha = alpha;
+  }
+
+  setCompositeOperation(op: GlobalCompositeOperation): void {
+    this.raw.globalCompositeOperation = op;
+  }
+
+  // ── Low-level Draws (6.9) ──
+
+  fillText(text: string, x: number, y: number): void {
+    this.raw.fillText(text, x, y);
+  }
+
+  strokeText(text: string, x: number, y: number): void {
+    this.raw.strokeText(text, x, y);
+  }
+
+  fillRect(x: number, y: number, w: number, h: number): void {
+    this.raw.fillRect(x, y, w, h);
+  }
+
+  strokeRect(x: number, y: number, w: number, h: number): void {
+    this.raw.strokeRect(x, y, w, h);
+  }
+
+  // ── State Scoping (6.10) ──
+
+  save(): void {
+    this.raw.save();
+  }
+
+  restore(): void {
+    this.raw.restore();
+  }
+
+  // ── Auto Save/Restore (6.11) ──
 
   beginElement(element: IElement): void {
     const ctx = this.raw;

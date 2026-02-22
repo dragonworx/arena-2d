@@ -29,9 +29,7 @@ export class Circle extends ShapeElement {
   }
 
   override paint(ctx: IArena2DContext): void {
-    if (this._lineWidth !== 1) {
-      ctx.setLineWidth(this._lineWidth);
-    }
-    ctx.drawCircle(this._radius, this._radius, this._radius, this._fill, this._stroke);
+    ctx.drawCircle(this._radius, this._radius, this._radius,
+      { fillColor: this._fill, strokeColor: this._stroke, lineWidth: this._lineWidth });
   }
 }

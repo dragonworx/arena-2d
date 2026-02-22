@@ -9,7 +9,6 @@ import { DirtyFlags } from "../core/DirtyFlags";
 import { Element } from "../core/Element";
 import type { IRect } from "../math/aabb";
 import type { IArena2DContext } from "../rendering/Arena2DContext";
-import { CanvasContext } from "../rendering/Arena2DContext";
 
 // ── Image Element ──
 
@@ -108,10 +107,8 @@ export class Image extends Element {
     const h = this.height;
     if (w <= 0 || h <= 0) return;
 
-    const raw = ctx.raw;
-
     if (this._nineSlice) {
-      this._paintNineSlice(raw, w, h);
+      this._paintNineSlice(ctx, w, h);
     } else if (this._sourceRect) {
       const sr = this._sourceRect;
       ctx.drawImageRegion(
@@ -131,11 +128,10 @@ export class Image extends Element {
 
     // Apply tint via compositing
     if (this._tint) {
-      const prevOp = raw.globalCompositeOperation;
-      raw.globalCompositeOperation = "source-atop";
-      raw.fillStyle = this._tint;
-      raw.fillRect(0, 0, w, h);
-      raw.globalCompositeOperation = prevOp;
+      ctx.save();
+      ctx.setCompositeOperation("source-atop");
+      ctx.drawRect(0, 0, w, h, { fillColor: this._tint });
+      ctx.restore();
     }
   }
 
@@ -144,7 +140,7 @@ export class Image extends Element {
    * [top, right, bottom, left] insets. Corners render at natural size,
    * edges stretch on one axis, center fills the remaining space.
    */
-  private _paintNineSlice(ctx: CanvasContext, w: number, h: number): void {
+  private _paintNineSlice(ctx: IArena2DContext, w: number, h: number): void {
     const source = this._source as CanvasImageSource;
     const [top, right, bottom, left] = this._nineSlice as [
       number,
@@ -178,18 +174,18 @@ export class Image extends Element {
 
     // Skip degenerate cases
     if (dstCenterW < 0 || dstCenterH < 0) {
-      ctx.drawImage(source, sx, sy, sw, sh, 0, 0, w, h);
+      ctx.drawImageRegion(source, sx, sy, sw, sh, 0, 0, w, h);
       return;
     }
 
     // Draw 9 regions:
     // Top-left corner
     if (left > 0 && top > 0) {
-      ctx.drawImage(source, sx, sy, left, top, 0, 0, left, top);
+      ctx.drawImageRegion(source, sx, sy, left, top, 0, 0, left, top);
     }
     // Top edge
     if (srcCenterW > 0 && top > 0 && dstCenterW > 0) {
-      ctx.drawImage(
+      ctx.drawImageRegion(
         source,
         sx + left,
         sy,
@@ -203,7 +199,7 @@ export class Image extends Element {
     }
     // Top-right corner
     if (right > 0 && top > 0) {
-      ctx.drawImage(
+      ctx.drawImageRegion(
         source,
         sx + sw - right,
         sy,
@@ -218,7 +214,7 @@ export class Image extends Element {
 
     // Left edge
     if (left > 0 && srcCenterH > 0 && dstCenterH > 0) {
-      ctx.drawImage(
+      ctx.drawImageRegion(
         source,
         sx,
         sy + top,
@@ -232,7 +228,7 @@ export class Image extends Element {
     }
     // Center
     if (srcCenterW > 0 && srcCenterH > 0 && dstCenterW > 0 && dstCenterH > 0) {
-      ctx.drawImage(
+      ctx.drawImageRegion(
         source,
         sx + left,
         sy + top,
@@ -246,7 +242,7 @@ export class Image extends Element {
     }
     // Right edge
     if (right > 0 && srcCenterH > 0 && dstCenterH > 0) {
-      ctx.drawImage(
+      ctx.drawImageRegion(
         source,
         sx + sw - right,
         sy + top,
@@ -261,7 +257,7 @@ export class Image extends Element {
 
     // Bottom-left corner
     if (left > 0 && bottom > 0) {
-      ctx.drawImage(
+      ctx.drawImageRegion(
         source,
         sx,
         sy + sh - bottom,
@@ -275,7 +271,7 @@ export class Image extends Element {
     }
     // Bottom edge
     if (srcCenterW > 0 && bottom > 0 && dstCenterW > 0) {
-      ctx.drawImage(
+      ctx.drawImageRegion(
         source,
         sx + left,
         sy + sh - bottom,
@@ -289,7 +285,7 @@ export class Image extends Element {
     }
     // Bottom-right corner
     if (right > 0 && bottom > 0) {
-      ctx.drawImage(
+      ctx.drawImageRegion(
         source,
         sx + sw - right,
         sy + sh - bottom,

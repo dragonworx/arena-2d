@@ -136,26 +136,28 @@ export default async function (Arena2D) {
     });
 
     // Element animation using KEYFRAMES directly on the Element
+    // All keyframes use the selected easing, progressing forward to show keyframe structure clearly
     const elemTween = new Tween({
       target: animRect,
       properties: {
         x: [
-          { toValue: 520, duration: dur * 0.4, easing: "easeOutBack" },
-          { toValue: 380, duration: dur * 0.3, easing: "easeInOutCubic" },
-          { toValue: 520, duration: dur * 0.3, easing: "easeInQuad" },
+          { toValue: 320, duration: dur * 0.4, easing: easing },
+          { toValue: 400, duration: dur * 0.3, easing: easing },
+          { toValue: 500, duration: dur * 0.3, easing: easing },
         ],
         y: [
-          { toValue: 120, duration: dur * 0.5, easing: "easeOutBounce" },
-          { toValue: 60, duration: dur * 0.5, easing: "easeInSine" },
+          { toValue: 100, duration: dur * 0.4, easing: easing },
+          { toValue: 140, duration: dur * 0.3, easing: easing },
+          { toValue: 60, duration: dur * 0.3, easing: easing },
         ],
-        rotation: [{ toValue: Math.PI * 2, duration: dur }],
+        rotation: [{ toValue: Math.PI * 2, duration: dur, easing: easing }],
         scaleX: [
-          { toValue: 1.5, duration: dur * 0.5 },
-          { toValue: 1, duration: dur * 0.5 },
+          { toValue: 1.3, duration: dur * 0.5, easing: easing },
+          { toValue: 1, duration: dur * 0.5, easing: easing },
         ],
         alpha: [
-          { toValue: 0.2, duration: dur * 0.5 },
-          { toValue: 1, duration: dur * 0.5 },
+          { toValue: 0.5, duration: dur * 0.5, easing: easing },
+          { toValue: 1, duration: dur * 0.5, easing: easing },
         ],
       },
       ticker: scene.ticker,
@@ -392,16 +394,16 @@ export default async function (Arena2D) {
     ctx.font = "10px monospace";
     ctx.fillText("Element Animation (Multi-Keyframe)", 240, 28);
 
-    // Keyframe markers on the "timeline" area
+    // Keyframe markers on the "timeline" area - showing progressive motion
     ctx.fillStyle = "#3366ff";
     ctx.fillRect(240, 32, 2, 8);
     ctx.fillText("Start", 244, 40);
-    ctx.fillRect(352, 32, 2, 8);
-    ctx.fillText("KF1", 356, 40);
-    ctx.fillRect(436, 32, 2, 8);
-    ctx.fillText("KF2", 440, 40);
-    ctx.fillRect(520, 32, 2, 8);
-    ctx.fillText("End", 524, 40);
+    ctx.fillRect(320, 32, 2, 8);
+    ctx.fillText("KF1", 324, 40);
+    ctx.fillRect(400, 32, 2, 8);
+    ctx.fillText("KF2", 404, 40);
+    ctx.fillRect(500, 32, 2, 8);
+    ctx.fillText("End", 504, 40);
 
     // Draw the animated rect
     ctx.save();

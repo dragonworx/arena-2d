@@ -25,14 +25,12 @@ export class Rect extends ShapeElement {
   }
 
   override paint(ctx: IArena2DContext): void {
-    if (this._lineWidth !== 1) {
-      ctx.setLineWidth(this._lineWidth);
-    }
-    
+    const style = { fillColor: this._fill, strokeColor: this._stroke, lineWidth: this._lineWidth };
+
     if (this._radius === 0 || (Array.isArray(this._radius) && this._radius.every(r => r === 0))) {
-      ctx.drawRect(0, 0, this.width, this.height, this._fill, this._stroke);
+      ctx.drawRect(0, 0, this.width, this.height, style);
     } else {
-      ctx.drawRoundedRect(0, 0, this.width, this.height, this._radius, this._fill, this._stroke);
+      ctx.drawRoundedRect(0, 0, this.width, this.height, this._radius, style);
     }
   }
 }
