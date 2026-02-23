@@ -43,6 +43,7 @@ export class Layer implements ILayer {
     zIndex: number,
     container: HTMLElement,
     scene: unknown,
+    lowLatency = true,
   ) {
     this.id = id;
     this._zIndex = zIndex;
@@ -59,9 +60,24 @@ export class Layer implements ILayer {
     this.canvas.style.zIndex = String(zIndex);
     this.canvas.style.opacity = String(this._opacity);
     this.canvas.style.mixBlendMode = this._blendMode;
+
+    // GPU compositor hint — promotes this canvas to its own compositor layer
+    // so the browser composites it on the GPU rather than re-rasterising the
+    // surrounding DOM whenever the canvas updates.
+    if (lowLatency) {
+      this.canvas.style.willChange = "transform";
+    }
+
     container.appendChild(this.canvas);
 
-    const ctx = this.canvas.getContext("2d", { alpha: true });
+    const ctx = this.canvas.getContext("2d", {
+      alpha: true,
+      // When desynchronized is true the canvas bypasses the normal
+      // double-buffered compositor path and renders via a direct "front
+      // buffer", reducing input-to-pixel latency by up to one frame.
+      // Browsers that don't support it simply ignore the flag.
+      desynchronized: lowLatency,
+    } as CanvasRenderingContext2DSettings);
     if (!ctx) {
       throw new Error("Failed to get 2D context for layer canvas");
     }

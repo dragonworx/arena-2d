@@ -73,6 +73,21 @@ export interface ViewOptions {
   inertia?: boolean;
   friction?: number;
   minVelocity?: number;
+  /**
+   * Enable low-latency GPU-accelerated rendering hints.
+   * When `true` (default):
+   * - Canvas elements receive `will-change: transform` to promote them to
+   *   GPU compositor layers.
+   * - Canvas 2D contexts are created with `desynchronized: true`, which
+   *   bypasses double-buffering synchronisation for lower input-to-pixel
+   *   latency.
+   *
+   * Set to `false` if you observe tearing artefacts or need pixel-perfect
+   * synchronisation with overlapping DOM content.
+   *
+   * Default: `true`
+   */
+  lowLatency?: boolean;
 }
 
 // ── IView Interface ──
@@ -152,6 +167,7 @@ export class View implements IView {
   private _wheelZoomScalar: number;
   private _constrainPan: boolean;
   private _constrainZoom: boolean;
+  private _lowLatency: boolean;
   private _isPanning = false;
   private _lastPointerX = 0;
   private _lastPointerY = 0;
@@ -196,6 +212,7 @@ export class View implements IView {
     this._inertiaEnabled = options.inertia ?? false;
     this._friction = options.friction ?? 0.92;
     this._minVelocity = options.minVelocity ?? 0.5;
+    this._lowLatency = options.lowLatency ?? true;
 
     // Ensure container is positioned
     if (getComputedStyle(container).position === "static") {
@@ -206,7 +223,7 @@ export class View implements IView {
     container.style.overscrollBehavior = "none";
 
     // Create default layer
-    this._defaultLayer = new Layer("default", 0, this.container, this);
+    this._defaultLayer = new Layer("default", 0, this.container, this, this._lowLatency);
     this._layers.set("default", this._defaultLayer);
     (scene.root as IElement).layer = this._defaultLayer;
     this._defaultLayer.addElement(scene.root as IElement);
@@ -310,7 +327,38 @@ export class View implements IView {
     (scene as any)._registerView(this);
   }
 
+  // ── Static helpers ──
+
+  /**
+   * Probe browser support for GPU-related canvas features.
+   *
+   * - `desynchronized` — `true` if the browser honours the `desynchronized`
+   *   context attribute (low-latency direct rendering path).
+   * - `offscreenCanvas` — `true` if `OffscreenCanvas` is available (modern
+   *   GPU-backed canvas pipeline).
+   */
+  static get gpuHints(): { desynchronized: boolean; offscreenCanvas: boolean } {
+    let desynchronized = false;
+    if (typeof document !== "undefined") {
+      const c = document.createElement("canvas");
+      c.width = 1;
+      c.height = 1;
+      const ctx = c.getContext("2d", { desynchronized: true } as any);
+      desynchronized =
+        (ctx as any)?.getContextAttributes?.()?.desynchronized === true;
+    }
+    return {
+      desynchronized,
+      offscreenCanvas: typeof OffscreenCanvas !== "undefined",
+    };
+  }
+
   // ── Properties ──
+
+  /** Whether low-latency GPU hints are active for this view's layers. */
+  get lowLatency(): boolean {
+    return this._lowLatency;
+  }
 
   get width(): number {
     return this._width;
@@ -396,7 +444,7 @@ export class View implements IView {
       throw new Error(`Layer with id "${id}" already exists`);
     }
 
-    const layer = new Layer(id, zIndex, this.container, this);
+    const layer = new Layer(id, zIndex, this.container, this, this._lowLatency);
     layer.resize(this._width, this._height, this._dpr);
     this._layers.set(id, layer);
     return layer;
