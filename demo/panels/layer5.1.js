@@ -35,7 +35,8 @@ export default async function (Arena2D, { signal }) {
     durationVal.textContent = `${durationSlider.value}s`;
   };
   repeatSlider.oninput = () => {
-    repeatVal.textContent = repeatSlider.value;
+    const val = parseInt(repeatSlider.value, 10);
+    repeatVal.textContent = val === 11 ? "∞" : val;
   };
 
   // ── Section 1: Easing Curve Visualizer (top-left area) ──
@@ -106,7 +107,8 @@ export default async function (Arena2D, { signal }) {
     }
 
     const dur = Number.parseFloat(durationSlider.value);
-    const rep = Number.parseInt(repeatSlider.value, 10);
+    let rep = Number.parseInt(repeatSlider.value, 10);
+    if (rep === 11) rep = Infinity;
     const yoyo = yoyoCheck.checked;
     const easing = easingSelect.value;
 

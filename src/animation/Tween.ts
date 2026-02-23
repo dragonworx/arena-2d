@@ -244,7 +244,7 @@ export class Tween extends EventEmitter implements ITween, IManagedTween {
 
       // Handle repeat
       if (
-        this._repeat === Number.POSITIVE_INFINITY ||
+        this._repeat === Infinity ||
         this._repeatCount < this._repeat
       ) {
         this._repeatCount++;
