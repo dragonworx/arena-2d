@@ -1,0 +1,94 @@
+<h1 style="margin:0 0 0.25rem;">Layer 4 — Container & Child Management</h1>
+<p style="color:#888; margin:0 0 1.5rem; font-size:0.95em;">Nested container tree with add/remove, re-parenting, z-sort, and transform cascade.</p>
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+  <!-- Left: Canvas -->
+  <div style="background:#1a1a2e; border-radius:10px; padding:1rem; border:1px solid #333;">
+    <h3 style="margin:0 0 0.5rem;">Canvas</h3>
+    <canvas id="layer4-canvas" width="400" height="320" style="width:100%; background:#12121e; border-radius:6px;"></canvas>
+  </div>
+
+  <!-- Right: Controls -->
+  <div style="display:flex; flex-direction:column; gap:0.75rem;">
+
+    <!-- Tree View -->
+    <div style="background:#1a1a2e; border-radius:10px; padding:1rem; border:1px solid #333;">
+      <h3 style="margin:0 0 0.5rem;">Scene Tree</h3>
+      <div id="tree-view" style="font-family:monospace; font-size:0.85em; line-height:1.6; max-height:160px; overflow-y:auto; color:#ccc;"></div>
+    </div>
+
+    <!-- Actions -->
+    <div style="background:#1a1a2e; border-radius:10px; padding:1rem; border:1px solid #333;">
+      <h3 style="margin:0 0 0.5rem;">Actions</h3>
+      <div style="display:flex; flex-wrap:wrap; gap:6px;">
+        <button id="btn-add-child" class="btn" style="font-size:0.8em;">➕ Add Child</button>
+        <button id="btn-remove-child" class="btn" style="font-size:0.8em;">🗑 Remove Selected</button>
+        <button id="btn-sort" class="btn" style="font-size:0.8em;">🔃 Sort by Z</button>
+        <button id="btn-reparent" class="btn" style="font-size:0.8em;">↪ Re-parent</button>
+        <button id="btn-deselect" class="btn" style="font-size:0.8em; background:#444;">❌ Deselect</button>
+      </div>
+    </div>
+
+    <!-- Properties (for selected element) -->
+    <div style="background:#1a1a2e; border-radius:10px; padding:1rem; border:1px solid #333;">
+      <h3 style="margin:0 0 0.5rem;">Selected: <span id="sel-name" style="color:#7c7cf5;">root</span></h3>
+      <div style="display:grid; grid-template-columns:auto 1fr auto; gap:4px 8px; align-items:center; font-size:0.85em;">
+        <label>X</label>
+        <input type="range" id="sel-x" min="0" max="300" value="0" style="width:100%;">
+        <span id="sel-x-val" style="width:30px; text-align:right;">0</span>
+
+        <label>Y</label>
+        <input type="range" id="sel-y" min="0" max="250" value="0" style="width:100%;">
+        <span id="sel-y-val" style="width:30px; text-align:right;">0</span>
+
+        <label>Pivot X</label>
+        <input type="range" id="sel-px" min="0" max="100" value="0" style="width:100%;">
+        <span id="sel-px-val" style="width:30px; text-align:right;">0</span>
+
+        <label>Pivot Y</label>
+        <input type="range" id="sel-py" min="0" max="100" value="0" style="width:100%;">
+        <span id="sel-py-val" style="width:30px; text-align:right;">0</span>
+
+        <label>Scale X</label>
+        <input type="range" id="sel-sx" min="0.1" max="3" step="0.1" value="1" style="width:100%;">
+        <span id="sel-sx-val" style="width:30px; text-align:right;">1.0</span>
+
+        <label>Scale Y</label>
+        <input type="range" id="sel-sy" min="0.1" max="3" step="0.1" value="1" style="width:100%;">
+        <span id="sel-sy-val" style="width:30px; text-align:right;">1.0</span>
+
+        <label>Rotation</label>
+        <input type="range" id="sel-r" min="0" max="360" step="1" value="0" style="width:100%;">
+        <span id="sel-r-val" style="width:30px; text-align:right;">0°</span>
+
+        <label>Skew X</label>
+        <input type="range" id="sel-skx" min="-1" max="1" step="0.05" value="0" style="width:100%;">
+        <span id="sel-skx-val" style="width:30px; text-align:right;">0</span>
+
+        <label>Skew Y</label>
+        <input type="range" id="sel-sky" min="-1" max="1" step="0.05" value="0" style="width:100%;">
+        <span id="sel-sky-val" style="width:30px; text-align:right;">0</span>
+
+        <label>zIndex</label>
+        <input type="range" id="sel-z" min="0" max="10" value="0" style="width:100%;">
+        <span id="sel-z-val" style="width:30px; text-align:right;">0</span>
+
+        <label>Alpha</label>
+        <input type="range" id="sel-alpha" min="0" max="100" value="100" step="1" style="width:100%;">
+        <span id="sel-alpha-val" style="width:30px; text-align:right;">1.00</span>
+      </div>
+    </div>
+
+
+
+  </div>
+</div>
+
+<!-- Event Log -->
+<div style="background:#1a1a2e; border-radius:10px; padding:1rem; border:1px solid #333; margin-top:1rem;">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+    <h3 style="margin:0;">Event Log</h3>
+    <button id="btn-clear-log" class="btn" style="font-size:0.75em;">Clear</button>
+  </div>
+  <pre id="event-log" style="background:#0d0d1a; border-radius:6px; padding:0.75rem; max-height:100px; overflow-y:auto; font-size:0.82em; margin:0; color:#8888aa;"></pre>
+</div>

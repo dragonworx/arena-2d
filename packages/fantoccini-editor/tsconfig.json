@@ -1,0 +1,9 @@
+{
+  "extends": "../../packages/typescript-config/library.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "lib": ["ESNext"]
+  },
+  "include": ["src/**/*.ts", "build.ts"],
+  "exclude": ["node_modules", "dist"]
+}

@@ -1,0 +1,144 @@
+<style>
+  #l12-demo-container {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+  }
+  #l12-canvas-column {
+    flex: 1;
+  }
+  #l12-controls-column {
+    width: 280px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .control-group {
+    background: #1a1a2e;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .control-group h4 {
+    margin: 0 0 4px 0;
+    font-size: 13px;
+    color: #4a90d9;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .control-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .control-row label {
+    font-size: 11px;
+    color: #999;
+    display: flex;
+    justify-content: space-between;
+  }
+  .control-row input[type="range"] {
+    width: 100%;
+  }
+  .control-inline {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: #999;
+  }
+  input[type="color"] {
+    width: 30px;
+    height: 24px;
+    padding: 0;
+    border: 1px solid #333;
+    background: none;
+    cursor: pointer;
+  }
+  #l12-stats {
+    font-size: 11px;
+    color: #666;
+    margin-top: 12px;
+    font-family: monospace;
+    white-space: pre-wrap;
+  }
+</style>
+
+<div class="main-header">
+  <h1>Layer 12 — Image & Nine-Slice</h1>
+  <p>Consolidated view: Standard, Sprite Sheet, and Nine-Slice on a single canvas.</p>
+</div>
+
+<div id="l12-demo-container">
+  <div id="l12-canvas-column">
+    <div id="l12-canvas-wrap" class="demo-canvas-container"></div>
+    <div id="l12-stats"></div>
+  </div>
+
+  <div id="l12-controls-column">
+    <!-- Standard Image Controls -->
+    <div class="control-group">
+      <h4>Standard Image</h4>
+      <div class="control-row">
+        <label>Width <span><span id="l12-w-val">150</span>px</span></label>
+        <input type="range" id="l12-width" min="32" max="300" value="150">
+      </div>
+      <div class="control-row">
+        <label>Height <span><span id="l12-h-val">120</span>px</span></label>
+        <input type="range" id="l12-height" min="32" max="300" value="120">
+      </div>
+      <div class="control-inline">
+        <input type="checkbox" id="l12-tint-enable">
+        <label for="l12-tint-enable">Enable Tint</label>
+        <input type="color" id="l12-tint-color" value="#4a90d9" style="margin-left: auto;">
+      </div>
+    </div>
+
+    <!-- Sprite Sheet Controls -->
+    <div class="control-group">
+      <h4>Sprite Sheet</h4>
+      <div class="control-row">
+        <label>Column <span><span id="l12-col-val">0</span></span></label>
+        <input type="range" id="l12-sprite-col" min="0" max="3" value="0" step="1">
+      </div>
+      <div class="control-row">
+        <label>Row <span><span id="l12-row-val">0</span></span></label>
+        <input type="range" id="l12-sprite-row" min="0" max="3" value="0" step="1">
+      </div>
+    </div>
+
+    <!-- Nine-Slice Controls -->
+    <div class="control-group">
+      <h4>Nine-Slice Panel</h4>
+      <div class="control-row">
+        <label>Panel Width <span><span id="l12-ns-w-val">400</span>px</span></label>
+        <input type="range" id="l12-ns-width" min="60" max="500" value="400">
+      </div>
+      <div class="control-row">
+        <label>Panel Height <span><span id="l12-ns-h-val">200</span>px</span></label>
+        <input type="range" id="l12-ns-height" min="60" max="350" value="200">
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px;">
+        <div class="control-row">
+          <label>Top <span id="l12-ns-top-val">20</span></label>
+          <input type="range" id="l12-ns-top" min="0" max="40" value="20">
+        </div>
+        <div class="control-row">
+          <label>Bottom <span id="l12-ns-bottom-val">20</span></label>
+          <input type="range" id="l12-ns-bottom" min="0" max="40" value="20">
+        </div>
+        <div class="control-row">
+          <label>Left <span id="l12-ns-left-val">20</span></label>
+          <input type="range" id="l12-ns-left" min="0" max="40" value="20">
+        </div>
+        <div class="control-row">
+          <label>Right <span id="l12-ns-right-val">20</span></label>
+          <input type="range" id="l12-ns-right" min="0" max="40" value="20">
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

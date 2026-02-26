@@ -1,0 +1,112 @@
+<h1 style="margin:0 0 0.25rem;">Layer 5 — Ticker (Frame Loop)</h1>
+<p style="color:#888; margin:0 0 1.5rem; font-size:0.95em;">Independent nested timelines — the orbiting moon runs on its own Ticker at a separate FPS.</p>
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+  <!-- Left: Canvas -->
+  <div style="background:#1a1a2e; border-radius:10px; padding:1rem; border:1px solid #333;">
+    <h3 style="margin:0 0 0.5rem;">Simulation</h3>
+    <canvas id="layer5-canvas" width="400" height="320" style="width:100%; background:#12121e; border-radius:6px;"></canvas>
+    <!-- Legend -->
+    <div style="display:flex; gap:1rem; margin-top:0.5rem; font-size:0.75em; color:#888; flex-wrap:wrap;">
+      <span>🔵 Ball (parent ticker)</span>
+      <span>🟠 Moon (child ticker)</span>
+      <span>🟢 Satellite (grandchild ticker)</span>
+    </div>
+  </div>
+
+  <!-- Right: Controls -->
+  <div style="display:flex; flex-direction:column; gap:0.75rem;">
+
+    <!-- Stats -->
+    <div style="background:#1a1a2e; border-radius:10px; padding:1rem; border:1px solid #333;">
+      <h3 style="margin:0 0 0.5rem;">Frame Stats</h3>
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; font-size:0.9em;">
+        <div style="background:#12121e; border-radius:6px; padding:0.5rem; text-align:center;">
+          <div style="color:#888; font-size:0.7em; text-transform:uppercase; letter-spacing:0.05em;">Parent FPS</div>
+          <div id="stat-fps" style="font-size:1.3em; font-weight:bold; color:#7cf58e;">0</div>
+        </div>
+        <div style="background:#12121e; border-radius:6px; padding:0.5rem; text-align:center;">
+          <div style="color:#888; font-size:0.7em; text-transform:uppercase; letter-spacing:0.05em;">Child FPS</div>
+          <div id="stat-child-fps" style="font-size:1.3em; font-weight:bold; color:#f5a623;">0</div>
+        </div>
+        <div style="background:#12121e; border-radius:6px; padding:0.5rem; text-align:center;">
+          <div style="color:#888; font-size:0.7em; text-transform:uppercase; letter-spacing:0.05em;">GC FPS</div>
+          <div id="stat-grandchild-fps" style="font-size:1.3em; font-weight:bold; color:#7ceb8e;">0</div>
+        </div>
+        <div style="background:#12121e; border-radius:6px; padding:0.5rem; text-align:center; grid-column: span 1;">
+          <div style="color:#888; font-size:0.7em; text-transform:uppercase; letter-spacing:0.05em;">Elapsed</div>
+          <div id="stat-elapsed" style="font-size:1.3em; font-weight:bold; color:#f5c77c;">0.0s</div>
+        </div>
+        <div style="background:#12121e; border-radius:6px; padding:0.5rem; text-align:center; grid-column: span 2;">
+          <div style="color:#888; font-size:0.7em; text-transform:uppercase; letter-spacing:0.05em;">Frames</div>
+          <div id="stat-frames" style="font-size:1.3em; font-weight:bold; color:#f57c7c;">0</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Parent Controls -->
+    <div style="background:#1a1a2e; border-radius:10px; padding:1rem; border:1px solid #333;">
+      <h3 style="margin:0 0 0.5rem;">Parent Ticker</h3>
+      <div style="display:grid; grid-template-columns:auto 1fr auto; gap:4px 8px; align-items:center; font-size:0.85em;">
+        <label>Parent FPS</label>
+        <input type="range" id="ctrl-fps" min="0" max="120" value="60" style="width:100%;">
+        <span id="ctrl-fps-val" style="width:30px; text-align:right;">60</span>
+
+        <label>Ball Speed</label>
+        <input type="range" id="ctrl-speed" min="50" max="1000" value="400" step="10" style="width:100%;">
+        <span id="ctrl-speed-val" style="width:40px; text-align:right;">400</span>
+
+        <label>Direction</label>
+        <input type="range" id="ctrl-direction" min="0" max="360" value="230" step="5" style="width:100%;">
+        <span id="ctrl-direction-val" style="width:40px; text-align:right;">230°</span>
+
+        <label>Gravity</label>
+        <input type="range" id="ctrl-gravity" min="0" max="1500" value="200" step="50" style="width:100%;">
+        <span id="ctrl-gravity-val" style="width:40px; text-align:right;">200</span>
+      </div>
+
+      <div style="display:flex; gap:6px; margin-top:0.75rem;">
+        <button id="btn-start" class="btn" style="font-size:0.8em;">▶ Start</button>
+        <button id="btn-stop" class="btn" style="font-size:0.8em;">⏹ Stop</button>
+        <button id="btn-reset" class="btn" style="font-size:0.8em; background:#444;">↺ Reset</button>
+      </div>
+    </div>
+
+    <!-- Child Ticker Controls -->
+    <div style="background:#1a1a2e; border-radius:10px; padding:1rem; border:1px solid #f5a62344;">
+      <h3 style="margin:0 0 0.5rem; color:#f5a623;">Child Ticker <span style="font-size:0.7em; color:#888;">(moon orbit)</span></h3>
+      <div style="display:grid; grid-template-columns:auto 1fr auto; gap:4px 8px; align-items:center; font-size:0.85em;">
+        <label>Child FPS</label>
+        <input type="range" id="ctrl-child-fps" min="1" max="120" value="60" style="width:100%; accent-color:#f5a623;">
+        <span id="ctrl-child-fps-val" style="width:30px; text-align:right;">60</span>
+
+        <label>Orbit Speed</label>
+        <input type="range" id="ctrl-orbit-speed" min="0.5" max="10" value="1" step="0.5" style="width:100%; accent-color:#f5a623;">
+        <span id="ctrl-orbit-speed-val" style="width:40px; text-align:right;">1×</span>
+
+        <label>Orbit Radius</label>
+        <input type="range" id="ctrl-orbit-radius" min="15" max="60" value="30" step="1" style="width:100%; accent-color:#f5a623;">
+        <span id="ctrl-orbit-radius-val" style="width:40px; text-align:right;">30</span>
+      </div>
+    </div>
+
+    <!-- Grandchild Ticker Controls -->
+    <div style="background:#1a1a2e; border-radius:10px; padding:1rem; border:1px solid #7ceb8e44;">
+      <h3 style="margin:0 0 0.5rem; color:#7ceb8e;">Grandchild Ticker <span style="font-size:0.7em; color:#888;">(satellite)</span></h3>
+      <div style="display:grid; grid-template-columns:auto 1fr auto; gap:4px 8px; align-items:center; font-size:0.85em;">
+        <label>Grandchild FPS</label>
+        <input type="range" id="ctrl-grandchild-fps" min="1" max="120" value="60" style="width:100%; accent-color:#7ceb8e;">
+        <span id="ctrl-grandchild-fps-val" style="width:30px; text-align:right;">60</span>
+
+        <label>Orbit Speed</label>
+        <input type="range" id="ctrl-grandchild-speed" min="0.5" max="20" value="1" step="0.5" style="width:100%; accent-color:#7ceb8e;">
+        <span id="ctrl-grandchild-speed-val" style="width:40px; text-align:right;">1×</span>
+
+        <label>Orbit Radius</label>
+        <input type="range" id="ctrl-grandchild-radius" min="5" max="25" value="12" step="1" style="width:100%; accent-color:#7ceb8e;">
+        <span id="ctrl-grandchild-radius-val" style="width:40px; text-align:right;">12</span>
+      </div>
+    </div>
+
+  </div>
+</div>

@@ -1,0 +1,109 @@
+      <div class="main-header">
+        <h2>Layer 1 — Core Math & Transformation Engine</h2>
+        <p>Affine transformation matrices, AABB computation, and the ITransform interface.</p>
+      </div>
+      <div class="card">
+        <div class="status-badge ready">
+          <span class="pulse"></span> Interactive Demo
+        </div>
+        <h3>Transform Playground</h3>
+        <p style="margin-bottom: 20px;">Drag the sliders to transform the blue rectangle. The dashed orange box shows the world-space AABB.</p>
+
+        <div class="demo-layout">
+          <div class="demo-canvas-container">
+            <canvas id="math-canvas" width="600" height="400" style="width: 100%; height: auto; background: #0f0f1a; border-radius: 8px; border: 1px solid var(--border);"></canvas>
+          </div>
+
+          <div class="demo-controls-sidebar">
+            <div class="compact-control-group">
+              <div class="compact-control-header">
+                <label>x</label>
+                <span class="value" id="val-x">200</span>
+              </div>
+              <input type="range" id="slider-x" class="compact-slider" min="0" max="500" value="200" style="accent-color: var(--accent);">
+            </div>
+
+            <div class="compact-control-group">
+              <div class="compact-control-header">
+                <label>y</label>
+                <span class="value" id="val-y">150</span>
+              </div>
+              <input type="range" id="slider-y" class="compact-slider" min="0" max="350" value="150" style="accent-color: var(--accent);">
+            </div>
+
+            <div class="compact-control-group">
+              <div class="compact-control-header">
+                <label>rotation</label>
+                <span class="value"><span id="val-rot">0</span>°</span>
+              </div>
+              <input type="range" id="slider-rot" class="compact-slider" min="-180" max="180" value="0" style="accent-color: var(--accent);">
+            </div>
+
+            <div class="compact-control-group">
+              <div class="compact-control-header">
+                <label>scaleX</label>
+                <span class="value" id="val-sx">1.0</span>
+              </div>
+              <input type="range" id="slider-sx" class="compact-slider" min="-30" max="30" value="10" style="accent-color: var(--accent);">
+            </div>
+
+            <div class="compact-control-group">
+              <div class="compact-control-header">
+                <label>scaleY</label>
+                <span class="value" id="val-sy">1.0</span>
+              </div>
+              <input type="range" id="slider-sy" class="compact-slider" min="-30" max="30" value="10" style="accent-color: var(--accent);">
+            </div>
+
+            <div class="compact-control-group">
+              <div class="compact-control-header">
+                <label>skewX</label>
+                <span class="value"><span id="val-skx">0</span>°</span>
+              </div>
+              <input type="range" id="slider-skx" class="compact-slider" min="-60" max="60" value="0" style="accent-color: #60c0f0;">
+            </div>
+
+            <div class="compact-control-group">
+              <div class="compact-control-header">
+                <label>skewY</label>
+                <span class="value"><span id="val-sky">0</span>°</span>
+              </div>
+              <input type="range" id="slider-sky" class="compact-slider" min="-60" max="60" value="0" style="accent-color: #60c0f0;">
+            </div>
+
+            <div class="compact-control-group">
+              <div class="compact-control-header">
+                <label>pivotX</label>
+                <span class="value" id="val-px">0</span>
+              </div>
+              <input type="range" id="slider-px" class="compact-slider" min="0" max="100" value="0" style="accent-color: #f06060;">
+            </div>
+
+            <div class="compact-control-group">
+              <div class="compact-control-header">
+                <label>pivotY</label>
+                <span class="value" id="val-py">0</span>
+              </div>
+              <input type="range" id="slider-py" class="compact-slider" min="0" max="80" value="0" style="accent-color: #f06060;">
+            </div>
+
+            <div class="compact-control-group">
+              <div class="compact-control-header">
+                <label>width</label>
+                <span class="value" id="val-w">100</span>
+              </div>
+              <input type="range" id="slider-w" class="compact-slider" min="10" max="250" value="100" style="accent-color: #60f0a0;">
+            </div>
+
+            <div class="compact-control-group">
+              <div class="compact-control-header">
+                <label>height</label>
+                <span class="value" id="val-h">80</span>
+              </div>
+              <input type="range" id="slider-h" class="compact-slider" min="10" max="200" value="80" style="accent-color: #60f0a0;">
+            </div>
+
+            <div id="matrix-readout" style="margin-top: 8px; font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); background: var(--bg-primary); padding: 8px; border-radius: 6px; border: 1px solid var(--border);"></div>
+          </div>
+        </div>
+      </div>

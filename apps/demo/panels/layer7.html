@@ -1,0 +1,67 @@
+<div class="main-header">
+  <h2>Layer 7 — Scene</h2>
+  <p>
+    A single Scene rendered four times, each showing a different quadrant of
+    the scene bounds. Scroll to pan, Ctrl/&#8984;+scroll to zoom towards the
+    cursor, and Shift+drag to pan — just like a CAD app.
+  </p>
+</div>
+
+<div class="card">
+  <h3>Scene Demo</h3>
+  <p>
+    Each panel shows one quadrant of the scene. Scroll on a panel to
+    zoom into it; Shift+drag or middle-click drag to pan. Each quadrant
+    zooms and pans independently. Click any shape to randomise its
+    colours; hover to see a dotted outline.
+  </p>
+
+  <canvas id="quad-canvas" width="600" height="450"
+    style="display: block; margin: 20px 0; border: 1px solid var(--border); background: #111;">
+  </canvas>
+
+  <p style="font-size: 0.85em; color: var(--text-secondary); margin: -12px 0 12px;">
+    Scroll = pan &middot; Ctrl/&#8984;+scroll = zoom &middot; Shift+drag = pan &middot; Click shape = random colour &middot; Hover = dotted outline
+  </p>
+
+  <div class="control-group">
+    <label>Animation Speed: <span id="speed-val">1.0x</span></label>
+    <input type="range" id="ctrl-speed" min="0" max="3" step="0.1" value="1">
+  </div>
+
+  <div class="control-group" style="display: flex; gap: 24px; align-items: center;">
+    <label><input type="checkbox" id="ctrl-constrain-pan" checked> Constrain Pan</label>
+    <label><input type="checkbox" id="ctrl-constrain-zoom" checked> Constrain Zoom</label>
+    <label>Background: <input type="color" id="ctrl-bg-color" value="#222222"></label>
+  </div>
+
+  <div class="info-grid">
+    <div class="info-item">
+      <span class="label">Scene Size:</span>
+      <span class="value" id="stat-size">400×300</span>
+    </div>
+    <div class="info-item">
+      <span class="label">Quadrants:</span>
+      <span class="value">4</span>
+    </div>
+    <div class="info-item">
+      <span class="label">FPS:</span>
+      <span class="value" id="stat-fps">—</span>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h3>Features Demonstrated</h3>
+  <ul>
+    <li><strong>Quad-view compositing:</strong> Four source→dest mappings from the scene's quadrants</li>
+    <li><strong>Ticker-driven:</strong> The Scene's Ticker drives rendering of all four mappings</li>
+    <li><strong>Shared scene graph:</strong> Animated elements appear in whichever quadrant they overlap</li>
+    <li><strong>Scroll pan:</strong> Scroll/trackpad to pan the view</li>
+    <li><strong>Ctrl/&#8984; zoom:</strong> Hold Ctrl or &#8984; and scroll to zoom toward the cursor</li>
+    <li><strong>Shift+drag pan:</strong> Shift+left-click drag or middle-click drag to pan</li>
+    <li><strong>Click interaction:</strong> Click any shape to randomise its gradient colours</li>
+    <li><strong>Hover interaction:</strong> Hover over a shape to see a 3px white dotted stroke</li>
+    <li><strong>Adjustable zoom:</strong> Each quadrant zoomed in to show detail</li>
+  </ul>
+</div>

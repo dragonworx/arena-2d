@@ -1,0 +1,16 @@
+  <div class="panel-header">
+    <h2>Layer 1.1 — Geometry Primitives</h2>
+  </div>
+  <div class="panel-content" style="display: flex; flex-direction: column; height: 100%;">
+    <div style="padding: 10px; background: #222; border-bottom: 1px solid #333; display: flex; align-items: center; gap: 15px;">
+      <label style="color: #00ffff; font-family: monospace; font-size: 12px;">Parametric T (0-1):</label>
+      <input type="range" id="l1.1-t-slider" min="0" max="1" step="0.001" value="0" style="flex: 1; accent-color: #00ffff;">
+      <span id="l1.1-t-value" style="color: #00ffff; font-family: monospace; width: 40px;">0.00</span>
+    </div>
+    <canvas id="l1.1-canvas" style="flex: 1; min-height: 600px; background: #1a1a2e; display: block; cursor: crosshair;"></canvas>
+    <div style="padding: 10px; background: #222; font-family: monospace; font-size: 11px; color: #aaa; max-height: 100px; overflow-y: auto;">
+      <div id="l1.1-info" style="color: #0f0;">
+        Move your mouse to interact. Ray (green) draws from origin through pointer. Shapes highlight when intersected.
+      </div>
+    </div>
+  </div>

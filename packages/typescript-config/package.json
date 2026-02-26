@@ -1,0 +1,6 @@
+{
+  "name": "@arena-2d/typescript-config",
+  "version": "0.0.1",
+  "private": true,
+  "files": ["base.json", "library.json"]
+}

@@ -1,0 +1,69 @@
+<div class="main-header">
+  <h2>Layer 3 — Element Base & Dirty Flagging</h2>
+  <p>Interactive demo of the invalidate → accumulate → resolve cycle.</p>
+</div>
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+  <!-- Left column: Canvas + Controls -->
+  <div>
+    <div class="card" style="margin-bottom:1rem;">
+      <h3 style="margin-bottom:0.5rem;">Canvas</h3>
+      <canvas id="l3-canvas" width="260" height="200" style="background:#111; border-radius:6px; display:block; width:100%;"></canvas>
+    </div>
+
+    <div class="card" style="margin-bottom:1rem;">
+      <h3 style="margin-bottom:0.5rem;">Transform</h3>
+      <div class="l3-grid">
+        <label>X <input id="ctrl-x" type="range" min="0" max="180" value="90" style="width:100px"> <span id="ctrl-x-val">90</span></label>
+        <label>Y <input id="ctrl-y" type="range" min="0" max="120" value="60" style="width:100px"> <span id="ctrl-y-val">60</span></label>
+        <label>Rot <input id="ctrl-rot" type="range" min="-314" max="314" value="0" style="width:100px"> <span id="ctrl-rot-val">0.00</span></label>
+        <label>SX <input id="ctrl-sx" type="range" min="10" max="300" value="100" style="width:100px"> <span id="ctrl-sx-val">1.00</span></label>
+        <label>SY <input id="ctrl-sy" type="range" min="10" max="300" value="100" style="width:100px"> <span id="ctrl-sy-val">1.00</span></label>
+        <label>Alpha <input id="ctrl-alpha" type="range" min="0" max="100" value="100" style="width:100px"> <span id="ctrl-alpha-val">1.00</span></label>
+      </div>
+      <div style="margin-top:0.6rem; display:flex; gap:8px; flex-wrap:wrap;">
+        <button id="btn-toggle-vis" class="btn secondary" style="font-size:0.8em;">Toggle Visible</button>
+        <button id="btn-coalesce" class="btn secondary" style="font-size:0.8em;">⚡ Modify All Props</button>
+        <button id="btn-destroy" class="btn secondary" style="font-size:0.8em; border-color:#f06c6c; color:#f06c6c;">💀 Destroy</button>
+        <button id="btn-reset" class="btn secondary" style="font-size:0.8em;">🔄 Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right column: Inspector + Log -->
+  <div>
+    <div class="card" style="margin-bottom:1rem;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+        <h3 style="margin:0;">Dirty Flags</h3>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <button id="btn-update" class="btn" style="font-size:0.8em;">▶ Update</button>
+          <label style="font-size:0.82em; color:#aaa; display:flex; align-items:center; gap:4px;"><input id="chk-auto" type="checkbox" checked> auto</label>
+        </div>
+      </div>
+      <table id="flag-table" style="width:100%; border-collapse:collapse; font-family:monospace; font-size:0.85em;">
+        <thead><tr style="border-bottom:1px solid #333; color:#888;">
+          <th style="text-align:left; padding:3px 6px;">Prop</th>
+          <th style="text-align:left; padding:3px 6px;">Value</th>
+        </tr></thead>
+        <tbody id="flag-tbody"></tbody>
+      </table>
+      <div id="flag-badges" style="margin-top:0.6rem; font-family:monospace; font-size:0.9em;"></div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.3rem;">
+        <h3 style="margin:0;">Event Log</h3>
+        <button id="btn-clear-log" class="btn secondary" style="font-size:0.75em;">Clear</button>
+      </div>
+      <div id="event-log" style="font-family:monospace; font-size:0.78em; color:#aaa; max-height:160px; overflow-y:auto; background:#0d0d0d; border-radius:4px; padding:6px; white-space:pre-wrap;"></div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .l3-grid { display:grid; grid-template-columns:1fr 1fr; gap:4px 12px; }
+  .l3-grid label { display:flex; align-items:center; gap:4px; color:#ccc; font-size:0.82em; white-space:nowrap; }
+  .flag-badge { display:inline-block; min-width:24px; height:20px; line-height:20px; border-radius:3px; font-size:0.78em; font-weight:bold; text-align:center; margin-right:6px; padding:0 4px; }
+  .flag-on  { background:#6cf0a0; color:#111; }
+  .flag-off { background:#222; color:#555; }
+</style>

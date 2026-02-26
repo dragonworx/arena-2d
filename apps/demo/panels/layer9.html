@@ -1,0 +1,119 @@
+<div class="main-header">
+  <h2>Layer 9 — Interaction & Focus System</h2>
+  <p>Pointer events, hit-testing, event bubbling, keyboard dispatch, and focus/tab management.</p>
+</div>
+
+<div class="card" style="margin-bottom: 1rem;">
+  <h3>Interactive Scene</h3>
+  <p style="color: #888; font-size: 0.85rem; margin-bottom: 0.75rem;">
+    Click elements to see event paths. Use <kbd style="background:#333;padding:2px 6px;border-radius:3px;border:1px solid #555;">Tab</kbd> to cycle focus. Hover to see cursor changes.
+  </p>
+  <div style="display: flex; gap: 1rem;">
+    <!-- Left Column: Scene & Event Log -->
+    <div style="flex: 1;">
+      <div id="l9-scene-container" style="width: 400px; height: 200px; border: 1px solid #444; border-radius: 4px; position: relative; margin-bottom: 1rem;"></div>
+
+      <!-- Drag Controls -->
+      <div style="margin-bottom: 1rem; padding: 0.5rem; background: #1a1a2e; border: 1px solid #333; border-radius: 4px; display: inline-flex; align-items: center; gap: 1rem;">
+        <span style="color: #aaa; font-size: 0.85rem;">Drag Constraint (Pink Box):</span>
+        <label style="color: #ccc; font-size: 0.85rem; cursor: pointer;">
+          <input type="radio" name="drag-constraint" value="none" checked> None
+        </label>
+        <label style="color: #ccc; font-size: 0.85rem; cursor: pointer;">
+          <input type="radio" name="drag-constraint" value="x"> X-Axis
+        </label>
+        <label style="color: #ccc; font-size: 0.85rem; cursor: pointer;">
+          <input type="radio" name="drag-constraint" value="y"> Y-Axis
+        </label>
+      </div>
+      
+      <!-- Quad Hit Test Toggle -->
+      <div style="margin-bottom: 1rem; padding: 0.5rem; background: #1a1a2e; border: 1px solid #333; border-radius: 4px; display: inline-flex; align-items: center; gap: 1rem;">
+        <span style="color: #aaa; font-size: 0.85rem;">Precision:</span>
+        <label style="color: #ccc; font-size: 0.85rem; cursor: pointer;">
+          <input type="checkbox" id="l9-quad-toggle"> Use Quad Hit Test
+        </label>
+      </div>
+
+      <div style="display: flex; gap: 1.5rem; flex-wrap: wrap;">
+        <!-- Event Log -->
+        <div style="flex: 1; min-width: 250px;">
+          <h4 style="margin: 0 0 0.5rem 0; color: #aaa; font-size: 0.85rem;">Event Log</h4>
+          <div id="l9-event-log" style="background: #1a1a2e; border: 1px solid #333; border-radius: 4px; padding: 0.5rem; height: 160px; overflow-y: auto; font-family: monospace; font-size: 0.75rem; color: #ccc;"></div>
+          <button id="l9-clear-log" style="margin-top: 0.5rem; padding: 4px 12px; background: #333; border: 1px solid #555; border-radius: 3px; color: #ccc; cursor: pointer; font-size: 0.75rem;">Clear Log</button>
+        </div>
+
+        <!-- Focus Info -->
+        <div style="flex: 1; min-width: 200px;">
+          <h4 style="margin: 0 0 0.5rem 0; color: #aaa; font-size: 0.85rem;">Focus State</h4>
+          <div style="background: #1a1a2e; border: 1px solid #333; border-radius: 4px; padding: 0.75rem; font-size: 0.85rem;">
+            <div>Focused: <span id="l9-focused" style="color: #6ecf6e;">none</span></div>
+            <div>Hovered: <span id="l9-hovered" style="color: #6ecfa0;">none</span></div>
+            <div style="margin-top: 0.5rem;">
+              <button id="l9-tab-next" style="padding: 4px 10px; background: #2a4a6a; border: 1px solid #4a6a8a; border-radius: 3px; color: #ccc; cursor: pointer; font-size: 0.75rem; margin-right: 0.25rem;">Tab Next</button>
+              <button id="l9-tab-prev" style="padding: 4px 10px; background: #2a4a6a; border: 1px solid #4a6a8a; border-radius: 3px; color: #ccc; cursor: pointer; font-size: 0.75rem;">Tab Prev</button>
+            </div>
+          </div>
+
+          <h4 style="margin: 0.75rem 0 0.5rem 0; color: #aaa; font-size: 0.85rem;">Hit Test Info</h4>
+          <div style="background: #1a1a2e; border: 1px solid #333; border-radius: 4px; padding: 0.75rem; font-size: 0.85rem;">
+            <div>Last Click: <span id="l9-last-click" style="color: #cf6e6e;">—</span></div>
+            <div>Bubble Path: <span id="l9-bubble-path" style="color: #cfcf6e;">—</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Transform Controls -->
+    <div style="width: 200px; background: #1a1a2e; border: 1px solid #333; border-radius: 4px; padding: 1rem; height: fit-content;">
+      <h4 style="margin: 0 0 1rem 0; color: #aaa; font-size: 0.85rem; border-bottom: 1px solid #333; padding-bottom: 0.5rem;">
+        Transform <span id="l9-selected-id" style="color: #6ecf6e; font-weight: normal; margin-left: 0.5rem;">(none)</span>
+      </h4>
+
+      <!-- X Position -->
+      <div class="control-group" style="margin-bottom: 1rem;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+          <label class="control-label" style="margin-bottom: 0;">X</label>
+          <span id="l9-val-x" class="control-value">0</span>
+        </div>
+        <input type="range" id="l9-ctrl-x" min="0" max="400" value="0" disabled>
+      </div>
+
+      <!-- Y Position -->
+      <div class="control-group" style="margin-bottom: 1rem;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+          <label class="control-label" style="margin-bottom: 0;">Y</label>
+          <span id="l9-val-y" class="control-value">0</span>
+        </div>
+        <input type="range" id="l9-ctrl-y" min="0" max="200" value="0" disabled>
+      </div>
+
+      <!-- Width -->
+      <div class="control-group" style="margin-bottom: 1rem;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+          <label class="control-label" style="margin-bottom: 0;">Width</label>
+          <span id="l9-val-w" class="control-value">0</span>
+        </div>
+        <input type="range" id="l9-ctrl-w" min="10" max="400" value="0" disabled>
+      </div>
+
+      <!-- Height -->
+      <div class="control-group" style="margin-bottom: 1rem;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+          <label class="control-label" style="margin-bottom: 0;">Height</label>
+          <span id="l9-val-h" class="control-value">0</span>
+        </div>
+        <input type="range" id="l9-ctrl-h" min="10" max="400" value="0" disabled>
+      </div>
+
+      <!-- Rotation -->
+      <div class="control-group">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+          <label class="control-label" style="margin-bottom: 0;">Rotation</label>
+          <span id="l9-val-r" class="control-value">0°</span>
+        </div>
+        <input type="range" id="l9-ctrl-r" min="0" max="360" value="0" disabled>
+      </div>
+    </div>
+  </div>
+</div>

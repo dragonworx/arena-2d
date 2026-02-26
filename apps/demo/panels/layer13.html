@@ -1,0 +1,68 @@
+<div class="main-header">
+  <h2>Layer 13 — Scroll Containers</h2>
+  <p>Viewport clipping, drag-to-scroll, and momentum.</p>
+</div>
+
+<div class="demo-layout">
+  <div class="demo-canvas-container">
+    <div id="l13-canvas-wrap" style="width: 100%; height: 100%;"></div>
+    <div id="l13-stats" class="stats-panel">
+      Initializing...
+    </div>
+  </div>
+
+  <div class="demo-controls-sidebar">
+    <div class="card compact-control-group">
+      <div class="compact-control-header">
+        <label>Width</label>
+        <span id="l13-w-val" class="value">400</span>
+      </div>
+      <input type="range" id="l13-width" min="100" max="800" value="500" class="compact-slider">
+      
+      <div class="compact-control-header" style="margin-top: 12px;">
+        <label>Height</label>
+        <span id="l13-h-val" class="value">300</span>
+      </div>
+      <input type="range" id="l13-height" min="100" max="600" value="350" class="compact-slider">
+
+      <div class="compact-control-header" style="margin-top: 12px;">
+        <label>Click Deferral (ms)</label>
+        <span id="l13-threshold-val" class="value">250</span>
+      </div>
+      <input type="range" id="l13-threshold" min="0" max="500" value="250" step="10" class="compact-slider">
+    </div>
+
+    <div class="card compact-control-group">
+      <div class="checkbox-row">
+        <input type="checkbox" id="l13-scroll-x" checked>
+        <label for="l13-scroll-x">X Scroll</label>
+      </div>
+      <div class="checkbox-row">
+        <input type="checkbox" id="l13-scroll-y" checked>
+        <label for="l13-scroll-y">Y Scroll</label>
+      </div>
+      <div class="checkbox-row">
+        <input type="checkbox" id="l13-inertia" checked>
+        <label for="l13-inertia">Inertia</label>
+      </div>
+      <div class="checkbox-row">
+        <input type="checkbox" id="l13-drag" checked>
+        <label for="l13-drag">Drag Enabled</label>
+      </div>
+    </div>
+
+    <div class="card compact-control-group">
+      <button id="l13-reset" class="btn" style="width: 100%; margin-bottom: 8px;">Reset</button>
+      <button id="l13-random" class="btn" style="width: 100%;">Random</button>
+    </div>
+
+    <div class="card help-card" style="padding: 16px;">
+      <h4 style="font-size: 13px; margin-bottom: 8px;">Interactions</h4>
+      <ul class="help-list" style="font-size: 11px;">
+        <li><strong>Drag</strong> to scroll</li>
+        <li><strong>Wheel</strong> to scroll</li>
+        <li><strong>Flick</strong> for momentum</li>
+      </ul>
+    </div>
+  </div>
+</div>
